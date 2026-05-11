@@ -1,7 +1,7 @@
 "use client"
 
 import { useState, useEffect } from "react"
-import { Search, Menu, X, Globe, LogOut, LayoutDashboard } from "lucide-react"
+import { Search, Menu, X, Globe, LogOut, LayoutDashboard, MessageSquare } from "lucide-react"
 import Link from "next/link"
 import { useRouter } from "next/navigation"
 import type { User } from "@supabase/supabase-js"
@@ -22,6 +22,7 @@ export function Navbar() {
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false)
   const [language, setLanguage] = useState<"fr" | "ar">("fr")
   const [user, setUser] = useState<User | null | undefined>(undefined)
+  const [unreadCount, setUnreadCount] = useState(0)
 
   useEffect(() => {
     const handleScroll = () => {
@@ -46,6 +47,32 @@ export function Navbar() {
     })
     return () => subscription.unsubscribe()
   }, [])
+
+  useEffect(() => {
+    if (!user) {
+      setUnreadCount(0)
+      return
+    }
+    const supabase = createClient()
+
+    async function fetchUnread() {
+      const { count } = await supabase
+        .from("messages")
+        .select("id", { count: "exact", head: true })
+        .eq("is_read", false)
+        .neq("sender_id", user!.id)
+      setUnreadCount(count ?? 0)
+    }
+
+    fetchUnread()
+
+    const channel = supabase
+      .channel("navbar-unread")
+      .on("postgres_changes", { event: "*", schema: "public", table: "messages" }, fetchUnread)
+      .subscribe()
+
+    return () => { supabase.removeChannel(channel) }
+  }, [user])
 
   const toggleLanguage = () => {
     setLanguage(language === "fr" ? "ar" : "fr")
@@ -131,6 +158,17 @@ export function Navbar() {
                   <Link href="/dashboard">
                     <LayoutDashboard className="h-4 w-4" />
                     Tableau de bord
+                  </Link>
+                </Button>
+                <Button variant="ghost" size="sm" className="text-sm font-medium relative" asChild>
+                  <Link href="/messages">
+                    <MessageSquare className="h-4 w-4" />
+                    Messages
+                    {unreadCount > 0 && (
+                      <span className="absolute -top-1 -right-1 flex h-4 w-4 items-center justify-center rounded-full bg-primary text-[10px] font-bold text-primary-foreground">
+                        {unreadCount > 99 ? "99+" : unreadCount}
+                      </span>
+                    )}
                   </Link>
                 </Button>
                 <Button variant="ghost" size="sm" onClick={handleLogout} className="text-sm font-medium">
@@ -222,6 +260,17 @@ export function Navbar() {
                 <Link href="/dashboard">
                   <LayoutDashboard className="h-4 w-4 mr-2" />
                   Tableau de bord
+                </Link>
+              </Button>
+              <Button variant="ghost" className="w-full justify-start text-sm font-medium" asChild>
+                <Link href="/messages" className="flex items-center gap-2">
+                  <MessageSquare className="h-4 w-4" />
+                  Messages
+                  {unreadCount > 0 && (
+                    <span className="ml-auto flex h-5 w-5 items-center justify-center rounded-full bg-primary text-[10px] font-bold text-primary-foreground">
+                      {unreadCount > 99 ? "99+" : unreadCount}
+                    </span>
+                  )}
                 </Link>
               </Button>
               <Button variant="ghost" className="w-full justify-start text-sm font-medium" onClick={handleLogout}>
