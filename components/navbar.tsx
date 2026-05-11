@@ -1,13 +1,27 @@
 "use client"
 
 import { useState, useEffect } from "react"
-import { Search, Menu, X, Globe } from "lucide-react"
+import { Search, Menu, X, Globe, LogOut } from "lucide-react"
+import Link from "next/link"
+import { useRouter } from "next/navigation"
+import type { User } from "@supabase/supabase-js"
+import { createClient } from "@/lib/supabase/client"
 import { Button } from "@/components/ui/button"
 
+function getInitials(user: User): string {
+  const name = user.user_metadata?.full_name as string | undefined
+  if (name) {
+    return name.split(" ").map((n) => n[0]).join("").toUpperCase().slice(0, 2)
+  }
+  return user.email?.[0]?.toUpperCase() ?? "U"
+}
+
 export function Navbar() {
+  const router = useRouter()
   const [isScrolled, setIsScrolled] = useState(false)
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false)
   const [language, setLanguage] = useState<"fr" | "ar">("fr")
+  const [user, setUser] = useState<User | null | undefined>(undefined)
 
   useEffect(() => {
     const handleScroll = () => {
@@ -18,13 +32,30 @@ export function Navbar() {
   }, [])
 
   useEffect(() => {
-    // Apply RTL direction when Arabic is selected
     document.documentElement.dir = language === "ar" ? "rtl" : "ltr"
     document.documentElement.lang = language === "ar" ? "ar" : "fr"
   }, [language])
 
+  useEffect(() => {
+    const supabase = createClient()
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      setUser(session?.user ?? null)
+    })
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
+      setUser(session?.user ?? null)
+    })
+    return () => subscription.unsubscribe()
+  }, [])
+
   const toggleLanguage = () => {
     setLanguage(language === "fr" ? "ar" : "fr")
+  }
+
+  async function handleLogout() {
+    const supabase = createClient()
+    await supabase.auth.signOut()
+    router.push("/")
+    router.refresh()
   }
 
   return (
@@ -86,12 +117,31 @@ export function Navbar() {
             </button>
             
             <div className="w-px h-6 bg-border mx-2" />
-            <Button variant="ghost" className="text-sm font-medium">
-              Connexion
-            </Button>
-            <Button className="text-sm font-medium bg-primary hover:bg-primary/90 text-primary-foreground">
-              S&apos;inscrire
-            </Button>
+            {user === undefined ? null : user ? (
+              <>
+                <div className="flex items-center gap-2 px-3 py-1.5 rounded-full border border-border bg-card text-sm">
+                  <div className="w-6 h-6 rounded-full bg-primary flex items-center justify-center text-xs font-bold text-primary-foreground shrink-0">
+                    {getInitials(user)}
+                  </div>
+                  <span className="text-foreground font-medium max-w-[120px] truncate">
+                    {(user.user_metadata?.full_name as string) || user.email}
+                  </span>
+                </div>
+                <Button variant="ghost" size="sm" onClick={handleLogout} className="text-sm font-medium">
+                  <LogOut className="h-4 w-4" />
+                  Déconnexion
+                </Button>
+              </>
+            ) : (
+              <>
+                <Button variant="ghost" className="text-sm font-medium" asChild>
+                  <Link href="/connexion">Connexion</Link>
+                </Button>
+                <Button className="text-sm font-medium bg-primary hover:bg-primary/90 text-primary-foreground" asChild>
+                  <Link href="/inscription">S&apos;inscrire</Link>
+                </Button>
+              </>
+            )}
           </div>
 
           {/* Mobile Menu Button */}
@@ -152,12 +202,31 @@ export function Navbar() {
           </button>
           
           <div className="h-px bg-border" />
-          <Button variant="ghost" className="w-full justify-start text-sm font-medium">
-            Connexion
-          </Button>
-          <Button className="w-full text-sm font-medium bg-primary hover:bg-primary/90 text-primary-foreground">
-            S&apos;inscrire
-          </Button>
+          {user === undefined ? null : user ? (
+            <>
+              <div className="flex items-center gap-2 px-3 py-2 rounded-lg border border-border bg-card text-sm">
+                <div className="w-7 h-7 rounded-full bg-primary flex items-center justify-center text-xs font-bold text-primary-foreground shrink-0">
+                  {getInitials(user)}
+                </div>
+                <span className="text-foreground font-medium truncate">
+                  {(user.user_metadata?.full_name as string) || user.email}
+                </span>
+              </div>
+              <Button variant="ghost" className="w-full justify-start text-sm font-medium" onClick={handleLogout}>
+                <LogOut className="h-4 w-4 mr-2" />
+                Déconnexion
+              </Button>
+            </>
+          ) : (
+            <>
+              <Button variant="ghost" className="w-full justify-start text-sm font-medium" asChild>
+                <Link href="/connexion">Connexion</Link>
+              </Button>
+              <Button className="w-full text-sm font-medium bg-primary hover:bg-primary/90 text-primary-foreground" asChild>
+                <Link href="/inscription">S&apos;inscrire</Link>
+              </Button>
+            </>
+          )}
         </div>
       </div>
     </nav>
