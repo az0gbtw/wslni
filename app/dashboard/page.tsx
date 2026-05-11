@@ -163,19 +163,17 @@ export default function DashboardPage() {
 
         <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 pb-16">
           {/* Avatar + quick actions row */}
-          <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-4 -mt-10 mb-8">
-            <div className="flex items-end gap-4">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pt-6 pb-6 border-b border-border mb-6">
+            <div className="flex items-center gap-4">
               {/* Avatar */}
-              <div className="w-20 h-20 rounded-full bg-white shadow-xl shrink-0 p-1 border-2 border-white">
-                <div className="w-full h-full rounded-full bg-primary overflow-hidden flex items-center justify-center">
-                  {profile.avatar_url ? (
-                    <img src={profile.avatar_url} alt={displayName} className="w-full h-full object-cover" />
-                  ) : (
-                    <span className="text-2xl font-bold text-white select-none">{ini}</span>
-                  )}
-                </div>
+              <div className="w-16 h-16 rounded-full bg-primary overflow-hidden flex items-center justify-center shrink-0 shadow-md">
+                {profile.avatar_url ? (
+                  <img src={profile.avatar_url} alt={displayName} className="w-full h-full object-cover" />
+                ) : (
+                  <span className="text-xl font-bold text-white select-none">{ini}</span>
+                )}
               </div>
-              <div className="pb-1">
+              <div>
                 <p className="font-bold text-foreground text-lg leading-tight">{displayName}</p>
                 {profile.job_title && (
                   <p className="text-sm text-muted-foreground">{profile.job_title}</p>
@@ -184,7 +182,7 @@ export default function DashboardPage() {
             </div>
 
             {/* Quick actions */}
-            <div className="flex gap-2 pb-1">
+            <div className="flex gap-2">
               <Button asChild size="sm" variant="outline" className="gap-1.5 font-medium">
                 <Link href="/profil">
                   <Edit2 className="h-3.5 w-3.5" />
