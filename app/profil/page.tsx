@@ -19,7 +19,6 @@ import {
   SheetContent,
   SheetHeader,
   SheetTitle,
-  SheetTrigger,
 } from "@/components/ui/sheet"
 
 interface Profile {
@@ -214,43 +213,59 @@ export default function ProfilPage() {
       <Navbar />
 
       <main className="min-h-screen bg-background">
-        <ZelligeCover />
+        <div className="relative">
+          <ZelligeCover />
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => setEditOpen(true)}
+            className="absolute top-4 right-4 sm:right-8 z-10 bg-white/90 hover:bg-white text-gray-800 border-white/40 shadow-md backdrop-blur-sm font-medium"
+          >
+            <Edit2 className="h-3.5 w-3.5" />
+            Modifier le profil
+          </Button>
+        </div>
 
         <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8">
           {/* Header */}
-          <div className="relative flex flex-col sm:flex-row sm:items-end sm:justify-between gap-4 -mt-16 pb-6 border-b border-border">
-            <div className="flex items-end gap-5 min-w-0">
-              <div className="w-32 h-32 rounded-full border-[5px] border-background bg-primary flex items-center justify-center overflow-hidden shadow-xl shrink-0 ring-2 ring-primary/20">
-                {profile.avatar_url ? (
-                  <img src={profile.avatar_url} alt={displayName} className="w-full h-full object-cover" />
-                ) : (
-                  <span className="text-3xl font-bold text-primary-foreground">{ini}</span>
-                )}
+          <div className="relative z-10 -mt-16 pb-6 border-b border-border">
+            <div className="flex flex-col sm:flex-row sm:items-start gap-4 sm:gap-6">
+              {/* Avatar overlaps the banner. On desktop it sits at the top of the row
+                  which starts at -mt-16, so the top 64px is inside the banner. */}
+              <div className="w-32 h-32 rounded-full bg-white shadow-xl shrink-0 p-1.5">
+                <div className="w-full h-full rounded-full bg-primary overflow-hidden flex items-center justify-center">
+                  {profile.avatar_url ? (
+                    <img src={profile.avatar_url} alt={displayName} className="w-full h-full object-cover" />
+                  ) : (
+                    <span className="text-4xl font-bold text-white leading-none select-none">{ini}</span>
+                  )}
+                </div>
               </div>
-              <div className="mb-2 min-w-0">
-                <h1 className="text-2xl sm:text-3xl font-bold text-foreground leading-tight break-words">
+              {/* sm:pt-16 = 64px, exactly the amount the row is pulled into the banner,
+                  so this column's content always starts at the banner's bottom edge. */}
+              <div className="sm:pt-16 min-w-0 flex-1 pb-2">
+                <h1 className="text-3xl sm:text-4xl font-black text-foreground leading-tight">
                   {displayName}
                 </h1>
-                {profile.job_title && (
-                  <p className="text-muted-foreground text-sm mt-0.5">{profile.job_title}</p>
-                )}
-                {profile.hourly_rate != null && (
-                  <p className="text-primary font-semibold text-sm mt-1">
-                    {profile.hourly_rate.toLocaleString("fr-MA")} MAD/h
-                  </p>
-                )}
+                <div className="flex flex-wrap items-center gap-2 mt-2">
+                  {profile.job_title && (
+                    <span className="inline-flex items-center px-3 py-1 rounded-full bg-primary/10 text-primary text-xs font-semibold border border-primary/20">
+                      {profile.job_title}
+                    </span>
+                  )}
+                  {profile.hourly_rate != null && (
+                    <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-muted text-foreground text-xs font-semibold border border-border">
+                      <span className="w-1.5 h-1.5 rounded-full bg-primary inline-block" />
+                      {profile.hourly_rate.toLocaleString("fr-MA")} MAD/h
+                    </span>
+                  )}
+                </div>
               </div>
             </div>
+          </div>
 
-            <Sheet open={editOpen} onOpenChange={handleSheetChange}>
-              <SheetTrigger asChild>
-                <Button variant="outline" className="self-start sm:self-auto shrink-0">
-                  <Edit2 className="h-4 w-4" />
-                  Modifier le profil
-                </Button>
-              </SheetTrigger>
-
-              <SheetContent className="sm:max-w-xl gap-0 p-0 flex flex-col">
+          <Sheet open={editOpen} onOpenChange={handleSheetChange}>
+            <SheetContent className="sm:max-w-xl gap-0 p-0 flex flex-col">
                 <SheetHeader className="px-6 py-4 border-b border-border shrink-0">
                   <SheetTitle>Modifier mon profil</SheetTitle>
                 </SheetHeader>
@@ -467,8 +482,7 @@ export default function ProfilPage() {
                   </Button>
                 </div>
               </SheetContent>
-            </Sheet>
-          </div>
+          </Sheet>
 
           {/* Stats row */}
           <div className="py-5 border-b border-border grid grid-cols-3 divide-x divide-border">

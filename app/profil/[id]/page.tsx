@@ -128,55 +128,65 @@ export default function PublicProfilePage({ params }: { params: Promise<{ id: st
       <Navbar />
 
       <main className="min-h-screen bg-background">
-        <ZelligeCover />
+        <div className="relative">
+          <ZelligeCover />
+          <div className="absolute top-4 right-4 sm:right-8 z-10">
+            {isOwner ? (
+              <Button asChild variant="outline" size="sm" className="bg-white/90 hover:bg-white text-gray-800 border-white/40 shadow-md backdrop-blur-sm font-medium">
+                <Link href="/profil">
+                  <Edit2 className="h-3.5 w-3.5" />
+                  Modifier mon profil
+                </Link>
+              </Button>
+            ) : (
+              <Button
+                size="sm"
+                className="bg-primary hover:bg-primary/90 text-primary-foreground shadow-md font-medium"
+                onClick={() => setContactOpen(true)}
+              >
+                <MessageCircle className="h-3.5 w-3.5" />
+                Contacter
+              </Button>
+            )}
+          </div>
+        </div>
 
         <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8">
 
-          {/* Header: avatar + name + action button */}
-          <div className="relative flex flex-col sm:flex-row sm:items-end sm:justify-between gap-4 -mt-16 pb-6 border-b border-border">
-            <div className="flex items-end gap-5 min-w-0">
-              {/* Avatar */}
-              <div className="w-32 h-32 rounded-full border-[5px] border-background bg-primary flex items-center justify-center overflow-hidden shadow-xl shrink-0 ring-2 ring-primary/20">
-                {profile.avatar_url ? (
-                  <img src={profile.avatar_url} alt={displayName} className="w-full h-full object-cover" />
-                ) : (
-                  <span className="text-3xl font-bold text-primary-foreground">{ini}</span>
-                )}
+          {/* Header: avatar + name */}
+          <div className="relative z-10 -mt-16 pb-6 border-b border-border">
+            <div className="flex flex-col sm:flex-row sm:items-start gap-4 sm:gap-6">
+              {/* Avatar overlaps the banner. On desktop it sits at the top of the row
+                  which starts at -mt-16, so the top 64px is inside the banner. */}
+              <div className="w-32 h-32 rounded-full bg-white shadow-xl shrink-0 p-1.5">
+                <div className="w-full h-full rounded-full bg-primary overflow-hidden flex items-center justify-center">
+                  {profile.avatar_url ? (
+                    <img src={profile.avatar_url} alt={displayName} className="w-full h-full object-cover" />
+                  ) : (
+                    <span className="text-4xl font-bold text-white leading-none select-none">{ini}</span>
+                  )}
+                </div>
               </div>
-              {/* Name + meta */}
-              <div className="mb-2 min-w-0">
-                <h1 className="text-2xl sm:text-3xl font-bold text-foreground leading-tight break-words">
+              {/* sm:pt-16 = 64px, exactly the amount the row is pulled into the banner,
+                  so this column's content always starts at the banner's bottom edge. */}
+              <div className="sm:pt-16 min-w-0 flex-1 pb-2">
+                <h1 className="text-3xl sm:text-4xl font-black text-foreground leading-tight">
                   {displayName}
                 </h1>
-                {profile.job_title && (
-                  <p className="text-muted-foreground text-sm mt-0.5">{profile.job_title}</p>
-                )}
-                {profile.hourly_rate != null && (
-                  <p className="text-primary font-semibold text-sm mt-1">
-                    {profile.hourly_rate.toLocaleString("fr-MA")} MAD/h
-                  </p>
-                )}
+                <div className="flex flex-wrap items-center gap-2 mt-2">
+                  {profile.job_title && (
+                    <span className="inline-flex items-center px-3 py-1 rounded-full bg-primary/10 text-primary text-xs font-semibold border border-primary/20">
+                      {profile.job_title}
+                    </span>
+                  )}
+                  {profile.hourly_rate != null && (
+                    <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-muted text-foreground text-xs font-semibold border border-border">
+                      <span className="w-1.5 h-1.5 rounded-full bg-primary inline-block" />
+                      {profile.hourly_rate.toLocaleString("fr-MA")} MAD/h
+                    </span>
+                  )}
+                </div>
               </div>
-            </div>
-
-            {/* Action */}
-            <div className="self-start sm:self-auto shrink-0">
-              {isOwner ? (
-                <Button asChild variant="outline">
-                  <Link href="/profil">
-                    <Edit2 className="h-4 w-4" />
-                    Modifier mon profil
-                  </Link>
-                </Button>
-              ) : (
-                <Button
-                  className="bg-primary hover:bg-primary/90 text-primary-foreground shadow-sm"
-                  onClick={() => setContactOpen(true)}
-                >
-                  <MessageCircle className="h-4 w-4" />
-                  Contacter
-                </Button>
-              )}
             </div>
           </div>
 
