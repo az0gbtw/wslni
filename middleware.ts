@@ -45,5 +45,6 @@ export const config = {
     "/missions/:path*",
     "/messages/:path*",
     "/parametres/:path*",
+    "/services/nouveau",
   ],
 }
