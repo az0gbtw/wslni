@@ -1,7 +1,7 @@
 "use client"
 
 import { useState, useEffect } from "react"
-import { Search, Menu, X, Globe, LogOut } from "lucide-react"
+import { Search, Menu, X, Globe, LogOut, LayoutDashboard } from "lucide-react"
 import Link from "next/link"
 import { useRouter } from "next/navigation"
 import type { User } from "@supabase/supabase-js"
@@ -127,6 +127,12 @@ export function Navbar() {
                     {(user.user_metadata?.full_name as string) || user.email}
                   </span>
                 </div>
+                <Button variant="ghost" size="sm" className="text-sm font-medium" asChild>
+                  <Link href="/dashboard">
+                    <LayoutDashboard className="h-4 w-4" />
+                    Tableau de bord
+                  </Link>
+                </Button>
                 <Button variant="ghost" size="sm" onClick={handleLogout} className="text-sm font-medium">
                   <LogOut className="h-4 w-4" />
                   Déconnexion
@@ -212,6 +218,12 @@ export function Navbar() {
                   {(user.user_metadata?.full_name as string) || user.email}
                 </span>
               </div>
+              <Button variant="ghost" className="w-full justify-start text-sm font-medium" asChild>
+                <Link href="/dashboard">
+                  <LayoutDashboard className="h-4 w-4 mr-2" />
+                  Tableau de bord
+                </Link>
+              </Button>
               <Button variant="ghost" className="w-full justify-start text-sm font-medium" onClick={handleLogout}>
                 <LogOut className="h-4 w-4 mr-2" />
                 Déconnexion
