@@ -2,8 +2,10 @@
 
 import { Button } from "@/components/ui/button"
 import { ArrowRight, Sparkles } from "lucide-react"
+import { useRouter } from "next/navigation"
 import { useLanguage } from "@/lib/language-context"
 import { translations } from "@/lib/translations"
+import { createClient } from "@/lib/supabase/client"
 
 function ZelligePattern() {
   return (
@@ -48,6 +50,17 @@ function ZelligePattern() {
 export function HeroSection() {
   const { lang } = useLanguage()
   const t = translations[lang].hero
+  const router = useRouter()
+
+  async function handleOfferServices() {
+    const supabase = createClient()
+    const { data: { session } } = await supabase.auth.getSession()
+    if (session) {
+      router.push("/dashboard")
+    } else {
+      router.push("/inscription?redirect=/dashboard")
+    }
+  }
 
   return (
     <section className="relative min-h-[90vh] flex items-center justify-center bg-gradient-to-br from-secondary via-background to-secondary/30 pt-16">
@@ -96,6 +109,7 @@ export function HeroSection() {
             <Button
               size="lg"
               className="w-full sm:w-auto text-base px-8 py-4 sm:py-6 bg-primary hover:bg-primary/90 text-primary-foreground shadow-lg shadow-primary/20 hover:shadow-xl hover:shadow-primary/30 transition-all duration-300 group"
+              onClick={() => router.push("/services")}
             >
               {t.ctaFind}
               <ArrowRight className="ms-2 h-5 w-5 group-hover:translate-x-1 rtl:group-hover:-translate-x-1 transition-transform" />
@@ -104,6 +118,7 @@ export function HeroSection() {
               size="lg"
               variant="outline"
               className="w-full sm:w-auto text-base px-8 py-4 sm:py-6 border-2 border-foreground/20 hover:border-primary hover:text-primary transition-all duration-300"
+              onClick={handleOfferServices}
             >
               {t.ctaOffer}
             </Button>
