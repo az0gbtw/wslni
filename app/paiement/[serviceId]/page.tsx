@@ -93,6 +93,22 @@ export default function PaiementPage() {
       return
     }
 
+    const clientName =
+      (user.user_metadata?.full_name as string | undefined) ??
+      user.email?.split("@")[0] ??
+      "Client"
+
+    fetch("/api/emails/new-order", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        freelancerId: service.user_id,
+        clientName,
+        serviceTitle: service.title,
+        price: service.price,
+      }),
+    }).catch(() => {})
+
     setStep("success")
   }
 

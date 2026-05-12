@@ -49,6 +49,12 @@ export default function InscriptionPage() {
       return
     }
 
+    fetch("/api/emails/welcome", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ email, fullName }),
+    }).catch(() => {})
+
     setSuccess(true)
     setLoading(false)
   }

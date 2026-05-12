@@ -166,18 +166,32 @@ function OrderRow({
   role,
   hasReview,
   onReview,
+  onStatusChange,
 }: {
   order: Order
   otherParty: ProfileSnap | undefined
   role: "freelancer" | "client"
   hasReview?: boolean
   onReview?: () => void
+  onStatusChange?: (orderId: string, newStatus: string) => void
 }) {
   const ini = otherParty?.full_name
     ? otherParty.full_name.split(" ").map((n) => n[0]).slice(0, 2).join("").toUpperCase()
     : "?"
 
   const showReviewAction = role === "client" && order.status === "livré"
+
+  const nextStatuses: Record<string, Array<{ status: string; label: string; cls: string }>> = {
+    en_attente: [
+      { status: "en_cours", label: "Accepter", cls: "text-blue-600 hover:bg-blue-50" },
+      { status: "annulé", label: "Annuler", cls: "text-red-600 hover:bg-red-50" },
+    ],
+    en_cours: [
+      { status: "livré", label: "Marquer comme livré", cls: "text-emerald-600 hover:bg-emerald-50" },
+      { status: "annulé", label: "Annuler", cls: "text-red-600 hover:bg-red-50" },
+    ],
+  }
+  const actions = role === "freelancer" ? (nextStatuses[order.status] ?? []) : []
 
   return (
     <div className="rounded-xl border border-border bg-card hover:shadow-sm transition-shadow overflow-hidden">
@@ -237,6 +251,22 @@ function OrderRow({
               Laisser un avis
             </Button>
           )}
+        </div>
+      )}
+
+      {actions.length > 0 && (
+        <div className="px-4 py-2.5 border-t border-border/60 bg-muted/20 flex items-center gap-2">
+          {actions.map((a) => (
+            <Button
+              key={a.status}
+              variant="ghost"
+              size="sm"
+              className={`h-7 px-2.5 text-xs font-medium -ml-1.5 ${a.cls}`}
+              onClick={() => onStatusChange?.(order.id, a.status)}
+            >
+              {a.label}
+            </Button>
+          ))}
         </div>
       )}
     </div>
@@ -347,6 +377,35 @@ export default function DashboardPage() {
     setReviewRating(0)
     setReviewComment("")
     setReviewSubmitting(false)
+  }
+
+  async function handleStatusChange(orderId: string, newStatus: string) {
+    const supabase = createClient()
+    const { error } = await supabase
+      .from("orders")
+      .update({ status: newStatus })
+      .eq("id", orderId)
+    if (error) return
+
+    const order = receivedOrders.find((o) => o.id === orderId)
+    setReceivedOrders((prev) =>
+      prev.map((o) => (o.id === orderId ? { ...o, status: newStatus } : o))
+    )
+
+    if (order) {
+      const myName = profile?.full_name ?? user?.email?.split("@")[0] ?? "Freelance"
+      fetch("/api/emails/order-status", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          clientId: order.client_id,
+          freelancerName: myName,
+          serviceTitle: order.service_title,
+          newStatus,
+          price: order.price,
+        }),
+      }).catch(() => {})
+    }
   }
 
   function openReviewDialog(order: Order) {
@@ -669,6 +728,7 @@ export default function DashboardPage() {
                     order={order}
                     otherParty={profilesMap[order.client_id]}
                     role="freelancer"
+                    onStatusChange={handleStatusChange}
                   />
                 ))}
               </div>

@@ -319,10 +319,27 @@ export default function MessagesPage() {
       .single()
 
     if (data) {
-      // Optimistic: add to local list if realtime didn't fire yet
       setMessages((prev) =>
         prev.some((m) => m.id === data.id) ? prev : [...prev, data as Message]
       )
+
+      const conv = conversations.find((c) => c.id === activeConvId)
+      if (conv) {
+        const recipientId =
+          conv.participant1_id === user.id ? conv.participant2_id : conv.participant1_id
+        fetch("/api/emails/new-message", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            recipientId,
+            senderName:
+              (user.user_metadata?.full_name as string | undefined) ??
+              user.email?.split("@")[0] ??
+              "Utilisateur",
+            messagePreview: content,
+          }),
+        }).catch(() => {})
+      }
     }
     setSending(false)
   }
