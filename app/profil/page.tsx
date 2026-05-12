@@ -232,19 +232,19 @@ export default function ProfilPage() {
             <div className="flex flex-col sm:flex-row sm:items-start gap-4 sm:gap-6">
               {/* Avatar overlaps the banner. On desktop it sits at the top of the row
                   which starts at -mt-16, so the top 64px is inside the banner. */}
-              <div className="w-32 h-32 rounded-full bg-white shadow-xl shrink-0 p-1.5">
+              <div className="w-24 h-24 sm:w-32 sm:h-32 rounded-full bg-white shadow-xl shrink-0 p-1.5">
                 <div className="w-full h-full rounded-full bg-primary overflow-hidden flex items-center justify-center">
                   {profile.avatar_url ? (
                     <img src={profile.avatar_url} alt={displayName} className="w-full h-full object-cover" />
                   ) : (
-                    <span className="text-4xl font-bold text-white leading-none select-none">{ini}</span>
+                    <span className="text-3xl sm:text-4xl font-bold text-white leading-none select-none">{ini}</span>
                   )}
                 </div>
               </div>
               {/* sm:pt-16 = 64px, exactly the amount the row is pulled into the banner,
                   so this column's content always starts at the banner's bottom edge. */}
               <div className="sm:pt-16 min-w-0 flex-1 pb-2">
-                <h1 className="text-3xl sm:text-4xl font-black text-foreground leading-tight">
+                <h1 className="text-2xl sm:text-3xl md:text-4xl font-black text-foreground leading-tight">
                   {displayName}
                 </h1>
                 <div className="flex flex-wrap items-center gap-2 mt-2">
@@ -486,28 +486,28 @@ export default function ProfilPage() {
 
           {/* Stats row */}
           <div className="py-5 border-b border-border grid grid-cols-3 divide-x divide-border">
-            <div className="text-center px-4">
-              <div className="flex items-center justify-center gap-1.5 text-muted-foreground mb-1.5">
-                <Calendar className="h-3.5 w-3.5 shrink-0" />
-                <span className="text-xs uppercase tracking-wide font-medium">Membre depuis</span>
+            <div className="text-center px-1.5 sm:px-4">
+              <div className="flex items-center justify-center gap-1 sm:gap-1.5 text-muted-foreground mb-1.5">
+                <Calendar className="h-3.5 w-3.5 shrink-0 hidden sm:block" />
+                <span className="text-[10px] sm:text-xs uppercase tracking-wide font-medium leading-tight">Membre depuis</span>
               </div>
-              <p className="text-sm font-semibold text-foreground capitalize">
+              <p className="text-xs sm:text-sm font-semibold text-foreground capitalize">
                 {memberSince(profile.updated_at)}
               </p>
             </div>
-            <div className="text-center px-4">
-              <div className="flex items-center justify-center gap-1.5 text-muted-foreground mb-1.5">
-                <MessageSquare className="h-3.5 w-3.5 shrink-0" />
-                <span className="text-xs uppercase tracking-wide font-medium">Taux de réponse</span>
+            <div className="text-center px-1.5 sm:px-4">
+              <div className="flex items-center justify-center gap-1 sm:gap-1.5 text-muted-foreground mb-1.5">
+                <MessageSquare className="h-3.5 w-3.5 shrink-0 hidden sm:block" />
+                <span className="text-[10px] sm:text-xs uppercase tracking-wide font-medium leading-tight">Taux de réponse</span>
               </div>
-              <p className="text-sm font-semibold text-foreground">—</p>
+              <p className="text-xs sm:text-sm font-semibold text-foreground">—</p>
             </div>
-            <div className="text-center px-4">
-              <div className="flex items-center justify-center gap-1.5 text-muted-foreground mb-1.5">
-                <CheckCircle2 className="h-3.5 w-3.5 shrink-0" />
-                <span className="text-xs uppercase tracking-wide font-medium">Missions réalisées</span>
+            <div className="text-center px-1.5 sm:px-4">
+              <div className="flex items-center justify-center gap-1 sm:gap-1.5 text-muted-foreground mb-1.5">
+                <CheckCircle2 className="h-3.5 w-3.5 shrink-0 hidden sm:block" />
+                <span className="text-[10px] sm:text-xs uppercase tracking-wide font-medium leading-tight">Missions réalisées</span>
               </div>
-              <p className="text-sm font-semibold text-foreground">—</p>
+              <p className="text-xs sm:text-sm font-semibold text-foreground">—</p>
             </div>
           </div>
 

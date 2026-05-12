@@ -132,7 +132,7 @@ export function Navbar() {
                 type="button"
                 aria-label="Rechercher"
                 onClick={() => handleSearch(desktopSearchRef.current?.value ?? "")}
-                className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground group-focus-within:text-primary transition-colors hover:text-primary"
+                className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground group-focus-within:text-primary transition-all duration-150 hover:text-primary hover:scale-110"
               >
                 <Search className="h-4 w-4" />
               </button>
@@ -157,7 +157,7 @@ export function Navbar() {
             {/* Bascule de langue */}
             <button
               onClick={() => setLanguage(language === "fr" ? "ar" : "fr")}
-              className="flex items-center gap-1.5 px-3 py-1.5 rounded-full border border-border bg-card hover:bg-muted text-sm font-medium transition-colors"
+              className="flex items-center gap-1.5 px-3 py-1.5 rounded-full border border-border bg-card hover:bg-muted text-sm font-medium transition-all duration-150 hover:scale-[1.04] active:scale-[0.97]"
               aria-label="Changer de langue"
             >
               <Globe className="h-4 w-4 text-muted-foreground" />
@@ -186,7 +186,7 @@ export function Navbar() {
                 {/* Menu utilisateur */}
                 <DropdownMenu>
                   <DropdownMenuTrigger asChild>
-                    <button className="flex items-center gap-1.5 px-2 py-1.5 rounded-full border border-border bg-card hover:bg-muted transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2">
+                    <button className="flex items-center gap-1.5 px-2 py-1.5 rounded-full border border-border bg-card hover:bg-muted transition-all duration-150 hover:scale-[1.04] active:scale-[0.97] focus:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2">
                       <div className="w-7 h-7 rounded-full bg-primary flex items-center justify-center text-xs font-bold text-primary-foreground shrink-0">
                         {getInitials(user)}
                       </div>
@@ -245,8 +245,9 @@ export function Navbar() {
       {/* Menu mobile */}
       <div
         className={`lg:hidden overflow-hidden transition-all duration-300 ${
-          isMobileMenuOpen ? "max-h-screen" : "max-h-0"
+          isMobileMenuOpen ? "max-h-[calc(100dvh-4rem)]" : "max-h-0"
         }`}
+        style={{ overflowY: isMobileMenuOpen ? "auto" : "hidden" }}
       >
         <div className="px-4 py-4 space-y-2 bg-background/95 backdrop-blur-md border-t border-border">
 
@@ -256,7 +257,7 @@ export function Navbar() {
               type="button"
               aria-label="Rechercher"
               onClick={() => handleSearch(mobileSearchRef.current?.value ?? "")}
-              className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-primary transition-colors"
+              className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-primary transition-all duration-150 hover:scale-110"
             >
               <Search className="h-4 w-4" />
             </button>

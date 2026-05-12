@@ -75,7 +75,7 @@ export function FeaturedFreelancersSection() {
   }
 
   return (
-    <section className="py-20 md:py-28 bg-background overflow-hidden">
+    <section className="py-12 md:py-28 bg-background overflow-hidden">
       <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
         {/* Section Header */}
         <div className="flex flex-col sm:flex-row sm:items-end sm:justify-between gap-4 mb-10">
@@ -122,7 +122,7 @@ export function FeaturedFreelancersSection() {
               key={index}
               className="flex-shrink-0 w-72 snap-start group overflow-visible"
             >
-              <div className="relative bg-card rounded-2xl border border-border p-5 shadow-sm hover:shadow-xl hover:border-primary/20 transition-all duration-300 hover:-translate-y-1 cursor-pointer overflow-visible">
+              <div className="relative bg-card rounded-2xl border border-border p-5 shadow-sm hover:shadow-2xl hover:border-primary/30 transition-all duration-200 hover:-translate-y-2 cursor-pointer overflow-visible">
                 {/* Top Badge */}
                 {freelancer.rating === 5.0 && (
                   <div className="absolute -top-2 right-3 px-2 py-1 bg-primary text-primary-foreground text-xs font-medium rounded-full z-10">

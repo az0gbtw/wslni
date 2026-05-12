@@ -434,7 +434,7 @@ export default function MessagesPage() {
       <Navbar />
 
       {/* Full-height panel below the fixed Navbar (h-16) */}
-      <div className="fixed inset-0 top-16 flex overflow-hidden bg-background">
+      <div className="fixed inset-x-0 bottom-0 top-16 flex overflow-hidden bg-background">
 
         {/* ── Left panel: conversation list ── */}
         <aside
@@ -676,7 +676,7 @@ export default function MessagesPage() {
                         sendMessage()
                       }
                     }}
-                    placeholder="Écrivez un message… (Entrée pour envoyer)"
+                    placeholder="Écrivez un message…"
                     rows={1}
                     className={cn(
                       "flex-1 resize-none rounded-xl border border-border bg-muted/30 px-4 py-2.5",

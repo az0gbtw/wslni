@@ -458,7 +458,7 @@ export default function DashboardPage() {
               <p className="text-white/70 text-sm font-medium tracking-wide uppercase mb-0.5">
                 Tableau de bord
               </p>
-              <h1 className="text-2xl sm:text-3xl font-black text-white drop-shadow">
+              <h1 className="text-xl sm:text-3xl font-black text-white drop-shadow truncate">
                 Bonjour, {displayName.split(" ")[0]} 👋
               </h1>
             </div>
@@ -502,45 +502,45 @@ export default function DashboardPage() {
 
           {/* Stats row */}
           <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mb-6">
-            <div className="rounded-2xl border border-border bg-card p-4 shadow-sm flex items-center gap-3">
-              <div className="w-10 h-10 rounded-xl bg-primary/10 flex items-center justify-center shrink-0">
-                <Briefcase className="h-5 w-5 text-primary" />
+            <div className="rounded-2xl border border-border bg-card p-3 sm:p-4 shadow-sm flex items-center gap-2.5 sm:gap-3 animate-fade-in-up">
+              <div className="w-8 h-8 sm:w-10 sm:h-10 rounded-xl bg-primary/10 flex items-center justify-center shrink-0">
+                <Briefcase className="h-4 w-4 sm:h-5 sm:w-5 text-primary" />
               </div>
-              <div>
-                <p className="text-2xl font-black text-foreground leading-none">{publishedServices.length}</p>
-                <p className="text-xs text-muted-foreground mt-0.5">Services publiés</p>
-              </div>
-            </div>
-
-            <div className="rounded-2xl border border-border bg-card p-4 shadow-sm flex items-center gap-3">
-              <div className="w-10 h-10 rounded-xl bg-primary/10 flex items-center justify-center shrink-0">
-                <Package className="h-5 w-5 text-primary" />
-              </div>
-              <div>
-                <p className="text-2xl font-black text-foreground leading-none">{receivedOrders.length}</p>
-                <p className="text-xs text-muted-foreground mt-0.5">Commandes reçues</p>
+              <div className="min-w-0">
+                <p className="text-xl sm:text-2xl font-black text-foreground leading-none">{publishedServices.length}</p>
+                <p className="text-[11px] sm:text-xs text-muted-foreground mt-0.5 leading-tight">Services publiés</p>
               </div>
             </div>
 
-            <div className="rounded-2xl border border-border bg-card p-4 shadow-sm flex items-center gap-3">
-              <div className="w-10 h-10 rounded-xl bg-primary/10 flex items-center justify-center shrink-0">
-                <Star className="h-5 w-5 text-primary" />
+            <div className="rounded-2xl border border-border bg-card p-3 sm:p-4 shadow-sm flex items-center gap-2.5 sm:gap-3 animate-fade-in-up animation-delay-100">
+              <div className="w-8 h-8 sm:w-10 sm:h-10 rounded-xl bg-primary/10 flex items-center justify-center shrink-0">
+                <Package className="h-4 w-4 sm:h-5 sm:w-5 text-primary" />
               </div>
-              <div>
-                <p className="text-2xl font-black text-foreground leading-none">
+              <div className="min-w-0">
+                <p className="text-xl sm:text-2xl font-black text-foreground leading-none">{receivedOrders.length}</p>
+                <p className="text-[11px] sm:text-xs text-muted-foreground mt-0.5 leading-tight">Commandes reçues</p>
+              </div>
+            </div>
+
+            <div className="rounded-2xl border border-border bg-card p-3 sm:p-4 shadow-sm flex items-center gap-2.5 sm:gap-3 animate-fade-in-up animation-delay-175">
+              <div className="w-8 h-8 sm:w-10 sm:h-10 rounded-xl bg-primary/10 flex items-center justify-center shrink-0">
+                <Star className="h-4 w-4 sm:h-5 sm:w-5 text-primary" />
+              </div>
+              <div className="min-w-0">
+                <p className="text-xl sm:text-2xl font-black text-foreground leading-none">
                   {(profile.skills ?? []).length}
                 </p>
-                <p className="text-xs text-muted-foreground mt-0.5">Compétences</p>
+                <p className="text-[11px] sm:text-xs text-muted-foreground mt-0.5 leading-tight">Compétences</p>
               </div>
             </div>
 
-            <div className="rounded-2xl border border-border bg-card p-4 shadow-sm flex items-center gap-3">
-              <div className="w-10 h-10 rounded-xl bg-primary/10 flex items-center justify-center shrink-0">
-                <TrendingUp className="h-5 w-5 text-primary" />
+            <div className="rounded-2xl border border-border bg-card p-3 sm:p-4 shadow-sm flex items-center gap-2.5 sm:gap-3 animate-fade-in-up animation-delay-250">
+              <div className="w-8 h-8 sm:w-10 sm:h-10 rounded-xl bg-primary/10 flex items-center justify-center shrink-0">
+                <TrendingUp className="h-4 w-4 sm:h-5 sm:w-5 text-primary" />
               </div>
-              <div>
-                <p className="text-2xl font-black text-foreground leading-none">{pct}%</p>
-                <p className="text-xs text-muted-foreground mt-0.5">Profil complété</p>
+              <div className="min-w-0">
+                <p className="text-xl sm:text-2xl font-black text-foreground leading-none">{pct}%</p>
+                <p className="text-[11px] sm:text-xs text-muted-foreground mt-0.5 leading-tight">Profil complété</p>
               </div>
             </div>
           </div>

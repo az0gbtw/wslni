@@ -40,11 +40,11 @@ const categories = [
 
 export function CategoriesSection() {
   return (
-    <section className="py-20 md:py-28 bg-background">
+    <section className="py-12 md:py-28 bg-background">
       <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
         {/* Section Header */}
-        <div className="text-center mb-12 md:mb-16">
-          <h2 className="text-3xl sm:text-4xl font-bold text-foreground mb-4 text-balance">
+        <div className="text-center mb-8 md:mb-14">
+          <h2 className="text-2xl sm:text-4xl font-bold text-foreground mb-3 text-balance">
             Explore nos catégories
           </h2>
           <p className="text-lg text-muted-foreground max-w-2xl mx-auto text-pretty">
@@ -62,7 +62,7 @@ export function CategoriesSection() {
                 className={`group relative flex flex-col items-center justify-center p-4 md:p-6 rounded-xl ${category.color} border border-transparent hover:border-current/20 transition-all duration-300 hover:scale-[1.02] hover:shadow-lg cursor-pointer`}
               >
                 <div className="mb-3 p-3 rounded-lg bg-white/60 group-hover:bg-white/80 transition-colors">
-                  <Icon className="w-6 h-6 md:w-7 md:h-7" />
+                  <Icon className="w-6 h-6 md:w-7 md:h-7 transition-transform duration-200 group-hover:scale-110" />
                 </div>
                 <span className="text-xs md:text-sm font-medium text-center leading-tight text-foreground/90">
                   {category.label}

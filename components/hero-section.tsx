@@ -52,7 +52,7 @@ export function HeroSection() {
     <section className="relative min-h-[90vh] flex items-center justify-center bg-gradient-to-br from-secondary via-background to-secondary/30 pt-16">
       <ZelligePattern />
       
-      <div className="relative z-10 mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 py-20 md:py-32">
+      <div className="relative z-10 mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 py-8 md:py-24">
         <div className="text-center max-w-4xl mx-auto">
           {/* Badge */}
           <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-primary/10 border border-primary/20 mb-8 animate-fade-in">
@@ -63,7 +63,7 @@ export function HeroSection() {
           </div>
           
           {/* Main Headline */}
-          <h1 className="text-4xl sm:text-5xl md:text-6xl lg:text-7xl font-bold tracking-tight text-foreground mb-6 text-balance">
+          <h1 className="text-3xl sm:text-5xl md:text-6xl lg:text-7xl font-bold tracking-tight text-foreground mb-5 sm:mb-6 text-balance">
             Trouve le talent{" "}
             <span className="text-primary relative">
               qu&apos;il te faut
@@ -86,31 +86,31 @@ export function HeroSection() {
           </h1>
           
           {/* Subtext */}
-          <p className="text-lg sm:text-xl text-muted-foreground max-w-2xl mx-auto mb-10 text-pretty">
+          <p className="text-base sm:text-xl text-muted-foreground max-w-2xl mx-auto mb-8 sm:mb-10 text-pretty">
             Des milliers de freelances qualifiés, prêts à travailler sur ton projet. 
             Design, développement, marketing et bien plus.
           </p>
           
           {/* CTA Buttons */}
           <div className="flex flex-col sm:flex-row items-center justify-center gap-4">
-            <Button 
-              size="lg" 
-              className="w-full sm:w-auto text-base px-8 py-6 bg-primary hover:bg-primary/90 text-primary-foreground shadow-lg shadow-primary/20 hover:shadow-xl hover:shadow-primary/30 transition-all duration-300 group"
+            <Button
+              size="lg"
+              className="w-full sm:w-auto text-base px-8 py-4 sm:py-6 bg-primary hover:bg-primary/90 text-primary-foreground shadow-lg shadow-primary/20 hover:shadow-xl hover:shadow-primary/30 transition-all duration-300 group"
             >
               Je cherche un freelance
               <ArrowRight className="ml-2 h-5 w-5 group-hover:translate-x-1 transition-transform" />
             </Button>
-            <Button 
-              size="lg" 
+            <Button
+              size="lg"
               variant="outline"
-              className="w-full sm:w-auto text-base px-8 py-6 border-2 border-foreground/20 hover:border-primary hover:text-primary transition-all duration-300"
+              className="w-full sm:w-auto text-base px-8 py-4 sm:py-6 border-2 border-foreground/20 hover:border-primary hover:text-primary transition-all duration-300"
             >
               Je propose mes services
             </Button>
           </div>
           
           {/* Trust indicators */}
-          <div className="mt-16 flex flex-wrap items-center justify-center gap-8 text-sm text-muted-foreground">
+          <div className="mt-8 sm:mt-14 flex flex-wrap items-center justify-center gap-4 sm:gap-8 text-sm text-muted-foreground">
             <div className="flex items-center gap-2">
               <div className="flex -space-x-2">
                 {[1, 2, 3, 4].map((i) => (
