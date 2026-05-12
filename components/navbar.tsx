@@ -31,16 +31,28 @@ export function Navbar() {
   const { lang, toggleLang } = useLanguage()
   const t = translations[lang].nav
   const [isScrolled, setIsScrolled] = useState(false)
+  const [isHidden, setIsHidden] = useState(false)
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false)
   const [user, setUser] = useState<User | null | undefined>(undefined)
   const [unreadCount, setUnreadCount] = useState(0)
+  const lastScrollY = useRef(0)
 
   const desktopSearchRef = useRef<HTMLInputElement>(null)
   const mobileSearchRef = useRef<HTMLInputElement>(null)
 
   useEffect(() => {
-    const handleScroll = () => setIsScrolled(window.scrollY > 10)
-    window.addEventListener("scroll", handleScroll)
+    const handleScroll = () => {
+      const currentY = window.scrollY
+      setIsScrolled(currentY > 10)
+      if (currentY > lastScrollY.current && currentY > 80) {
+        setIsHidden(true)
+        setIsMobileMenuOpen(false)
+      } else {
+        setIsHidden(false)
+      }
+      lastScrollY.current = currentY
+    }
+    window.addEventListener("scroll", handleScroll, { passive: true })
     return () => window.removeEventListener("scroll", handleScroll)
   }, [])
 
@@ -109,7 +121,7 @@ export function Navbar() {
         isScrolled
           ? "bg-background/95 backdrop-blur-md shadow-sm"
           : "bg-transparent"
-      }`}
+      } ${isHidden ? "-translate-y-full" : "translate-y-0"}`}
     >
       <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
         <div className="flex h-16 items-center justify-between gap-4">

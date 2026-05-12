@@ -1,43 +1,143 @@
-export const CATEGORIES = [
-  { value: "design-graphique",    label: "Design Graphique & Branding" },
-  { value: "montage-video",       label: "Montage Vidéo & Motion" },
-  { value: "production-musicale", label: "Production Musicale & Mixage" },
-  { value: "developpement-web",   label: "Développement Web & Mobile" },
-  { value: "reseaux-sociaux",     label: "Gestion des Réseaux Sociaux" },
-  { value: "photographie",        label: "Photographie & Retouche" },
-  { value: "traduction",          label: "Traduction (AR/FR/EN)" },
-  { value: "cours-particuliers",  label: "Cours Particuliers & Aide Scolaire" },
-  { value: "conseil-financier",   label: "Conseil Financier" },
-  { value: "aide-juridique",      label: "Aide Juridique & Administrative" },
-  { value: "voice-over",          label: "Voice Over & Podcast" },
-  { value: "animation-3d",        label: "3D & Animation" },
-  { value: "redaction",           label: "Rédaction & Copywriting" },
-  { value: "saisie-donnees",      label: "Saisie de Données & Assistant Virtuel" },
-  { value: "evenements",          label: "Organisation d'Événements" },
-  { value: "mode-textile",        label: "Mode & Design Textile" },
-] as const
+export const CATEGORY_GROUPS = [
+  {
+    value: "graphics-design",
+    label: "Graphics & Design",
+    subcategories: [
+      { value: "logo-identite",       label: "Logo & Identité de marque" },
+      { value: "design-web-app",      label: "Design Web & App" },
+      { value: "illustration-art",    label: "Illustration & Art" },
+      { value: "design-print",        label: "Design Print" },
+      { value: "design-mode",         label: "Design de Mode" },
+      { value: "design-3d",           label: "Design 3D" },
+      { value: "retouche-photo",      label: "Retouche Photo" },
+    ],
+  },
+  {
+    value: "programmation-tech",
+    label: "Programmation & Tech",
+    subcategories: [
+      { value: "developpement-web",    label: "Développement Web" },
+      { value: "developpement-mobile", label: "Développement Mobile" },
+      { value: "developpement-ai",     label: "Développement AI" },
+      { value: "cybersecurite",        label: "Cybersécurité" },
+      { value: "bases-donnees",        label: "Bases de données" },
+      { value: "devops",               label: "DevOps" },
+      { value: "support-it",           label: "Support IT" },
+    ],
+  },
+  {
+    value: "marketing-digital",
+    label: "Marketing Digital",
+    subcategories: [
+      { value: "seo",                  label: "SEO" },
+      { value: "reseaux-sociaux",      label: "Réseaux Sociaux" },
+      { value: "pub-facebook-insta",   label: "Publicité Facebook/Instagram" },
+      { value: "email-marketing",      label: "Email Marketing" },
+      { value: "marketing-contenu",    label: "Marketing de Contenu" },
+      { value: "strategie-marketing",  label: "Stratégie Marketing" },
+    ],
+  },
+  {
+    value: "video-animation",
+    label: "Vidéo & Animation",
+    subcategories: [
+      { value: "montage-video",        label: "Montage Vidéo" },
+      { value: "animation",            label: "Animation" },
+      { value: "motion-graphics",      label: "Motion Graphics" },
+      { value: "videos-ugc",           label: "Vidéos UGC" },
+      { value: "production-video",     label: "Production Vidéo" },
+      { value: "sous-titres",          label: "Sous-titres" },
+    ],
+  },
+  {
+    value: "redaction-traduction",
+    label: "Rédaction & Traduction",
+    subcategories: [
+      { value: "redaction-web",        label: "Rédaction Web" },
+      { value: "copywriting",          label: "Copywriting" },
+      { value: "traduction",           label: "Traduction AR/FR/EN" },
+      { value: "correction-relecture", label: "Correction & Relecture" },
+      { value: "ghostwriting",         label: "Ghostwriting" },
+      { value: "cv-lettres",           label: "CV & Lettres" },
+    ],
+  },
+  {
+    value: "musique-audio",
+    label: "Musique & Audio",
+    subcategories: [
+      { value: "production-musicale",  label: "Production Musicale" },
+      { value: "mixage-mastering",     label: "Mixage & Mastering" },
+      { value: "voice-over",           label: "Voice Over" },
+      { value: "podcasts",             label: "Podcasts" },
+      { value: "jingles",              label: "Jingles" },
+      { value: "cours-musique",        label: "Cours de Musique" },
+    ],
+  },
+  {
+    value: "business",
+    label: "Business",
+    subcategories: [
+      { value: "comptabilite",         label: "Comptabilité" },
+      { value: "conseil-financier",    label: "Conseil Financier" },
+      { value: "business-plan",        label: "Business Plan" },
+      { value: "ressources-humaines",  label: "Ressources Humaines" },
+      { value: "gestion-projet",       label: "Gestion de Projet" },
+    ],
+  },
+  {
+    value: "formation-cours",
+    label: "Formation & Cours",
+    subcategories: [
+      { value: "soutien-scolaire",     label: "Soutien Scolaire" },
+      { value: "cours-langues",        label: "Cours de Langues" },
+      { value: "coaching",             label: "Coaching" },
+      { value: "formation-pro",        label: "Formation Professionnelle" },
+    ],
+  },
+  {
+    value: "mode-de-vie",
+    label: "Mode de Vie",
+    subcategories: [
+      { value: "design-interieur",          label: "Design d'Intérieur" },
+      { value: "photographie",              label: "Photographie" },
+      { value: "planification-evenements",  label: "Planification d'Événements" },
+      { value: "bien-etre-fitness",         label: "Bien-être & Fitness" },
+    ],
+  },
+]
 
-export type CategoryValue = (typeof CATEGORIES)[number]["value"]
+export const CATEGORIES = CATEGORY_GROUPS.flatMap((g) => g.subcategories)
 
-export const CATEGORY_COLORS: Record<string, string> = {
-  "design-graphique":    "bg-rose-100 text-rose-700",
-  "montage-video":       "bg-blue-100 text-blue-700",
-  "production-musicale": "bg-purple-100 text-purple-700",
-  "developpement-web":   "bg-emerald-100 text-emerald-700",
-  "reseaux-sociaux":     "bg-pink-100 text-pink-700",
-  "photographie":        "bg-amber-100 text-amber-700",
-  "traduction":          "bg-cyan-100 text-cyan-700",
-  "cours-particuliers":  "bg-indigo-100 text-indigo-700",
-  "conseil-financier":   "bg-green-100 text-green-700",
-  "aide-juridique":      "bg-slate-100 text-slate-700",
-  "voice-over":          "bg-orange-100 text-orange-700",
-  "animation-3d":        "bg-violet-100 text-violet-700",
-  "redaction":           "bg-teal-100 text-teal-700",
-  "saisie-donnees":      "bg-sky-100 text-sky-700",
-  "evenements":          "bg-fuchsia-100 text-fuchsia-700",
-  "mode-textile":        "bg-red-100 text-red-700",
+export type CategoryValue = string
+
+const GROUP_COLORS: Record<string, string> = {
+  "graphics-design":      "bg-rose-100 text-rose-700",
+  "programmation-tech":   "bg-emerald-100 text-emerald-700",
+  "marketing-digital":    "bg-blue-100 text-blue-700",
+  "video-animation":      "bg-violet-100 text-violet-700",
+  "redaction-traduction": "bg-cyan-100 text-cyan-700",
+  "musique-audio":        "bg-purple-100 text-purple-700",
+  "business":             "bg-green-100 text-green-700",
+  "formation-cours":      "bg-indigo-100 text-indigo-700",
+  "mode-de-vie":          "bg-amber-100 text-amber-700",
 }
 
+export const CATEGORY_COLORS: Record<string, string> = Object.fromEntries(
+  CATEGORY_GROUPS.flatMap((g) =>
+    g.subcategories.map((s) => [s.value, GROUP_COLORS[g.value] ?? "bg-gray-100 text-gray-700"])
+  )
+)
+
 export function getCategoryLabel(value: string): string {
-  return CATEGORIES.find((c) => c.value === value)?.label ?? value
+  for (const g of CATEGORY_GROUPS) {
+    const sub = g.subcategories.find((s) => s.value === value)
+    if (sub) return sub.label
+  }
+  return value
+}
+
+export function getGroupForCategory(categoryValue: string): string | undefined {
+  return CATEGORY_GROUPS.find((g) =>
+    g.subcategories.some((s) => s.value === categoryValue)
+  )?.value
 }

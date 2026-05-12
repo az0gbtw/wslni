@@ -1,36 +1,23 @@
 "use client"
 
 import Link from "next/link"
-import {
-  Palette, Video, Music, Code, Share2, Camera, Languages, GraduationCap,
-  TrendingUp, Scale, Mic, Box, PenTool, ClipboardList, PartyPopper, Shirt
-} from "lucide-react"
+import { Palette, Code2, TrendingUp, Video, PenTool, Music, Briefcase, GraduationCap, Sparkles } from "lucide-react"
 import { useLanguage } from "@/lib/language-context"
 import { translations } from "@/lib/translations"
-import { CATEGORIES } from "@/lib/categories"
+import { CATEGORY_GROUPS } from "@/lib/categories"
 
-const categoryIcons = [
-  Palette, Video, Music, Code, Share2, Camera, Languages, GraduationCap,
-  TrendingUp, Scale, Mic, Box, PenTool, ClipboardList, PartyPopper, Shirt,
-]
+const GROUP_ICONS = [Palette, Code2, TrendingUp, Video, PenTool, Music, Briefcase, GraduationCap, Sparkles]
 
-const categoryColors = [
+const GROUP_COLORS = [
   "bg-rose-50 text-rose-600 hover:bg-rose-100",
-  "bg-blue-50 text-blue-600 hover:bg-blue-100",
-  "bg-purple-50 text-purple-600 hover:bg-purple-100",
   "bg-emerald-50 text-emerald-600 hover:bg-emerald-100",
-  "bg-pink-50 text-pink-600 hover:bg-pink-100",
-  "bg-amber-50 text-amber-600 hover:bg-amber-100",
-  "bg-cyan-50 text-cyan-600 hover:bg-cyan-100",
-  "bg-indigo-50 text-indigo-600 hover:bg-indigo-100",
-  "bg-green-50 text-green-600 hover:bg-green-100",
-  "bg-slate-50 text-slate-600 hover:bg-slate-100",
-  "bg-orange-50 text-orange-600 hover:bg-orange-100",
+  "bg-blue-50 text-blue-600 hover:bg-blue-100",
   "bg-violet-50 text-violet-600 hover:bg-violet-100",
-  "bg-teal-50 text-teal-600 hover:bg-teal-100",
-  "bg-sky-50 text-sky-600 hover:bg-sky-100",
-  "bg-fuchsia-50 text-fuchsia-600 hover:bg-fuchsia-100",
-  "bg-red-50 text-red-600 hover:bg-red-100",
+  "bg-cyan-50 text-cyan-600 hover:bg-cyan-100",
+  "bg-purple-50 text-purple-600 hover:bg-purple-100",
+  "bg-green-50 text-green-600 hover:bg-green-100",
+  "bg-indigo-50 text-indigo-600 hover:bg-indigo-100",
+  "bg-amber-50 text-amber-600 hover:bg-amber-100",
 ]
 
 export function CategoriesSection() {
@@ -50,16 +37,16 @@ export function CategoriesSection() {
           </p>
         </div>
 
-        {/* Categories Grid */}
-        <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-4 gap-3 md:gap-4">
-          {t.items.map((label, index) => {
-            const Icon = categoryIcons[index]
-            const color = categoryColors[index]
-            const categoryId = CATEGORIES[index]?.value
+        {/* Categories Grid — 3×3 */}
+        <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-3 gap-3 md:gap-4">
+          {CATEGORY_GROUPS.map((group, index) => {
+            const Icon = GROUP_ICONS[index]
+            const color = GROUP_COLORS[index]
+            const label = t.items[index]
             return (
               <Link
-                key={index}
-                href={`/services?category=${categoryId}`}
+                key={group.value}
+                href={`/services?group=${group.value}`}
                 className={`group relative flex flex-col items-center justify-center p-4 md:p-6 rounded-xl ${color} border border-transparent hover:border-current/20 transition-all duration-300 hover:scale-[1.02] hover:shadow-lg cursor-pointer`}
               >
                 <div className="mb-3 p-3 rounded-lg bg-white/60 group-hover:bg-white/80 transition-colors">

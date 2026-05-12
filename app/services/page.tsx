@@ -5,7 +5,7 @@ import Link from "next/link"
 import { Search, Clock, Loader2, Plus, Star, SlidersHorizontal, X } from "lucide-react"
 import { useSearchParams } from "next/navigation"
 import { createClient } from "@/lib/supabase/client"
-import { CATEGORIES, CATEGORY_COLORS, getCategoryLabel } from "@/lib/categories"
+import { CATEGORY_GROUPS, CATEGORY_COLORS, getCategoryLabel } from "@/lib/categories"
 import { useLanguage } from "@/lib/language-context"
 import { translations } from "@/lib/translations"
 import { Navbar } from "@/components/navbar"
@@ -58,6 +58,7 @@ function ServicesContent() {
   const [loading, setLoading] = useState(true)
   const [search, setSearch]                     = useState(searchParams.get("q") ?? "")
   const [selectedCategory, setSelectedCategory] = useState(searchParams.get("category") ?? "")
+  const [selectedGroup, setSelectedGroup]       = useState(searchParams.get("group") ?? "")
   const [minPrice, setMinPrice]                 = useState("")
   const [maxPrice, setMaxPrice]                 = useState("")
   const [maxDelivery, setMaxDelivery]           = useState(0)
@@ -111,9 +112,14 @@ function ServicesContent() {
     const min = minPrice !== "" ? parseFloat(minPrice) : null
     const max = maxPrice !== "" ? parseFloat(maxPrice) : null
 
+    const groupSubcategories = selectedGroup
+      ? CATEGORY_GROUPS.find((g) => g.value === selectedGroup)?.subcategories.map((s) => s.value) ?? []
+      : []
+
     let result = services.filter((s) => {
       if (q && !s.title.toLowerCase().includes(q) && !s.description.toLowerCase().includes(q)) return false
       if (selectedCategory && s.category !== selectedCategory) return false
+      if (selectedGroup && !groupSubcategories.includes(s.category)) return false
       if (min !== null && s.price < min) return false
       if (max !== null && s.price > max) return false
       if (maxDelivery > 0 && s.delivery_days > maxDelivery) return false
@@ -127,12 +133,12 @@ function ServicesContent() {
       if (sortBy === "rating")     return (b.avgRating ?? 0) - (a.avgRating ?? 0)
       return new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
     })
-  }, [services, search, selectedCategory, minPrice, maxPrice, maxDelivery, minRating, sortBy])
+  }, [services, search, selectedCategory, selectedGroup, minPrice, maxPrice, maxDelivery, minRating, sortBy])
 
-  const hasFilters = !!(search || selectedCategory || minPrice || maxPrice || maxDelivery > 0 || minRating > 0)
+  const hasFilters = !!(search || selectedCategory || selectedGroup || minPrice || maxPrice || maxDelivery > 0 || minRating > 0)
 
   function resetFilters() {
-    setSearch(""); setSelectedCategory(""); setMinPrice(""); setMaxPrice("")
+    setSearch(""); setSelectedCategory(""); setSelectedGroup(""); setMinPrice(""); setMaxPrice("")
     setMaxDelivery(0); setMinRating(0); setSortBy("newest")
   }
 
@@ -218,23 +224,30 @@ function ServicesContent() {
                 <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wide mb-2.5">
                   {t.categoryLabel}
                 </p>
-                <div className="space-y-1.5 max-h-56 overflow-y-auto pe-1">
-                  {[{ value: "", label: t.allCategories }, ...CATEGORIES].map((cat) => (
-                    <label key={cat.value} className="flex items-center gap-2 cursor-pointer group">
-                      <input
-                        type="radio"
-                        name="category"
-                        value={cat.value}
-                        checked={selectedCategory === cat.value}
-                        onChange={() => setSelectedCategory(cat.value)}
-                        className="accent-primary shrink-0"
-                      />
-                      <span className="text-sm text-foreground group-hover:text-primary transition-colors leading-tight">
-                        {cat.label}
-                      </span>
-                    </label>
+                <select
+                  value={selectedCategory || (selectedGroup ? `__group__${selectedGroup}` : "")}
+                  onChange={(e) => {
+                    const v = e.target.value
+                    if (v.startsWith("__group__")) {
+                      setSelectedGroup(v.replace("__group__", ""))
+                      setSelectedCategory("")
+                    } else {
+                      setSelectedCategory(v)
+                      setSelectedGroup("")
+                    }
+                  }}
+                  className="w-full h-9 rounded-md border border-input bg-background px-3 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
+                >
+                  <option value="">{t.allCategories}</option>
+                  {CATEGORY_GROUPS.map((group) => (
+                    <optgroup key={group.value} label={group.label}>
+                      <option value={`__group__${group.value}`}>— {group.label} (toutes)</option>
+                      {group.subcategories.map((sub) => (
+                        <option key={sub.value} value={sub.value}>{sub.label}</option>
+                      ))}
+                    </optgroup>
                   ))}
-                </div>
+                </select>
               </div>
 
               {/* Price range */}

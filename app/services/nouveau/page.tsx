@@ -5,7 +5,7 @@ import { useRouter } from "next/navigation"
 import Link from "next/link"
 import { CheckCircle2, Loader2, ArrowLeft } from "lucide-react"
 import { createClient } from "@/lib/supabase/client"
-import { CATEGORIES } from "@/lib/categories"
+import { CATEGORY_GROUPS } from "@/lib/categories"
 import { Navbar } from "@/components/navbar"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
@@ -201,10 +201,12 @@ export default function NouveauServicePage() {
                   }`}
                 >
                   <option value="">— Choisissez une catégorie —</option>
-                  {CATEGORIES.map((cat) => (
-                    <option key={cat.value} value={cat.value}>
-                      {cat.label}
-                    </option>
+                  {CATEGORY_GROUPS.map((group) => (
+                    <optgroup key={group.value} label={group.label}>
+                      {group.subcategories.map((sub) => (
+                        <option key={sub.value} value={sub.value}>{sub.label}</option>
+                      ))}
+                    </optgroup>
                   ))}
                 </select>
                 {errors.category && <p className="text-sm text-destructive">{errors.category}</p>}
