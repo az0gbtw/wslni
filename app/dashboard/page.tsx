@@ -5,7 +5,7 @@ import { useRouter } from "next/navigation"
 import Link from "next/link"
 import {
   Loader2, Plus, Edit2, Briefcase, CheckCircle2, Clock,
-  ArrowRight, User, Star, TrendingUp,
+  ArrowRight, User, Star, TrendingUp, ShoppingBag, Package,
 } from "lucide-react"
 import type { User as SupabaseUser } from "@supabase/supabase-js"
 import { createClient } from "@/lib/supabase/client"
@@ -36,15 +36,42 @@ interface Service {
   created_at: string
 }
 
+interface Order {
+  id: string
+  service_id: string
+  service_title: string
+  price: number
+  status: string
+  client_id: string
+  freelancer_id: string
+  created_at: string
+}
+
+type ProfileSnap = { full_name: string | null; avatar_url: string | null }
+
+const STATUS_LABELS: Record<string, string> = {
+  en_attente: "En attente",
+  en_cours: "En cours",
+  livré: "Livré",
+  annulé: "Annulé",
+}
+
+const STATUS_CLASSES: Record<string, string> = {
+  en_attente: "bg-amber-100 text-amber-700",
+  en_cours: "bg-blue-100 text-blue-700",
+  livré: "bg-emerald-100 text-emerald-700",
+  annulé: "bg-red-100 text-red-600",
+}
+
 function computeCompletion(profile: Profile | null): { pct: number; missing: string[] } {
   if (!profile) return { pct: 0, missing: [] }
   const checks: Array<{ label: string; weight: number; ok: boolean }> = [
-    { label: "Nom complet",      weight: 20, ok: !!profile.full_name },
-    { label: "Titre professionnel", weight: 20, ok: !!profile.job_title },
-    { label: "Biographie",       weight: 20, ok: !!profile.bio },
-    { label: "Compétences",      weight: 15, ok: (profile.skills ?? []).length > 0 },
-    { label: "Photo de profil",  weight: 15, ok: !!profile.avatar_url },
-    { label: "Tarif horaire",    weight: 10, ok: profile.hourly_rate != null },
+    { label: "Nom complet",          weight: 20, ok: !!profile.full_name },
+    { label: "Titre professionnel",  weight: 20, ok: !!profile.job_title },
+    { label: "Biographie",           weight: 20, ok: !!profile.bio },
+    { label: "Compétences",          weight: 15, ok: (profile.skills ?? []).length > 0 },
+    { label: "Photo de profil",      weight: 15, ok: !!profile.avatar_url },
+    { label: "Tarif horaire",        weight: 10, ok: profile.hourly_rate != null },
   ]
   const pct = checks.filter((c) => c.ok).reduce((acc, c) => acc + c.weight, 0)
   const missing = checks.filter((c) => !c.ok).map((c) => c.label)
@@ -59,6 +86,10 @@ function initials(name: string | null, email?: string | null) {
 function memberSince(ts?: string | null) {
   if (!ts) return null
   return new Date(ts).toLocaleDateString("fr-FR", { month: "long", year: "numeric" })
+}
+
+function formatDate(ts: string) {
+  return new Date(ts).toLocaleDateString("fr-FR", { day: "numeric", month: "short", year: "numeric" })
 }
 
 function ZelligeCover() {
@@ -88,11 +119,68 @@ function ZelligeCover() {
   )
 }
 
+function OrderRow({
+  order,
+  otherParty,
+  role,
+}: {
+  order: Order
+  otherParty: ProfileSnap | undefined
+  role: "freelancer" | "client"
+}) {
+  const ini = otherParty?.full_name
+    ? otherParty.full_name.split(" ").map((n) => n[0]).slice(0, 2).join("").toUpperCase()
+    : "?"
+
+  return (
+    <div className="flex items-center gap-3 p-4 rounded-xl border border-border bg-card hover:shadow-sm transition-shadow">
+      {/* Avatar */}
+      <div className="shrink-0">
+        {otherParty?.avatar_url ? (
+          <img
+            src={otherParty.avatar_url}
+            alt={otherParty.full_name ?? ""}
+            className="h-9 w-9 rounded-full object-cover"
+          />
+        ) : (
+          <div className="h-9 w-9 rounded-full bg-primary/10 flex items-center justify-center">
+            <span className="text-[10px] font-bold text-primary">{ini}</span>
+          </div>
+        )}
+      </div>
+
+      {/* Info */}
+      <div className="flex-1 min-w-0">
+        <p className="text-sm font-semibold text-foreground truncate">{order.service_title}</p>
+        <p className="text-xs text-muted-foreground truncate">
+          {role === "freelancer" ? "De : " : "Pour : "}
+          {otherParty?.full_name ?? "Utilisateur"}
+          {" · "}
+          {formatDate(order.created_at)}
+        </p>
+      </div>
+
+      {/* Price + status */}
+      <div className="flex flex-col items-end gap-1 shrink-0">
+        <span className="text-sm font-black text-foreground">
+          {order.price.toLocaleString("fr-MA")} MAD
+        </span>
+        <span className={`text-[10px] font-semibold px-2 py-0.5 rounded-full ${STATUS_CLASSES[order.status] ?? "bg-muted text-muted-foreground"}`}>
+          {STATUS_LABELS[order.status] ?? order.status}
+        </span>
+      </div>
+    </div>
+  )
+}
+
 export default function DashboardPage() {
   const router = useRouter()
   const [user, setUser] = useState<SupabaseUser | null>(null)
   const [profile, setProfile] = useState<Profile | null>(null)
   const [services, setServices] = useState<Service[]>([])
+  const [receivedOrders, setReceivedOrders] = useState<Order[]>([])
+  const [sentOrders, setSentOrders] = useState<Order[]>([])
+  const [profilesMap, setProfilesMap] = useState<Record<string, ProfileSnap>>({})
   const [loading, setLoading] = useState(true)
 
   useEffect(() => {
@@ -101,13 +189,30 @@ export default function DashboardPage() {
       if (!user) { router.replace("/connexion"); return }
       setUser(user)
 
-      const [{ data: profileData }, { data: servicesData }] = await Promise.all([
+      const [
+        { data: profileData },
+        { data: servicesData },
+        { data: receivedData },
+        { data: sentData },
+      ] = await Promise.all([
         supabase.from("profiles").select("*").eq("id", user.id).single(),
         supabase
           .from("services")
           .select("id, title, description, category, price, delivery_days, status, created_at")
           .eq("user_id", user.id)
           .order("created_at", { ascending: false }),
+        supabase
+          .from("orders")
+          .select("*")
+          .eq("freelancer_id", user.id)
+          .order("created_at", { ascending: false })
+          .limit(10),
+        supabase
+          .from("orders")
+          .select("*")
+          .eq("client_id", user.id)
+          .order("created_at", { ascending: false })
+          .limit(10),
       ])
 
       setProfile(profileData ?? {
@@ -116,6 +221,29 @@ export default function DashboardPage() {
         job_title: null, bio: null, skills: [], hourly_rate: null, portfolio_links: [], avatar_url: null,
       })
       setServices((servicesData as Service[]) ?? [])
+
+      const received = (receivedData as Order[]) ?? []
+      const sent = (sentData as Order[]) ?? []
+      setReceivedOrders(received)
+      setSentOrders(sent)
+
+      // Fetch profiles for all parties involved in orders
+      const ids = new Set<string>()
+      received.forEach((o) => ids.add(o.client_id))
+      sent.forEach((o) => ids.add(o.freelancer_id))
+
+      if (ids.size > 0) {
+        const { data: profilesData } = await supabase
+          .from("profiles")
+          .select("id, full_name, avatar_url")
+          .in("id", Array.from(ids))
+        const map: Record<string, ProfileSnap> = {}
+        profilesData?.forEach((p: { id: string; full_name: string | null; avatar_url: string | null }) => {
+          map[p.id] = { full_name: p.full_name, avatar_url: p.avatar_url }
+        })
+        setProfilesMap(map)
+      }
+
       setLoading(false)
     })
   }, [router])
@@ -165,7 +293,6 @@ export default function DashboardPage() {
           {/* Avatar + quick actions row */}
           <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pt-6 pb-6 border-b border-border mb-6">
             <div className="flex items-center gap-4">
-              {/* Avatar */}
               <div className="w-16 h-16 rounded-full bg-primary overflow-hidden flex items-center justify-center shrink-0 shadow-md">
                 {profile.avatar_url ? (
                   <img src={profile.avatar_url} alt={displayName} className="w-full h-full object-cover" />
@@ -181,7 +308,6 @@ export default function DashboardPage() {
               </div>
             </div>
 
-            {/* Quick actions */}
             <div className="flex gap-2">
               <Button asChild size="sm" variant="outline" className="gap-1.5 font-medium">
                 <Link href="/profil">
@@ -199,7 +325,7 @@ export default function DashboardPage() {
           </div>
 
           {/* Stats row */}
-          <div className="grid grid-cols-2 sm:grid-cols-3 gap-3 mb-6">
+          <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mb-6">
             <div className="rounded-2xl border border-border bg-card p-4 shadow-sm flex items-center gap-3">
               <div className="w-10 h-10 rounded-xl bg-primary/10 flex items-center justify-center shrink-0">
                 <Briefcase className="h-5 w-5 text-primary" />
@@ -207,6 +333,16 @@ export default function DashboardPage() {
               <div>
                 <p className="text-2xl font-black text-foreground leading-none">{publishedServices.length}</p>
                 <p className="text-xs text-muted-foreground mt-0.5">Services publiés</p>
+              </div>
+            </div>
+
+            <div className="rounded-2xl border border-border bg-card p-4 shadow-sm flex items-center gap-3">
+              <div className="w-10 h-10 rounded-xl bg-primary/10 flex items-center justify-center shrink-0">
+                <Package className="h-5 w-5 text-primary" />
+              </div>
+              <div>
+                <p className="text-2xl font-black text-foreground leading-none">{receivedOrders.length}</p>
+                <p className="text-xs text-muted-foreground mt-0.5">Commandes reçues</p>
               </div>
             </div>
 
@@ -222,7 +358,7 @@ export default function DashboardPage() {
               </div>
             </div>
 
-            <div className="col-span-2 sm:col-span-1 rounded-2xl border border-border bg-card p-4 shadow-sm flex items-center gap-3">
+            <div className="rounded-2xl border border-border bg-card p-4 shadow-sm flex items-center gap-3">
               <div className="w-10 h-10 rounded-xl bg-primary/10 flex items-center justify-center shrink-0">
                 <TrendingUp className="h-5 w-5 text-primary" />
               </div>
@@ -246,7 +382,6 @@ export default function DashboardPage() {
                 <span className="text-xl font-black text-foreground shrink-0">{pct}%</span>
               </div>
 
-              {/* Progress bar */}
               <div className="h-2 rounded-full bg-muted overflow-hidden mb-4">
                 <div
                   className={`h-full rounded-full transition-all duration-500 ${pctColor}`}
@@ -254,7 +389,6 @@ export default function DashboardPage() {
                 />
               </div>
 
-              {/* Missing fields */}
               {missing.length > 0 && (
                 <div className="space-y-2">
                   <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">
@@ -295,7 +429,7 @@ export default function DashboardPage() {
           )}
 
           {/* Services section */}
-          <div>
+          <div className="mb-8">
             <div className="flex items-center justify-between mb-4">
               <h2 className="text-lg font-black text-foreground">Mes services</h2>
               <Button asChild size="sm" variant="ghost" className="gap-1.5 text-primary hover:text-primary font-medium text-xs">
@@ -374,7 +508,6 @@ export default function DashboardPage() {
               </div>
             )}
 
-            {/* All services link when there are services */}
             {publishedServices.length > 0 && (
               <div className="mt-4 text-center">
                 <Button asChild variant="ghost" size="sm" className="gap-1.5 text-muted-foreground hover:text-foreground text-xs font-medium">
@@ -383,6 +516,88 @@ export default function DashboardPage() {
                     <ArrowRight className="h-3 w-3" />
                   </Link>
                 </Button>
+              </div>
+            )}
+          </div>
+
+          {/* Received orders section (freelancer view) */}
+          <div className="mb-8">
+            <div className="flex items-center justify-between mb-4">
+              <h2 className="text-lg font-black text-foreground flex items-center gap-2">
+                <Package className="h-5 w-5 text-primary" />
+                Commandes reçues
+              </h2>
+              {receivedOrders.length > 0 && (
+                <span className="text-xs font-semibold px-2.5 py-0.5 rounded-full bg-primary/10 text-primary">
+                  {receivedOrders.length}
+                </span>
+              )}
+            </div>
+
+            {receivedOrders.length === 0 ? (
+              <div className="rounded-2xl border-2 border-dashed border-border bg-card p-8 text-center">
+                <div className="w-12 h-12 rounded-2xl bg-primary/10 flex items-center justify-center mx-auto mb-3">
+                  <Package className="h-6 w-6 text-primary" />
+                </div>
+                <p className="font-bold text-foreground text-sm mb-1">Aucune commande reçue</p>
+                <p className="text-xs text-muted-foreground">
+                  Les clients qui commandent vos services apparaîtront ici.
+                </p>
+              </div>
+            ) : (
+              <div className="space-y-2">
+                {receivedOrders.map((order) => (
+                  <OrderRow
+                    key={order.id}
+                    order={order}
+                    otherParty={profilesMap[order.client_id]}
+                    role="freelancer"
+                  />
+                ))}
+              </div>
+            )}
+          </div>
+
+          {/* Sent orders section (client view) */}
+          <div className="mb-8">
+            <div className="flex items-center justify-between mb-4">
+              <h2 className="text-lg font-black text-foreground flex items-center gap-2">
+                <ShoppingBag className="h-5 w-5 text-primary" />
+                Mes commandes
+              </h2>
+              {sentOrders.length > 0 && (
+                <span className="text-xs font-semibold px-2.5 py-0.5 rounded-full bg-primary/10 text-primary">
+                  {sentOrders.length}
+                </span>
+              )}
+            </div>
+
+            {sentOrders.length === 0 ? (
+              <div className="rounded-2xl border-2 border-dashed border-border bg-card p-8 text-center">
+                <div className="w-12 h-12 rounded-2xl bg-primary/10 flex items-center justify-center mx-auto mb-3">
+                  <ShoppingBag className="h-6 w-6 text-primary" />
+                </div>
+                <p className="font-bold text-foreground text-sm mb-1">Aucune commande passée</p>
+                <p className="text-xs text-muted-foreground mb-4">
+                  Explorez les services disponibles et passez votre première commande.
+                </p>
+                <Button asChild size="sm" className="bg-primary hover:bg-primary/90 text-primary-foreground font-semibold gap-1.5">
+                  <Link href="/services">
+                    Voir les services
+                    <ArrowRight className="h-3.5 w-3.5" />
+                  </Link>
+                </Button>
+              </div>
+            ) : (
+              <div className="space-y-2">
+                {sentOrders.map((order) => (
+                  <OrderRow
+                    key={order.id}
+                    order={order}
+                    otherParty={profilesMap[order.freelancer_id]}
+                    role="client"
+                  />
+                ))}
               </div>
             )}
           </div>

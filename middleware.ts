@@ -46,5 +46,6 @@ export const config = {
     "/messages/:path*",
     "/parametres/:path*",
     "/services/nouveau",
+    "/paiement/:path*",
   ],
 }

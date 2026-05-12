@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useMemo } from "react"
 import Link from "next/link"
-import { Search, Clock, Loader2, Plus, User } from "lucide-react"
+import { Search, Clock, Loader2, Plus } from "lucide-react"
 import { createClient } from "@/lib/supabase/client"
 import { CATEGORIES, CATEGORY_COLORS, getCategoryLabel } from "@/lib/categories"
 import { Navbar } from "@/components/navbar"
@@ -210,9 +210,14 @@ function ServiceCard({ service }: { service: ServiceWithProfile }) {
           <Clock className="h-3.5 w-3.5" />
           <span>{service.delivery_days} jour{service.delivery_days > 1 ? "s" : ""}</span>
         </div>
-        <span className="text-base font-bold text-primary">
-          {service.price.toLocaleString("fr-MA")} MAD
-        </span>
+        <div className="flex items-center gap-3">
+          <span className="text-base font-bold text-primary">
+            {service.price.toLocaleString("fr-MA")} MAD
+          </span>
+          <Button asChild size="sm" className="bg-primary hover:bg-primary/90 text-primary-foreground font-semibold text-xs h-7 px-3">
+            <Link href={`/paiement/${service.id}`}>Contacter</Link>
+          </Button>
+        </div>
       </div>
     </div>
   )
