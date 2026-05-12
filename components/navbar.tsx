@@ -1,7 +1,7 @@
 "use client"
 
 import { useState, useEffect, useRef } from "react"
-import { Search, Menu, X, Globe, LogOut, LayoutDashboard, MessageSquare, ChevronDown, User as UserIcon } from "lucide-react"
+import { Search, Menu, X, Globe, LogOut, LayoutDashboard, MessageSquare, ShoppingBag, ChevronDown, User as UserIcon } from "lucide-react"
 import { NotificationBell } from "@/components/notification-bell"
 import Link from "next/link"
 import { useRouter } from "next/navigation"
@@ -169,6 +169,9 @@ export function Navbar() {
 
             {user === undefined ? null : user ? (
               <>
+                {/* Bell */}
+                <NotificationBell user={user} />
+
                 {/* Messages */}
                 <Button variant="ghost" size="sm" className="text-sm font-medium relative" asChild>
                   <Link href="/messages">
@@ -179,6 +182,14 @@ export function Navbar() {
                         {unreadCount > 99 ? "99+" : unreadCount}
                       </span>
                     )}
+                  </Link>
+                </Button>
+
+                {/* Orders */}
+                <Button variant="ghost" size="sm" className="text-sm font-medium" asChild>
+                  <Link href="/commandes">
+                    <ShoppingBag className="h-4 w-4" />
+                    {t.orders}
                   </Link>
                 </Button>
 
@@ -228,9 +239,9 @@ export function Navbar() {
             )}
           </div>
 
-          {/* Bell (single instance for all screen sizes) + mobile menu button */}
+          {/* Bell (mobile only — desktop bell is inside the desktop nav) + mobile menu button */}
           <div className="flex items-center gap-2">
-            {user && <NotificationBell user={user} />}
+            {user && <span className="lg:hidden"><NotificationBell user={user} /></span>}
             <Button
               variant="ghost"
               size="icon"
@@ -322,6 +333,12 @@ export function Navbar() {
                       {unreadCount > 99 ? "99+" : unreadCount}
                     </span>
                   )}
+                </Link>
+              </Button>
+              <Button variant="ghost" className="w-full justify-start text-sm font-medium" asChild>
+                <Link href="/commandes">
+                  <ShoppingBag className="h-4 w-4 me-2" />
+                  {t.orders}
                 </Link>
               </Button>
               <Button

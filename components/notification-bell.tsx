@@ -61,21 +61,8 @@ export function NotificationBell({ user }: { user: User }) {
 
   useEffect(() => {
     fetchNotifications()
-    const supabase = createClient()
-    const channel = supabase
-      .channel(`notifs-${user.id}`)
-      .on(
-        "postgres_changes",
-        {
-          event: "*",
-          schema: "public",
-          table: "notifications",
-          filter: `user_id=eq.${user.id}`,
-        },
-        fetchNotifications
-      )
-      .subscribe()
-    return () => { supabase.removeChannel(channel) }
+    const interval = setInterval(fetchNotifications, 30_000)
+    return () => clearInterval(interval)
   }, [user.id, fetchNotifications])
 
   async function markAllRead() {
