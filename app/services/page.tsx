@@ -241,7 +241,7 @@ function ServicesContent() {
                   <option value="">{t.allCategories}</option>
                   {CATEGORY_GROUPS.map((group) => (
                     <optgroup key={group.value} label={group.label}>
-                      <option value={`__group__${group.value}`}>— {group.label} (toutes)</option>
+                      <option value={`__group__${group.value}`}>— {group.label} ({t.allSubcategories})</option>
                       {group.subcategories.map((sub) => (
                         <option key={sub.value} value={sub.value}>{sub.label}</option>
                       ))}
