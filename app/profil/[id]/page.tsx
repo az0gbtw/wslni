@@ -4,7 +4,7 @@ import { use, useState, useEffect } from "react"
 import Link from "next/link"
 import {
   ExternalLink, Edit2, MessageCircle, Loader2, ArrowLeft,
-  Tag, Calendar, MessageSquare, CheckCircle2, Briefcase, Plus,
+  Tag, Calendar, CheckCircle2, Briefcase, Plus, Star,
 } from "lucide-react"
 import type { User } from "@supabase/supabase-js"
 import { createClient } from "@/lib/supabase/client"
@@ -30,6 +30,15 @@ interface Profile {
   updated_at?: string | null
 }
 
+interface Review {
+  id: string
+  rating: number
+  comment: string | null
+  created_at: string
+  client_id: string
+  client: { full_name: string | null; avatar_url: string | null } | null
+}
+
 function initials(name: string | null) {
   if (!name) return "?"
   return name.split(" ").map((w) => w[0]).join("").toUpperCase().slice(0, 2)
@@ -38,6 +47,28 @@ function initials(name: string | null) {
 function memberSince(ts?: string | null) {
   if (!ts) return "—"
   return new Date(ts).toLocaleDateString("fr-FR", { month: "long", year: "numeric" })
+}
+
+function formatDate(ts: string) {
+  return new Date(ts).toLocaleDateString("fr-FR", { day: "numeric", month: "long", year: "numeric" })
+}
+
+function StarDisplay({ rating, size = "sm" }: { rating: number; size?: "sm" | "lg" }) {
+  const cls = size === "lg" ? "h-5 w-5" : "h-3.5 w-3.5"
+  return (
+    <div className="flex gap-0.5">
+      {[1, 2, 3, 4, 5].map((n) => (
+        <Star
+          key={n}
+          className={`${cls} ${
+            n <= rating
+              ? "fill-amber-400 text-amber-400"
+              : "fill-muted-foreground/10 text-muted-foreground/25"
+          }`}
+        />
+      ))}
+    </div>
+  )
 }
 
 function ZelligeCover() {
@@ -75,6 +106,7 @@ export default function PublicProfilePage({ params }: { params: Promise<{ id: st
   const { id } = use(params)
   const [profile, setProfile] = useState<Profile | null | undefined>(undefined)
   const [viewer, setViewer] = useState<User | null>(null)
+  const [reviews, setReviews] = useState<Review[]>([])
   const [contactOpen, setContactOpen] = useState(false)
 
   useEffect(() => {
@@ -82,9 +114,32 @@ export default function PublicProfilePage({ params }: { params: Promise<{ id: st
     Promise.all([
       supabase.from("profiles").select("*").eq("id", id).single(),
       supabase.auth.getUser(),
-    ]).then(([{ data }, { data: { user } }]) => {
-      setProfile(data ?? null)
+      supabase
+        .from("reviews")
+        .select("id, rating, comment, created_at, client_id")
+        .eq("freelancer_id", id)
+        .order("created_at", { ascending: false }),
+    ]).then(async ([{ data: profileData }, { data: { user } }, { data: reviewsData }]) => {
+      setProfile(profileData ?? null)
       setViewer(user)
+
+      if (reviewsData && reviewsData.length > 0) {
+        const clientIds = [...new Set(reviewsData.map((r: { client_id: string }) => r.client_id))]
+        const { data: clientsData } = await supabase
+          .from("profiles")
+          .select("id, full_name, avatar_url")
+          .in("id", clientIds)
+        const clientsMap: Record<string, { full_name: string | null; avatar_url: string | null }> = {}
+        clientsData?.forEach((c: { id: string; full_name: string | null; avatar_url: string | null }) => {
+          clientsMap[c.id] = { full_name: c.full_name, avatar_url: c.avatar_url }
+        })
+        setReviews(
+          reviewsData.map((r: { id: string; rating: number; comment: string | null; created_at: string; client_id: string }) => ({
+            ...r,
+            client: clientsMap[r.client_id] ?? null,
+          }))
+        )
+      }
     })
   }, [id])
 
@@ -123,6 +178,11 @@ export default function PublicProfilePage({ params }: { params: Promise<{ id: st
   const ini = initials(profile.full_name)
   const portfolioLinks = profile.portfolio_links.filter(Boolean)
 
+  const avgRating =
+    reviews.length > 0
+      ? reviews.reduce((sum, r) => sum + r.rating, 0) / reviews.length
+      : null
+
   return (
     <>
       <Navbar />
@@ -156,8 +216,6 @@ export default function PublicProfilePage({ params }: { params: Promise<{ id: st
           {/* Header: avatar + name */}
           <div className="relative z-10 -mt-16 pb-6 border-b border-border">
             <div className="flex flex-col sm:flex-row sm:items-start gap-4 sm:gap-6">
-              {/* Avatar overlaps the banner. On desktop it sits at the top of the row
-                  which starts at -mt-16, so the top 64px is inside the banner. */}
               <div className="w-32 h-32 rounded-full bg-white shadow-xl shrink-0 p-1.5">
                 <div className="w-full h-full rounded-full bg-primary overflow-hidden flex items-center justify-center">
                   {profile.avatar_url ? (
@@ -167,8 +225,6 @@ export default function PublicProfilePage({ params }: { params: Promise<{ id: st
                   )}
                 </div>
               </div>
-              {/* sm:pt-16 = 64px, exactly the amount the row is pulled into the banner,
-                  so this column's content always starts at the banner's bottom edge. */}
               <div className="sm:pt-16 min-w-0 flex-1 pb-2">
                 <h1 className="text-3xl sm:text-4xl font-black text-foreground leading-tight">
                   {displayName}
@@ -183,6 +239,12 @@ export default function PublicProfilePage({ params }: { params: Promise<{ id: st
                     <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-muted text-foreground text-xs font-semibold border border-border">
                       <span className="w-1.5 h-1.5 rounded-full bg-primary inline-block" />
                       {profile.hourly_rate.toLocaleString("fr-MA")} MAD/h
+                    </span>
+                  )}
+                  {avgRating !== null && (
+                    <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-amber-50 text-amber-700 text-xs font-semibold border border-amber-200">
+                      <Star className="h-3 w-3 fill-amber-400 text-amber-400" />
+                      {avgRating.toFixed(1)} ({reviews.length} avis)
                     </span>
                   )}
                 </div>
@@ -203,17 +265,26 @@ export default function PublicProfilePage({ params }: { params: Promise<{ id: st
             </div>
             <div className="text-center px-4">
               <div className="flex items-center justify-center gap-1.5 text-muted-foreground mb-1.5">
-                <MessageSquare className="h-3.5 w-3.5 shrink-0" />
-                <span className="text-xs uppercase tracking-wide font-medium">Taux de réponse</span>
+                <Star className="h-3.5 w-3.5 shrink-0" />
+                <span className="text-xs uppercase tracking-wide font-medium">Note moyenne</span>
               </div>
-              <p className="text-sm font-semibold text-foreground">—</p>
+              {avgRating !== null ? (
+                <div className="flex items-center justify-center gap-1.5">
+                  <span className="text-sm font-semibold text-foreground">{avgRating.toFixed(1)}</span>
+                  <StarDisplay rating={Math.round(avgRating)} />
+                </div>
+              ) : (
+                <p className="text-sm font-semibold text-foreground">—</p>
+              )}
             </div>
             <div className="text-center px-4">
               <div className="flex items-center justify-center gap-1.5 text-muted-foreground mb-1.5">
                 <CheckCircle2 className="h-3.5 w-3.5 shrink-0" />
                 <span className="text-xs uppercase tracking-wide font-medium">Missions réalisées</span>
               </div>
-              <p className="text-sm font-semibold text-foreground">—</p>
+              <p className="text-sm font-semibold text-foreground">
+                {reviews.length > 0 ? reviews.length : "—"}
+              </p>
             </div>
           </div>
 
@@ -269,7 +340,84 @@ export default function PublicProfilePage({ params }: { params: Promise<{ id: st
                 </section>
               )}
 
-              {/* Services proposés — always shown */}
+              {/* Avis clients */}
+              <section>
+                <div className="flex items-center justify-between mb-4">
+                  <h2 className="text-base font-semibold text-foreground flex items-center gap-2">
+                    <Star className="h-4 w-4 fill-amber-400 text-amber-400" />
+                    Avis clients
+                    {reviews.length > 0 && (
+                      <span className="text-xs font-normal text-muted-foreground">
+                        ({reviews.length})
+                      </span>
+                    )}
+                  </h2>
+                  {avgRating !== null && (
+                    <div className="flex items-center gap-1">
+                      <span className="text-lg font-black text-foreground">{avgRating.toFixed(1)}</span>
+                      <span className="text-xs text-muted-foreground">/ 5</span>
+                    </div>
+                  )}
+                </div>
+
+                {reviews.length === 0 ? (
+                  <div className="rounded-2xl border border-dashed border-border bg-muted/20 p-8 text-center">
+                    <div className="flex justify-center mb-3">
+                      {[1, 2, 3, 4, 5].map((n) => (
+                        <Star key={n} className="h-6 w-6 fill-muted-foreground/10 text-muted-foreground/25" />
+                      ))}
+                    </div>
+                    <p className="text-sm font-medium text-foreground mb-1">Aucun avis pour l&apos;instant</p>
+                    <p className="text-xs text-muted-foreground max-w-xs mx-auto">
+                      {isOwner
+                        ? "Terminez vos premières missions pour recevoir des avis de vos clients."
+                        : "Ce freelance n'a pas encore reçu d'avis."}
+                    </p>
+                  </div>
+                ) : (
+                  <div className="space-y-3">
+                    {reviews.map((review) => {
+                      const clientName = review.client?.full_name || "Client"
+                      const clientIni = initials(review.client?.full_name ?? null)
+                      return (
+                        <div key={review.id} className="rounded-xl border border-border bg-card p-4">
+                          <div className="flex items-start gap-3">
+                            <div className="shrink-0">
+                              {review.client?.avatar_url ? (
+                                <img
+                                  src={review.client.avatar_url}
+                                  alt={clientName}
+                                  className="h-9 w-9 rounded-full object-cover"
+                                />
+                              ) : (
+                                <div className="h-9 w-9 rounded-full bg-primary/10 flex items-center justify-center">
+                                  <span className="text-[10px] font-bold text-primary">{clientIni}</span>
+                                </div>
+                              )}
+                            </div>
+                            <div className="flex-1 min-w-0">
+                              <div className="flex items-center justify-between gap-2 flex-wrap mb-1">
+                                <p className="text-sm font-semibold text-foreground">{clientName}</p>
+                                <span className="text-xs text-muted-foreground shrink-0">
+                                  {formatDate(review.created_at)}
+                                </span>
+                              </div>
+                              <StarDisplay rating={review.rating} />
+                              {review.comment && (
+                                <p className="text-sm text-muted-foreground mt-2 leading-relaxed">
+                                  {review.comment}
+                                </p>
+                              )}
+                            </div>
+                          </div>
+                        </div>
+                      )
+                    })}
+                  </div>
+                )}
+              </section>
+
+              {/* Services proposés */}
               <section>
                 <h2 className="text-base font-semibold mb-3 text-foreground">Services proposés</h2>
                 <div className="rounded-2xl border border-dashed border-border bg-muted/20 p-8 text-center">
@@ -305,6 +453,16 @@ export default function PublicProfilePage({ params }: { params: Promise<{ id: st
                   </div>
                 )}
 
+                {avgRating !== null && (
+                  <div className="pb-4 border-b border-border">
+                    <p className="text-xs text-muted-foreground mb-2">Note des clients</p>
+                    <StarDisplay rating={Math.round(avgRating)} size="lg" />
+                    <p className="text-xs text-muted-foreground mt-1.5">
+                      {avgRating.toFixed(1)}/5 · {reviews.length} avis
+                    </p>
+                  </div>
+                )}
+
                 {isOwner ? (
                   <Button variant="outline" className="w-full" asChild>
                     <Link href="/profil">
@@ -327,7 +485,7 @@ export default function PublicProfilePage({ params }: { params: Promise<{ id: st
         </div>
       </main>
 
-      {/* Contact dialog */}
+      {/* Dialogue de contact */}
       <Dialog open={contactOpen} onOpenChange={setContactOpen}>
         <DialogContent className="sm:max-w-md">
           <DialogHeader>

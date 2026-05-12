@@ -11,6 +11,13 @@ import type { User as SupabaseUser } from "@supabase/supabase-js"
 import { createClient } from "@/lib/supabase/client"
 import { Navbar } from "@/components/navbar"
 import { Button } from "@/components/ui/button"
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogDescription,
+} from "@/components/ui/dialog"
 import { getCategoryLabel, CATEGORY_COLORS } from "@/lib/categories"
 
 interface Profile {
@@ -61,6 +68,14 @@ const STATUS_CLASSES: Record<string, string> = {
   en_cours: "bg-blue-100 text-blue-700",
   livré: "bg-emerald-100 text-emerald-700",
   annulé: "bg-red-100 text-red-600",
+}
+
+const RATING_LABELS: Record<number, string> = {
+  1: "Très insatisfait",
+  2: "Insatisfait",
+  3: "Correct",
+  4: "Satisfait",
+  5: "Très satisfait",
 }
 
 function computeCompletion(profile: Profile | null): { pct: number; missing: string[] } {
@@ -119,56 +134,111 @@ function ZelligeCover() {
   )
 }
 
+function StarPicker({ value, onChange }: { value: number; onChange: (n: number) => void }) {
+  const [hovered, setHovered] = useState(0)
+  return (
+    <div className="flex gap-1">
+      {[1, 2, 3, 4, 5].map((n) => (
+        <button
+          key={n}
+          type="button"
+          onClick={() => onChange(n)}
+          onMouseEnter={() => setHovered(n)}
+          onMouseLeave={() => setHovered(0)}
+          className="p-0.5 transition-transform hover:scale-110 focus:outline-none"
+        >
+          <Star
+            className={`h-8 w-8 transition-colors ${
+              n <= (hovered || value)
+                ? "fill-amber-400 text-amber-400"
+                : "text-muted-foreground/40"
+            }`}
+          />
+        </button>
+      ))}
+    </div>
+  )
+}
+
 function OrderRow({
   order,
   otherParty,
   role,
+  hasReview,
+  onReview,
 }: {
   order: Order
   otherParty: ProfileSnap | undefined
   role: "freelancer" | "client"
+  hasReview?: boolean
+  onReview?: () => void
 }) {
   const ini = otherParty?.full_name
     ? otherParty.full_name.split(" ").map((n) => n[0]).slice(0, 2).join("").toUpperCase()
     : "?"
 
+  const showReviewAction = role === "client" && order.status === "livré"
+
   return (
-    <div className="flex items-center gap-3 p-4 rounded-xl border border-border bg-card hover:shadow-sm transition-shadow">
-      {/* Avatar */}
-      <div className="shrink-0">
-        {otherParty?.avatar_url ? (
-          <img
-            src={otherParty.avatar_url}
-            alt={otherParty.full_name ?? ""}
-            className="h-9 w-9 rounded-full object-cover"
-          />
-        ) : (
-          <div className="h-9 w-9 rounded-full bg-primary/10 flex items-center justify-center">
-            <span className="text-[10px] font-bold text-primary">{ini}</span>
-          </div>
-        )}
+    <div className="rounded-xl border border-border bg-card hover:shadow-sm transition-shadow overflow-hidden">
+      <div className="flex items-center gap-3 p-4">
+        {/* Avatar */}
+        <div className="shrink-0">
+          {otherParty?.avatar_url ? (
+            <img
+              src={otherParty.avatar_url}
+              alt={otherParty.full_name ?? ""}
+              className="h-9 w-9 rounded-full object-cover"
+            />
+          ) : (
+            <div className="h-9 w-9 rounded-full bg-primary/10 flex items-center justify-center">
+              <span className="text-[10px] font-bold text-primary">{ini}</span>
+            </div>
+          )}
+        </div>
+
+        {/* Info */}
+        <div className="flex-1 min-w-0">
+          <p className="text-sm font-semibold text-foreground truncate">{order.service_title}</p>
+          <p className="text-xs text-muted-foreground truncate">
+            {role === "freelancer" ? "De : " : "Pour : "}
+            {otherParty?.full_name ?? "Utilisateur"}
+            {" · "}
+            {formatDate(order.created_at)}
+          </p>
+        </div>
+
+        {/* Price + status */}
+        <div className="flex flex-col items-end gap-1 shrink-0">
+          <span className="text-sm font-black text-foreground">
+            {order.price.toLocaleString("fr-MA")} MAD
+          </span>
+          <span className={`text-[10px] font-semibold px-2 py-0.5 rounded-full ${STATUS_CLASSES[order.status] ?? "bg-muted text-muted-foreground"}`}>
+            {STATUS_LABELS[order.status] ?? order.status}
+          </span>
+        </div>
       </div>
 
-      {/* Info */}
-      <div className="flex-1 min-w-0">
-        <p className="text-sm font-semibold text-foreground truncate">{order.service_title}</p>
-        <p className="text-xs text-muted-foreground truncate">
-          {role === "freelancer" ? "De : " : "Pour : "}
-          {otherParty?.full_name ?? "Utilisateur"}
-          {" · "}
-          {formatDate(order.created_at)}
-        </p>
-      </div>
-
-      {/* Price + status */}
-      <div className="flex flex-col items-end gap-1 shrink-0">
-        <span className="text-sm font-black text-foreground">
-          {order.price.toLocaleString("fr-MA")} MAD
-        </span>
-        <span className={`text-[10px] font-semibold px-2 py-0.5 rounded-full ${STATUS_CLASSES[order.status] ?? "bg-muted text-muted-foreground"}`}>
-          {STATUS_LABELS[order.status] ?? order.status}
-        </span>
-      </div>
+      {showReviewAction && (
+        <div className="px-4 py-2.5 border-t border-border/60 bg-muted/20 flex items-center">
+          {hasReview ? (
+            <div className="flex items-center gap-1.5 text-xs text-emerald-600 font-medium">
+              <CheckCircle2 className="h-3.5 w-3.5" />
+              Avis publié
+            </div>
+          ) : (
+            <Button
+              variant="ghost"
+              size="sm"
+              className="h-7 px-2.5 text-xs gap-1.5 text-primary hover:text-primary hover:bg-primary/10 font-medium -ml-1.5"
+              onClick={onReview}
+            >
+              <Star className="h-3.5 w-3.5" />
+              Laisser un avis
+            </Button>
+          )}
+        </div>
+      )}
     </div>
   )
 }
@@ -181,6 +251,11 @@ export default function DashboardPage() {
   const [receivedOrders, setReceivedOrders] = useState<Order[]>([])
   const [sentOrders, setSentOrders] = useState<Order[]>([])
   const [profilesMap, setProfilesMap] = useState<Record<string, ProfileSnap>>({})
+  const [reviewedOrderIds, setReviewedOrderIds] = useState<Set<string>>(new Set())
+  const [reviewDialog, setReviewDialog] = useState<Order | null>(null)
+  const [reviewRating, setReviewRating] = useState(0)
+  const [reviewComment, setReviewComment] = useState("")
+  const [reviewSubmitting, setReviewSubmitting] = useState(false)
   const [loading, setLoading] = useState(true)
 
   useEffect(() => {
@@ -194,6 +269,7 @@ export default function DashboardPage() {
         { data: servicesData },
         { data: receivedData },
         { data: sentData },
+        { data: reviewsData },
       ] = await Promise.all([
         supabase.from("profiles").select("*").eq("id", user.id).single(),
         supabase
@@ -213,6 +289,10 @@ export default function DashboardPage() {
           .eq("client_id", user.id)
           .order("created_at", { ascending: false })
           .limit(10),
+        supabase
+          .from("reviews")
+          .select("order_id")
+          .eq("client_id", user.id),
       ])
 
       setProfile(profileData ?? {
@@ -226,6 +306,7 @@ export default function DashboardPage() {
       const sent = (sentData as Order[]) ?? []
       setReceivedOrders(received)
       setSentOrders(sent)
+      setReviewedOrderIds(new Set(reviewsData?.map((r: { order_id: string }) => r.order_id) ?? []))
 
       // Fetch profiles for all parties involved in orders
       const ids = new Set<string>()
@@ -248,6 +329,38 @@ export default function DashboardPage() {
     })
   }, [router])
 
+  async function handleSubmitReview() {
+    if (!user || !reviewDialog || reviewRating === 0) return
+    setReviewSubmitting(true)
+    const supabase = createClient()
+    const { error } = await supabase.from("reviews").insert({
+      order_id: reviewDialog.id,
+      client_id: user.id,
+      freelancer_id: reviewDialog.freelancer_id,
+      rating: reviewRating,
+      comment: reviewComment.trim() || null,
+    })
+    if (!error) {
+      setReviewedOrderIds((prev) => new Set([...prev, reviewDialog.id]))
+    }
+    setReviewDialog(null)
+    setReviewRating(0)
+    setReviewComment("")
+    setReviewSubmitting(false)
+  }
+
+  function openReviewDialog(order: Order) {
+    setReviewDialog(order)
+    setReviewRating(0)
+    setReviewComment("")
+  }
+
+  function closeReviewDialog() {
+    setReviewDialog(null)
+    setReviewRating(0)
+    setReviewComment("")
+  }
+
   if (loading) {
     return (
       <div className="min-h-screen flex items-center justify-center">
@@ -268,6 +381,10 @@ export default function DashboardPage() {
     pct >= 80 ? "bg-emerald-500" :
     pct >= 50 ? "bg-amber-500" :
     "bg-primary"
+
+  const freelanceName = reviewDialog
+    ? (profilesMap[reviewDialog.freelancer_id]?.full_name ?? "ce freelance")
+    : ""
 
   return (
     <>
@@ -376,7 +493,7 @@ export default function DashboardPage() {
                 <div>
                   <h2 className="font-bold text-foreground text-sm">Complétez votre profil</h2>
                   <p className="text-xs text-muted-foreground mt-0.5">
-                    Un profil complet augmente vos chances d'être contacté.
+                    Un profil complet augmente vos chances d&apos;être contacté.
                   </p>
                 </div>
                 <span className="text-xl font-black text-foreground shrink-0">{pct}%</span>
@@ -596,6 +713,8 @@ export default function DashboardPage() {
                     order={order}
                     otherParty={profilesMap[order.freelancer_id]}
                     role="client"
+                    hasReview={reviewedOrderIds.has(order.id)}
+                    onReview={() => openReviewDialog(order)}
                   />
                 ))}
               </div>
@@ -610,6 +729,60 @@ export default function DashboardPage() {
           )}
         </div>
       </main>
+
+      {/* Dialogue de publication d'un avis */}
+      <Dialog open={reviewDialog !== null} onOpenChange={(open) => { if (!open) closeReviewDialog() }}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle>Laisser un avis</DialogTitle>
+            <DialogDescription>
+              Évaluez votre expérience avec {freelanceName} pour &quot;{reviewDialog?.service_title}&quot;.
+            </DialogDescription>
+          </DialogHeader>
+
+          <div className="space-y-5 py-2">
+            <div>
+              <p className="text-sm font-semibold mb-2 text-foreground">
+                Note <span className="text-primary">*</span>
+              </p>
+              <StarPicker value={reviewRating} onChange={setReviewRating} />
+              {reviewRating > 0 && (
+                <p className="text-sm text-muted-foreground mt-1.5">{RATING_LABELS[reviewRating]}</p>
+              )}
+            </div>
+
+            <div>
+              <p className="text-sm font-semibold mb-2 text-foreground">
+                Commentaire{" "}
+                <span className="text-muted-foreground font-normal">(optionnel)</span>
+              </p>
+              <textarea
+                value={reviewComment}
+                onChange={(e) => setReviewComment(e.target.value)}
+                placeholder="Partagez votre expérience avec ce freelance..."
+                maxLength={500}
+                rows={4}
+                className="w-full px-3 py-2 text-sm rounded-lg border border-border bg-background resize-none focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary transition-colors placeholder:text-muted-foreground/60"
+              />
+              <p className="text-xs text-muted-foreground text-right mt-1">{reviewComment.length}/500</p>
+            </div>
+          </div>
+
+          <div className="flex gap-2 justify-end pt-2">
+            <Button variant="outline" onClick={closeReviewDialog} disabled={reviewSubmitting}>
+              Annuler
+            </Button>
+            <Button
+              disabled={reviewRating === 0 || reviewSubmitting}
+              onClick={handleSubmitReview}
+              className="bg-primary hover:bg-primary/90 text-primary-foreground gap-2"
+            >
+              {reviewSubmitting && <Loader2 className="h-4 w-4 animate-spin" />}
+              Publier l&apos;avis
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
     </>
   )
 }
