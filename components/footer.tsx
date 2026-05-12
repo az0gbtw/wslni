@@ -1,39 +1,8 @@
 "use client"
 
 import { Facebook, Instagram, Twitter, Linkedin, Youtube } from "lucide-react"
-
-const footerLinks = {
-  services: {
-    title: "Services",
-    links: [
-      { label: "Design & Créatif", href: "#" },
-      { label: "Développement", href: "#" },
-      { label: "Marketing Digital", href: "#" },
-      { label: "Rédaction", href: "#" },
-      { label: "Vidéo & Audio", href: "#" },
-    ],
-  },
-  entreprise: {
-    title: "Entreprise",
-    links: [
-      { label: "À propos", href: "#" },
-      { label: "Comment ça marche", href: "#" },
-      { label: "Devenir freelance", href: "#" },
-      { label: "Carrières", href: "#" },
-      { label: "Blog", href: "#" },
-    ],
-  },
-  support: {
-    title: "Support",
-    links: [
-      { label: "Centre d'aide", href: "#" },
-      { label: "Contact", href: "#" },
-      { label: "Conditions d'utilisation", href: "#" },
-      { label: "Politique de confidentialité", href: "#" },
-      { label: "FAQ", href: "#" },
-    ],
-  },
-}
+import { useLanguage } from "@/lib/language-context"
+import { translations } from "@/lib/translations"
 
 const socialLinks = [
   { icon: Facebook, href: "#", label: "Facebook" },
@@ -65,9 +34,13 @@ function ZelligeDivider() {
 }
 
 export function Footer() {
+  const { lang } = useLanguage()
+  const t = translations[lang].footer
+
+  const sections = [t.services, t.company, t.support]
+
   return (
     <footer className="bg-foreground text-background">
-      {/* Zellige Pattern Divider */}
       <ZelligeDivider />
 
       <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 py-12 md:py-16">
@@ -81,10 +54,9 @@ export function Footer() {
               <span className="text-xl font-bold">Wslni.ma</span>
             </a>
             <p className="text-sm text-background/70 mb-6 max-w-xs">
-              La première marketplace freelance 100% marocaine. Trouve le talent qu&apos;il te faut.
+              {t.tagline}
             </p>
-            
-            {/* Social Links */}
+
             <div className="flex gap-3">
               {socialLinks.map((social, index) => {
                 const Icon = social.icon
@@ -102,18 +74,15 @@ export function Footer() {
             </div>
           </div>
 
-          {/* Links Columns */}
-          {Object.values(footerLinks).map((section, index) => (
+          {/* Link columns */}
+          {sections.map((section, index) => (
             <div key={index}>
               <h3 className="font-semibold mb-4">{section.title}</h3>
               <ul className="space-y-3">
-                {section.links.map((link, linkIndex) => (
+                {section.links.map((label, linkIndex) => (
                   <li key={linkIndex}>
-                    <a
-                      href={link.href}
-                      className="text-sm text-background/70 hover:text-primary transition-colors"
-                    >
-                      {link.label}
+                    <a href="#" className="text-sm text-background/70 hover:text-primary transition-colors">
+                      {label}
                     </a>
                   </li>
                 ))}
@@ -124,9 +93,7 @@ export function Footer() {
 
         {/* Bottom Bar */}
         <div className="mt-12 pt-8 border-t border-background/10">
-          <p className="text-sm text-background/50">
-            © 2025 Wslni.ma. Tous droits réservés.
-          </p>
+          <p className="text-sm text-background/50">{t.copyright}</p>
         </div>
       </div>
     </footer>

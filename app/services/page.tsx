@@ -6,6 +6,8 @@ import { Search, Clock, Loader2, Plus, Star, SlidersHorizontal, X } from "lucide
 import { useSearchParams } from "next/navigation"
 import { createClient } from "@/lib/supabase/client"
 import { CATEGORIES, CATEGORY_COLORS, getCategoryLabel } from "@/lib/categories"
+import { useLanguage } from "@/lib/language-context"
+import { translations } from "@/lib/translations"
 import { Navbar } from "@/components/navbar"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
@@ -29,22 +31,6 @@ interface ServiceWithProfile {
   } | null
 }
 
-const DELIVERY_OPTIONS = [
-  { value: 0,  label: "Tous les délais" },
-  { value: 1,  label: "Livraison en 24h" },
-  { value: 3,  label: "Jusqu'à 3 jours" },
-  { value: 7,  label: "Jusqu'à 7 jours" },
-  { value: 14, label: "Jusqu'à 14 jours" },
-  { value: 30, label: "Jusqu'à 30 jours" },
-]
-
-const SORT_OPTIONS = [
-  { value: "newest",     label: "Plus récent" },
-  { value: "price_asc",  label: "Prix croissant" },
-  { value: "price_desc", label: "Prix décroissant" },
-  { value: "rating",     label: "Mieux noté" },
-]
-
 export default function ServicesPage() {
   return (
     <>
@@ -63,11 +49,13 @@ export default function ServicesPage() {
 }
 
 function ServicesContent() {
+  const { lang } = useLanguage()
+  const t = translations[lang].services
   const searchParams = useSearchParams()
   const supabase = createClient()
+
   const [services, setServices] = useState<ServiceWithProfile[]>([])
   const [loading, setLoading] = useState(true)
-
   const [search, setSearch]                     = useState(searchParams.get("q") ?? "")
   const [selectedCategory, setSelectedCategory] = useState("")
   const [minPrice, setMinPrice]                 = useState("")
@@ -77,13 +65,26 @@ function ServicesContent() {
   const [sortBy, setSortBy]                     = useState("newest")
   const [filtersOpen, setFiltersOpen]           = useState(false)
 
+  const DELIVERY_OPTIONS = [
+    { value: 0,  label: t.delivery.all },
+    { value: 1,  label: t.delivery.day1 },
+    { value: 3,  label: t.delivery.days3 },
+    { value: 7,  label: t.delivery.days7 },
+    { value: 14, label: t.delivery.days14 },
+    { value: 30, label: t.delivery.days30 },
+  ]
+
+  const SORT_OPTIONS = [
+    { value: "newest",     label: t.sort.newest },
+    { value: "price_asc",  label: t.sort.priceAsc },
+    { value: "price_desc", label: t.sort.priceDesc },
+    { value: "rating",     label: t.sort.rating },
+  ]
+
   useEffect(() => {
     async function fetchData() {
       const [{ data: servicesData }, { data: reviewsData }] = await Promise.all([
-        supabase
-          .from("services")
-          .select("*, profiles (id, full_name, avatar_url, job_title)")
-          .eq("status", "published"),
+        supabase.from("services").select("*, profiles (id, full_name, avatar_url, job_title)").eq("status", "published"),
         supabase.from("reviews").select("freelancer_id, rating"),
       ])
 
@@ -131,51 +132,43 @@ function ServicesContent() {
   const hasFilters = !!(search || selectedCategory || minPrice || maxPrice || maxDelivery > 0 || minRating > 0)
 
   function resetFilters() {
-    setSearch("")
-    setSelectedCategory("")
-    setMinPrice("")
-    setMaxPrice("")
-    setMaxDelivery(0)
-    setMinRating(0)
-    setSortBy("newest")
+    setSearch(""); setSelectedCategory(""); setMinPrice(""); setMaxPrice("")
+    setMaxDelivery(0); setMinRating(0); setSortBy("newest")
   }
 
   return (
     <>
-      {/* En-tête */}
+      {/* Header */}
       <div className="bg-primary text-primary-foreground py-16 px-4">
         <div className="mx-auto max-w-7xl">
           <div className="flex flex-col sm:flex-row sm:items-end sm:justify-between gap-6">
             <div>
-              <h1 className="text-4xl font-bold mb-3">Services disponibles</h1>
-              <p className="text-primary-foreground/80 text-lg max-w-xl">
-                Trouvez le freelance idéal parmi les offres de services des talents marocains.
-              </p>
+              <h1 className="text-4xl font-bold mb-3">{t.header}</h1>
+              <p className="text-primary-foreground/80 text-lg max-w-xl">{t.headerSub}</p>
             </div>
             <Button asChild variant="secondary" className="shrink-0 font-semibold">
               <Link href="/services/nouveau">
-                <Plus className="mr-2 h-4 w-4" />
-                Proposer un service
+                <Plus className="me-2 h-4 w-4" />
+                {t.offerBtn}
               </Link>
             </Button>
           </div>
         </div>
       </div>
 
-      {/* Barre de recherche + tri */}
+      {/* Search + sort bar */}
       <div className="sticky top-0 z-10 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/80 border-b border-border shadow-sm">
         <div className="mx-auto max-w-7xl px-4 py-3 flex gap-3 items-center">
           <div className="relative flex-1">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+            <Search className="absolute start-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
             <Input
-              placeholder="Rechercher par titre ou description…"
+              placeholder={t.searchPlaceholder}
               value={search}
               onChange={(e) => setSearch(e.target.value)}
-              className="pl-9"
+              className="ps-9"
             />
           </div>
 
-          {/* Bouton filtres (mobile) */}
           <Button
             variant="outline"
             size="sm"
@@ -183,11 +176,10 @@ function ServicesContent() {
             onClick={() => setFiltersOpen((v) => !v)}
           >
             <SlidersHorizontal className="h-4 w-4" />
-            Filtres
+            {t.filtersBtn}
             {hasFilters && <span className="h-2 w-2 rounded-full bg-primary" />}
           </Button>
 
-          {/* Tri */}
           <select
             value={sortBy}
             onChange={(e) => setSortBy(e.target.value)}
@@ -200,34 +192,34 @@ function ServicesContent() {
         </div>
       </div>
 
-      {/* Corps : sidebar filtres + grille */}
+      {/* Body: filters sidebar + results grid */}
       <div className="mx-auto max-w-7xl px-4 py-8">
         <div className="lg:flex lg:gap-8 lg:items-start">
 
-          {/* ── Panneau de filtres ── */}
+          {/* Filters panel */}
           <aside className={`lg:w-64 lg:shrink-0 lg:sticky lg:top-24 mb-6 lg:mb-0 ${filtersOpen ? "block" : "hidden lg:block"}`}>
             <div className="rounded-2xl border border-border bg-card p-5 space-y-6">
 
               <div className="flex items-center justify-between">
-                <h2 className="text-sm font-semibold text-foreground">Filtres</h2>
+                <h2 className="text-sm font-semibold text-foreground">{t.filtersTitle}</h2>
                 {hasFilters && (
                   <button
                     onClick={resetFilters}
                     className="text-xs text-primary hover:underline underline-offset-4 flex items-center gap-1"
                   >
                     <X className="h-3 w-3" />
-                    Réinitialiser
+                    {t.reset}
                   </button>
                 )}
               </div>
 
-              {/* Catégorie */}
+              {/* Category */}
               <div>
                 <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wide mb-2.5">
-                  Catégorie
+                  {t.categoryLabel}
                 </p>
-                <div className="space-y-1.5 max-h-56 overflow-y-auto pr-1">
-                  {[{ value: "", label: "Toutes les catégories" }, ...CATEGORIES].map((cat) => (
+                <div className="space-y-1.5 max-h-56 overflow-y-auto pe-1">
+                  {[{ value: "", label: t.allCategories }, ...CATEGORIES].map((cat) => (
                     <label key={cat.value} className="flex items-center gap-2 cursor-pointer group">
                       <input
                         type="radio"
@@ -245,10 +237,10 @@ function ServicesContent() {
                 </div>
               </div>
 
-              {/* Fourchette de prix */}
+              {/* Price range */}
               <div>
                 <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wide mb-2.5">
-                  Prix (MAD)
+                  {t.priceLabel}
                 </p>
                 <div className="flex items-center gap-2">
                   <Input
@@ -271,10 +263,10 @@ function ServicesContent() {
                 </div>
               </div>
 
-              {/* Délai de livraison */}
+              {/* Delivery */}
               <div>
                 <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wide mb-2.5">
-                  Délai de livraison
+                  {t.deliveryLabel}
                 </p>
                 <div className="space-y-1.5">
                   {DELIVERY_OPTIONS.map((o) => (
@@ -295,10 +287,10 @@ function ServicesContent() {
                 </div>
               </div>
 
-              {/* Note minimale */}
+              {/* Min rating */}
               <div>
                 <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wide mb-2.5">
-                  Note minimale
+                  {t.ratingLabel}
                 </p>
                 <div className="flex flex-wrap gap-1.5">
                   <button
@@ -309,7 +301,7 @@ function ServicesContent() {
                         : "bg-background text-muted-foreground border-border hover:border-primary/50"
                     }`}
                   >
-                    Tous
+                    {t.allRatings}
                   </button>
                   {[1, 2, 3, 4, 5].map((r) => (
                     <button
@@ -328,15 +320,15 @@ function ServicesContent() {
                 </div>
                 {minRating > 0 && (
                   <p className="text-xs text-muted-foreground mt-1.5">
-                    {minRating === 5 ? "5 étoiles uniquement" : `${minRating} étoile${minRating > 1 ? "s" : ""} et plus`}
+                    {minRating === 5 ? t.starsOnly : t.starsAndMore(minRating)}
                   </p>
                 )}
               </div>
 
-              {/* Tri (mobile uniquement) */}
+              {/* Sort (mobile only) */}
               <div className="sm:hidden">
                 <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wide mb-2.5">
-                  Trier par
+                  {t.sortLabel}
                 </p>
                 <select
                   value={sortBy}
@@ -351,7 +343,7 @@ function ServicesContent() {
             </div>
           </aside>
 
-          {/* ── Grille de résultats ── */}
+          {/* Results grid */}
           <div className="flex-1 min-w-0">
             {loading ? (
               <div className="flex items-center justify-center py-24">
@@ -359,24 +351,19 @@ function ServicesContent() {
               </div>
             ) : filtered.length === 0 ? (
               <div className="text-center py-24">
-                <p className="text-muted-foreground text-lg mb-2">Aucun service trouvé.</p>
+                <p className="text-muted-foreground text-lg mb-2">{t.noResults}</p>
                 {hasFilters && (
-                  <button
-                    onClick={resetFilters}
-                    className="text-sm text-primary hover:underline underline-offset-4"
-                  >
-                    Effacer les filtres
+                  <button onClick={resetFilters} className="text-sm text-primary hover:underline underline-offset-4">
+                    {t.clearFilters}
                   </button>
                 )}
               </div>
             ) : (
               <>
-                <p className="text-sm text-muted-foreground mb-5">
-                  {filtered.length} service{filtered.length > 1 ? "s" : ""} trouvé{filtered.length > 1 ? "s" : ""}
-                </p>
+                <p className="text-sm text-muted-foreground mb-5">{t.servicesFound(filtered.length)}</p>
                 <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-5">
                   {filtered.map((service) => (
-                    <ServiceCard key={service.id} service={service} />
+                    <ServiceCard key={service.id} service={service} t={t} />
                   ))}
                 </div>
               </>
@@ -396,9 +383,7 @@ function StarDisplay({ rating }: { rating: number }) {
         <Star
           key={n}
           className={`h-3 w-3 ${
-            n <= rounded
-              ? "fill-amber-400 text-amber-400"
-              : "fill-muted-foreground/10 text-muted-foreground/25"
+            n <= rounded ? "fill-amber-400 text-amber-400" : "fill-muted-foreground/10 text-muted-foreground/25"
           }`}
         />
       ))}
@@ -406,11 +391,11 @@ function StarDisplay({ rating }: { rating: number }) {
   )
 }
 
-function ServiceCard({ service }: { service: ServiceWithProfile }) {
+function ServiceCard({ service, t }: { service: ServiceWithProfile; t: typeof translations["fr"]["services"] }) {
   const profile = service.profiles
   const categoryColor = CATEGORY_COLORS[service.category] ?? "bg-gray-100 text-gray-700"
   const categoryLabel = getCategoryLabel(service.category)
-  const initials = profile?.full_name
+  const ini = profile?.full_name
     ? profile.full_name.split(" ").map((n) => n[0]).slice(0, 2).join("").toUpperCase()
     : "?"
 
@@ -426,16 +411,14 @@ function ServiceCard({ service }: { service: ServiceWithProfile }) {
         <h2 className="text-base font-semibold text-foreground leading-snug line-clamp-2 group-hover:text-primary transition-colors">
           {service.title}
         </h2>
-        <p className="text-sm text-muted-foreground line-clamp-3 flex-1">
-          {service.description}
-        </p>
+        <p className="text-sm text-muted-foreground line-clamp-3 flex-1">{service.description}</p>
 
         {service.avgRating !== null && (
           <div className="flex items-center gap-1.5">
             <StarDisplay rating={service.avgRating} />
             <span className="text-xs text-muted-foreground">
               {service.avgRating.toFixed(1)}
-              <span className="ml-1">({service.reviewCount} avis)</span>
+              <span className="ms-1">({service.reviewCount} {t.reviews})</span>
             </span>
           </div>
         )}
@@ -449,16 +432,12 @@ function ServiceCard({ service }: { service: ServiceWithProfile }) {
             />
           ) : (
             <div className="h-7 w-7 rounded-full bg-primary/10 flex items-center justify-center shrink-0">
-              <span className="text-[10px] font-bold text-primary">{initials}</span>
+              <span className="text-[10px] font-bold text-primary">{ini}</span>
             </div>
           )}
           <div className="min-w-0">
-            <p className="text-xs font-medium text-foreground truncate">
-              {profile?.full_name ?? "Freelance"}
-            </p>
-            {profile?.job_title && (
-              <p className="text-xs text-muted-foreground truncate">{profile.job_title}</p>
-            )}
+            <p className="text-xs font-medium text-foreground truncate">{profile?.full_name ?? "Freelance"}</p>
+            {profile?.job_title && <p className="text-xs text-muted-foreground truncate">{profile.job_title}</p>}
           </div>
         </div>
       </div>
@@ -466,7 +445,7 @@ function ServiceCard({ service }: { service: ServiceWithProfile }) {
       <div className="flex items-center justify-between border-t border-border px-5 py-3 bg-muted/30">
         <div className="flex items-center gap-1.5 text-sm text-muted-foreground">
           <Clock className="h-3.5 w-3.5" />
-          <span>{service.delivery_days} jour{service.delivery_days > 1 ? "s" : ""}</span>
+          <span>{service.delivery_days} {service.delivery_days > 1 ? t.days : t.day}</span>
         </div>
         <div className="flex items-center gap-3">
           <span className="text-base font-bold text-primary">
@@ -477,7 +456,7 @@ function ServiceCard({ service }: { service: ServiceWithProfile }) {
             size="sm"
             className="bg-primary hover:bg-primary/90 text-primary-foreground font-semibold text-xs h-7 px-3"
           >
-            <Link href={`/paiement/${service.id}`}>Contacter</Link>
+            <Link href={`/paiement/${service.id}`}>{t.contact}</Link>
           </Button>
         </div>
       </div>

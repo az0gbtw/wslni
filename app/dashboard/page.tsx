@@ -9,14 +9,12 @@ import {
 } from "lucide-react"
 import type { User as SupabaseUser } from "@supabase/supabase-js"
 import { createClient } from "@/lib/supabase/client"
+import { useLanguage } from "@/lib/language-context"
+import { translations } from "@/lib/translations"
 import { Navbar } from "@/components/navbar"
 import { Button } from "@/components/ui/button"
 import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-  DialogDescription,
+  Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription,
 } from "@/components/ui/dialog"
 import { getCategoryLabel, CATEGORY_COLORS } from "@/lib/categories"
 
@@ -56,55 +54,26 @@ interface Order {
 
 type ProfileSnap = { full_name: string | null; avatar_url: string | null }
 
-const STATUS_LABELS: Record<string, string> = {
-  en_attente: "En attente",
-  en_cours: "En cours",
-  livré: "Livré",
-  annulé: "Annulé",
-}
+type ProfileFieldKey = "fullName" | "jobTitle" | "bio" | "skills" | "avatar" | "hourlyRate"
 
-const STATUS_CLASSES: Record<string, string> = {
-  en_attente: "bg-amber-100 text-amber-700",
-  en_cours: "bg-blue-100 text-blue-700",
-  livré: "bg-emerald-100 text-emerald-700",
-  annulé: "bg-red-100 text-red-600",
-}
-
-const RATING_LABELS: Record<number, string> = {
-  1: "Très insatisfait",
-  2: "Insatisfait",
-  3: "Correct",
-  4: "Satisfait",
-  5: "Très satisfait",
-}
-
-function computeCompletion(profile: Profile | null): { pct: number; missing: string[] } {
+function computeCompletion(profile: Profile | null): { pct: number; missing: ProfileFieldKey[] } {
   if (!profile) return { pct: 0, missing: [] }
-  const checks: Array<{ label: string; weight: number; ok: boolean }> = [
-    { label: "Nom complet",          weight: 20, ok: !!profile.full_name },
-    { label: "Titre professionnel",  weight: 20, ok: !!profile.job_title },
-    { label: "Biographie",           weight: 20, ok: !!profile.bio },
-    { label: "Compétences",          weight: 15, ok: (profile.skills ?? []).length > 0 },
-    { label: "Photo de profil",      weight: 15, ok: !!profile.avatar_url },
-    { label: "Tarif horaire",        weight: 10, ok: profile.hourly_rate != null },
+  const checks: Array<{ key: ProfileFieldKey; weight: number; ok: boolean }> = [
+    { key: "fullName",   weight: 20, ok: !!profile.full_name },
+    { key: "jobTitle",   weight: 20, ok: !!profile.job_title },
+    { key: "bio",        weight: 20, ok: !!profile.bio },
+    { key: "skills",     weight: 15, ok: (profile.skills ?? []).length > 0 },
+    { key: "avatar",     weight: 15, ok: !!profile.avatar_url },
+    { key: "hourlyRate", weight: 10, ok: profile.hourly_rate != null },
   ]
   const pct = checks.filter((c) => c.ok).reduce((acc, c) => acc + c.weight, 0)
-  const missing = checks.filter((c) => !c.ok).map((c) => c.label)
+  const missing = checks.filter((c) => !c.ok).map((c) => c.key)
   return { pct, missing }
 }
 
 function initials(name: string | null, email?: string | null) {
   const src = name || email?.split("@")[0] || "?"
   return src.split(" ").map((w) => w[0]).join("").toUpperCase().slice(0, 2)
-}
-
-function memberSince(ts?: string | null) {
-  if (!ts) return null
-  return new Date(ts).toLocaleDateString("fr-FR", { month: "long", year: "numeric" })
-}
-
-function formatDate(ts: string) {
-  return new Date(ts).toLocaleDateString("fr-FR", { day: "numeric", month: "short", year: "numeric" })
 }
 
 function ZelligeCover() {
@@ -149,9 +118,7 @@ function StarPicker({ value, onChange }: { value: number; onChange: (n: number) 
         >
           <Star
             className={`h-8 w-8 transition-colors ${
-              n <= (hovered || value)
-                ? "fill-amber-400 text-amber-400"
-                : "text-muted-foreground/40"
+              n <= (hovered || value) ? "fill-amber-400 text-amber-400" : "text-muted-foreground/40"
             }`}
           />
         </button>
@@ -161,12 +128,7 @@ function StarPicker({ value, onChange }: { value: number; onChange: (n: number) 
 }
 
 function OrderRow({
-  order,
-  otherParty,
-  role,
-  hasReview,
-  onReview,
-  onStatusChange,
+  order, otherParty, role, hasReview, onReview, onStatusChange, t,
 }: {
   order: Order
   otherParty: ProfileSnap | undefined
@@ -174,6 +136,7 @@ function OrderRow({
   hasReview?: boolean
   onReview?: () => void
   onStatusChange?: (orderId: string, newStatus: string) => void
+  t: typeof translations["fr"]["dashboard"]
 }) {
   const ini = otherParty?.full_name
     ? otherParty.full_name.split(" ").map((n) => n[0]).slice(0, 2).join("").toUpperCase()
@@ -181,29 +144,31 @@ function OrderRow({
 
   const showReviewAction = role === "client" && order.status === "livré"
 
-  const nextStatuses: Record<string, Array<{ status: string; label: string; cls: string }>> = {
+  const nextStatuses: Record<string, Array<{ status: string; labelKey: "accept" | "cancel" | "markDelivered"; cls: string }>> = {
     en_attente: [
-      { status: "en_cours", label: "Accepter", cls: "text-blue-600 hover:bg-blue-50" },
-      { status: "annulé", label: "Annuler", cls: "text-red-600 hover:bg-red-50" },
+      { status: "en_cours", labelKey: "accept",       cls: "text-blue-600 hover:bg-blue-50" },
+      { status: "annulé",   labelKey: "cancel",       cls: "text-red-600 hover:bg-red-50" },
     ],
     en_cours: [
-      { status: "livré", label: "Marquer comme livré", cls: "text-emerald-600 hover:bg-emerald-50" },
-      { status: "annulé", label: "Annuler", cls: "text-red-600 hover:bg-red-50" },
+      { status: "livré",  labelKey: "markDelivered", cls: "text-emerald-600 hover:bg-emerald-50" },
+      { status: "annulé", labelKey: "cancel",        cls: "text-red-600 hover:bg-red-50" },
     ],
   }
+
   const actions = role === "freelancer" ? (nextStatuses[order.status] ?? []) : []
+
+  function formatDate(ts: string) {
+    return new Date(ts).toLocaleDateString(t === translations.ar.dashboard ? "ar-MA" : "fr-FR", {
+      day: "numeric", month: "short", year: "numeric",
+    })
+  }
 
   return (
     <div className="rounded-xl border border-border bg-card hover:shadow-sm transition-shadow overflow-hidden">
       <div className="flex items-center gap-3 p-4">
-        {/* Avatar */}
         <div className="shrink-0">
           {otherParty?.avatar_url ? (
-            <img
-              src={otherParty.avatar_url}
-              alt={otherParty.full_name ?? ""}
-              className="h-9 w-9 rounded-full object-cover"
-            />
+            <img src={otherParty.avatar_url} alt={otherParty.full_name ?? ""} className="h-9 w-9 rounded-full object-cover" />
           ) : (
             <div className="h-9 w-9 rounded-full bg-primary/10 flex items-center justify-center">
               <span className="text-[10px] font-bold text-primary">{ini}</span>
@@ -211,24 +176,22 @@ function OrderRow({
           )}
         </div>
 
-        {/* Info */}
         <div className="flex-1 min-w-0">
           <p className="text-sm font-semibold text-foreground truncate">{order.service_title}</p>
           <p className="text-xs text-muted-foreground truncate">
-            {role === "freelancer" ? "De : " : "Pour : "}
-            {otherParty?.full_name ?? "Utilisateur"}
+            {role === "freelancer" ? t.orderRow.from : t.orderRow.for}
+            {otherParty?.full_name ?? t.orderRow.user}
             {" · "}
             {formatDate(order.created_at)}
           </p>
         </div>
 
-        {/* Price + status */}
         <div className="flex flex-col items-end gap-1 shrink-0">
           <span className="text-sm font-black text-foreground">
             {order.price.toLocaleString("fr-MA")} MAD
           </span>
-          <span className={`text-[10px] font-semibold px-2 py-0.5 rounded-full ${STATUS_CLASSES[order.status] ?? "bg-muted text-muted-foreground"}`}>
-            {STATUS_LABELS[order.status] ?? order.status}
+          <span className={`text-[10px] font-semibold px-2 py-0.5 rounded-full ${statusClasses[order.status] ?? "bg-muted text-muted-foreground"}`}>
+            {t.statuses[order.status] ?? order.status}
           </span>
         </div>
       </div>
@@ -238,17 +201,17 @@ function OrderRow({
           {hasReview ? (
             <div className="flex items-center gap-1.5 text-xs text-emerald-600 font-medium">
               <CheckCircle2 className="h-3.5 w-3.5" />
-              Avis publié
+              {t.orderRow.reviewDone}
             </div>
           ) : (
             <Button
               variant="ghost"
               size="sm"
-              className="h-7 px-2.5 text-xs gap-1.5 text-primary hover:text-primary hover:bg-primary/10 font-medium -ml-1.5"
+              className="h-7 px-2.5 text-xs gap-1.5 text-primary hover:text-primary hover:bg-primary/10 font-medium -ms-1.5"
               onClick={onReview}
             >
               <Star className="h-3.5 w-3.5" />
-              Laisser un avis
+              {t.orderRow.leaveReview}
             </Button>
           )}
         </div>
@@ -261,10 +224,10 @@ function OrderRow({
               key={a.status}
               variant="ghost"
               size="sm"
-              className={`h-7 px-2.5 text-xs font-medium -ml-1.5 ${a.cls}`}
+              className={`h-7 px-2.5 text-xs font-medium -ms-1.5 ${a.cls}`}
               onClick={() => onStatusChange?.(order.id, a.status)}
             >
-              {a.label}
+              {t.orderRow[a.labelKey]}
             </Button>
           ))}
         </div>
@@ -273,8 +236,18 @@ function OrderRow({
   )
 }
 
+const statusClasses: Record<string, string> = {
+  en_attente: "bg-amber-100 text-amber-700",
+  en_cours: "bg-blue-100 text-blue-700",
+  livré: "bg-emerald-100 text-emerald-700",
+  annulé: "bg-red-100 text-red-600",
+}
+
 export default function DashboardPage() {
   const router = useRouter()
+  const { lang } = useLanguage()
+  const t = translations[lang].dashboard
+
   const [user, setUser] = useState<SupabaseUser | null>(null)
   const [profile, setProfile] = useState<Profile | null>(null)
   const [services, setServices] = useState<Service[]>([])
@@ -287,6 +260,11 @@ export default function DashboardPage() {
   const [reviewComment, setReviewComment] = useState("")
   const [reviewSubmitting, setReviewSubmitting] = useState(false)
   const [loading, setLoading] = useState(true)
+
+  function memberSince(ts?: string | null) {
+    if (!ts) return null
+    return new Date(ts).toLocaleDateString(lang === "ar" ? "ar-MA" : "fr-FR", { month: "long", year: "numeric" })
+  }
 
   useEffect(() => {
     const supabase = createClient()
@@ -302,27 +280,15 @@ export default function DashboardPage() {
         { data: reviewsData },
       ] = await Promise.all([
         supabase.from("profiles").select("*").eq("id", user.id).single(),
-        supabase
-          .from("services")
+        supabase.from("services")
           .select("id, title, description, category, price, delivery_days, status, created_at")
           .eq("user_id", user.id)
           .order("created_at", { ascending: false }),
-        supabase
-          .from("orders")
-          .select("*")
-          .eq("freelancer_id", user.id)
-          .order("created_at", { ascending: false })
-          .limit(10),
-        supabase
-          .from("orders")
-          .select("*")
-          .eq("client_id", user.id)
-          .order("created_at", { ascending: false })
-          .limit(10),
-        supabase
-          .from("reviews")
-          .select("order_id")
-          .eq("client_id", user.id),
+        supabase.from("orders").select("*").eq("freelancer_id", user.id)
+          .order("created_at", { ascending: false }).limit(10),
+        supabase.from("orders").select("*").eq("client_id", user.id)
+          .order("created_at", { ascending: false }).limit(10),
+        supabase.from("reviews").select("order_id").eq("client_id", user.id),
       ])
 
       setProfile(profileData ?? {
@@ -338,16 +304,13 @@ export default function DashboardPage() {
       setSentOrders(sent)
       setReviewedOrderIds(new Set(reviewsData?.map((r: { order_id: string }) => r.order_id) ?? []))
 
-      // Fetch profiles for all parties involved in orders
       const ids = new Set<string>()
       received.forEach((o) => ids.add(o.client_id))
       sent.forEach((o) => ids.add(o.freelancer_id))
 
       if (ids.size > 0) {
         const { data: profilesData } = await supabase
-          .from("profiles")
-          .select("id, full_name, avatar_url")
-          .in("id", Array.from(ids))
+          .from("profiles").select("id, full_name, avatar_url").in("id", Array.from(ids))
         const map: Record<string, ProfileSnap> = {}
         profilesData?.forEach((p: { id: string; full_name: string | null; avatar_url: string | null }) => {
           map[p.id] = { full_name: p.full_name, avatar_url: p.avatar_url }
@@ -370,9 +333,7 @@ export default function DashboardPage() {
       rating: reviewRating,
       comment: reviewComment.trim() || null,
     })
-    if (!error) {
-      setReviewedOrderIds((prev) => new Set([...prev, reviewDialog.id]))
-    }
+    if (!error) setReviewedOrderIds((prev) => new Set([...prev, reviewDialog.id]))
     setReviewDialog(null)
     setReviewRating(0)
     setReviewComment("")
@@ -381,44 +342,24 @@ export default function DashboardPage() {
 
   async function handleStatusChange(orderId: string, newStatus: string) {
     const supabase = createClient()
-    const { error } = await supabase
-      .from("orders")
-      .update({ status: newStatus })
-      .eq("id", orderId)
+    const { error } = await supabase.from("orders").update({ status: newStatus }).eq("id", orderId)
     if (error) return
 
     const order = receivedOrders.find((o) => o.id === orderId)
-    setReceivedOrders((prev) =>
-      prev.map((o) => (o.id === orderId ? { ...o, status: newStatus } : o))
-    )
+    setReceivedOrders((prev) => prev.map((o) => (o.id === orderId ? { ...o, status: newStatus } : o)))
 
     if (order) {
       const myName = profile?.full_name ?? user?.email?.split("@")[0] ?? "Freelance"
       fetch("/api/emails/order-status", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          clientId: order.client_id,
-          freelancerName: myName,
-          serviceTitle: order.service_title,
-          newStatus,
-          price: order.price,
-        }),
+        body: JSON.stringify({ clientId: order.client_id, freelancerName: myName, serviceTitle: order.service_title, newStatus, price: order.price }),
       }).catch(() => {})
     }
   }
 
-  function openReviewDialog(order: Order) {
-    setReviewDialog(order)
-    setReviewRating(0)
-    setReviewComment("")
-  }
-
-  function closeReviewDialog() {
-    setReviewDialog(null)
-    setReviewRating(0)
-    setReviewComment("")
-  }
+  function openReviewDialog(order: Order) { setReviewDialog(order); setReviewRating(0); setReviewComment("") }
+  function closeReviewDialog() { setReviewDialog(null); setReviewRating(0); setReviewComment("") }
 
   if (loading) {
     return (
@@ -436,37 +377,30 @@ export default function DashboardPage() {
   const publishedServices = services.filter((s) => s.status === "published")
   const since = memberSince(profile.updated_at)
 
-  const pctColor =
-    pct >= 80 ? "bg-emerald-500" :
-    pct >= 50 ? "bg-amber-500" :
-    "bg-primary"
-
-  const freelanceName = reviewDialog
-    ? (profilesMap[reviewDialog.freelancer_id]?.full_name ?? "ce freelance")
-    : ""
+  const pctColor = pct >= 80 ? "bg-emerald-500" : pct >= 50 ? "bg-amber-500" : "bg-primary"
+  const freelanceName = reviewDialog ? (profilesMap[reviewDialog.freelancer_id]?.full_name ?? "ce freelance") : ""
 
   return (
     <>
       <Navbar />
 
       <main className="min-h-screen bg-background">
-        {/* Cover */}
         <div className="relative">
           <ZelligeCover />
           <div className="absolute inset-0 flex items-end pb-5 px-4 sm:px-6 lg:px-8">
             <div className="max-w-5xl w-full mx-auto">
               <p className="text-white/70 text-sm font-medium tracking-wide uppercase mb-0.5">
-                Tableau de bord
+                {t.header}
               </p>
               <h1 className="text-xl sm:text-3xl font-black text-white drop-shadow truncate">
-                Bonjour, {displayName.split(" ")[0]} 👋
+                {t.greeting}, {displayName.split(" ")[0]} 👋
               </h1>
             </div>
           </div>
         </div>
 
         <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 pb-16">
-          {/* Avatar + quick actions row */}
+          {/* Avatar + quick actions */}
           <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pt-6 pb-6 border-b border-border mb-6">
             <div className="flex items-center gap-4">
               <div className="w-16 h-16 rounded-full bg-primary overflow-hidden flex items-center justify-center shrink-0 shadow-md">
@@ -478,9 +412,7 @@ export default function DashboardPage() {
               </div>
               <div>
                 <p className="font-bold text-foreground text-lg leading-tight">{displayName}</p>
-                {profile.job_title && (
-                  <p className="text-sm text-muted-foreground">{profile.job_title}</p>
-                )}
+                {profile.job_title && <p className="text-sm text-muted-foreground">{profile.job_title}</p>}
               </div>
             </div>
 
@@ -488,96 +420,63 @@ export default function DashboardPage() {
               <Button asChild size="sm" variant="outline" className="gap-1.5 font-medium">
                 <Link href="/profil">
                   <Edit2 className="h-3.5 w-3.5" />
-                  Modifier le profil
+                  {t.editProfile}
                 </Link>
               </Button>
               <Button asChild size="sm" className="gap-1.5 font-medium bg-primary hover:bg-primary/90 text-primary-foreground">
                 <Link href="/services/nouveau">
                   <Plus className="h-3.5 w-3.5" />
-                  Nouveau service
+                  {t.newService}
                 </Link>
               </Button>
             </div>
           </div>
 
-          {/* Stats row */}
+          {/* Stats */}
           <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mb-6">
-            <div className="rounded-2xl border border-border bg-card p-3 sm:p-4 shadow-sm flex items-center gap-2.5 sm:gap-3 animate-fade-in-up">
-              <div className="w-8 h-8 sm:w-10 sm:h-10 rounded-xl bg-primary/10 flex items-center justify-center shrink-0">
-                <Briefcase className="h-4 w-4 sm:h-5 sm:w-5 text-primary" />
+            {[
+              { icon: Briefcase, value: publishedServices.length, label: t.stats.publishedServices },
+              { icon: Package,   value: receivedOrders.length,   label: t.stats.receivedOrders },
+              { icon: Star,      value: (profile.skills ?? []).length, label: t.stats.skills },
+              { icon: TrendingUp,value: `${pct}%`,               label: t.stats.profileCompletion },
+            ].map(({ icon: Icon, value, label }, i) => (
+              <div key={i} className="rounded-2xl border border-border bg-card p-3 sm:p-4 shadow-sm flex items-center gap-2.5 sm:gap-3">
+                <div className="w-8 h-8 sm:w-10 sm:h-10 rounded-xl bg-primary/10 flex items-center justify-center shrink-0">
+                  <Icon className="h-4 w-4 sm:h-5 sm:w-5 text-primary" />
+                </div>
+                <div className="min-w-0">
+                  <p className="text-xl sm:text-2xl font-black text-foreground leading-none">{value}</p>
+                  <p className="text-[11px] sm:text-xs text-muted-foreground mt-0.5 leading-tight">{label}</p>
+                </div>
               </div>
-              <div className="min-w-0">
-                <p className="text-xl sm:text-2xl font-black text-foreground leading-none">{publishedServices.length}</p>
-                <p className="text-[11px] sm:text-xs text-muted-foreground mt-0.5 leading-tight">Services publiés</p>
-              </div>
-            </div>
-
-            <div className="rounded-2xl border border-border bg-card p-3 sm:p-4 shadow-sm flex items-center gap-2.5 sm:gap-3 animate-fade-in-up animation-delay-100">
-              <div className="w-8 h-8 sm:w-10 sm:h-10 rounded-xl bg-primary/10 flex items-center justify-center shrink-0">
-                <Package className="h-4 w-4 sm:h-5 sm:w-5 text-primary" />
-              </div>
-              <div className="min-w-0">
-                <p className="text-xl sm:text-2xl font-black text-foreground leading-none">{receivedOrders.length}</p>
-                <p className="text-[11px] sm:text-xs text-muted-foreground mt-0.5 leading-tight">Commandes reçues</p>
-              </div>
-            </div>
-
-            <div className="rounded-2xl border border-border bg-card p-3 sm:p-4 shadow-sm flex items-center gap-2.5 sm:gap-3 animate-fade-in-up animation-delay-175">
-              <div className="w-8 h-8 sm:w-10 sm:h-10 rounded-xl bg-primary/10 flex items-center justify-center shrink-0">
-                <Star className="h-4 w-4 sm:h-5 sm:w-5 text-primary" />
-              </div>
-              <div className="min-w-0">
-                <p className="text-xl sm:text-2xl font-black text-foreground leading-none">
-                  {(profile.skills ?? []).length}
-                </p>
-                <p className="text-[11px] sm:text-xs text-muted-foreground mt-0.5 leading-tight">Compétences</p>
-              </div>
-            </div>
-
-            <div className="rounded-2xl border border-border bg-card p-3 sm:p-4 shadow-sm flex items-center gap-2.5 sm:gap-3 animate-fade-in-up animation-delay-250">
-              <div className="w-8 h-8 sm:w-10 sm:h-10 rounded-xl bg-primary/10 flex items-center justify-center shrink-0">
-                <TrendingUp className="h-4 w-4 sm:h-5 sm:w-5 text-primary" />
-              </div>
-              <div className="min-w-0">
-                <p className="text-xl sm:text-2xl font-black text-foreground leading-none">{pct}%</p>
-                <p className="text-[11px] sm:text-xs text-muted-foreground mt-0.5 leading-tight">Profil complété</p>
-              </div>
-            </div>
+            ))}
           </div>
 
-          {/* Profile completion card */}
+          {/* Profile completion */}
           {pct < 100 && (
             <div className="rounded-2xl border border-border bg-card p-5 shadow-sm mb-6">
               <div className="flex items-start justify-between gap-4 mb-3">
                 <div>
-                  <h2 className="font-bold text-foreground text-sm">Complétez votre profil</h2>
-                  <p className="text-xs text-muted-foreground mt-0.5">
-                    Un profil complet augmente vos chances d&apos;être contacté.
-                  </p>
+                  <h2 className="font-bold text-foreground text-sm">{t.completion.title}</h2>
+                  <p className="text-xs text-muted-foreground mt-0.5">{t.completion.subtitle}</p>
                 </div>
                 <span className="text-xl font-black text-foreground shrink-0">{pct}%</span>
               </div>
 
               <div className="h-2 rounded-full bg-muted overflow-hidden mb-4">
-                <div
-                  className={`h-full rounded-full transition-all duration-500 ${pctColor}`}
-                  style={{ width: `${pct}%` }}
-                />
+                <div className={`h-full rounded-full transition-all duration-500 ${pctColor}`} style={{ width: `${pct}%` }} />
               </div>
 
               {missing.length > 0 && (
                 <div className="space-y-2">
                   <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">
-                    Informations manquantes
+                    {t.completion.missingTitle}
                   </p>
                   <div className="flex flex-wrap gap-2">
-                    {missing.map((label) => (
-                      <span
-                        key={label}
-                        className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full bg-muted text-xs font-medium text-foreground"
-                      >
+                    {missing.map((key) => (
+                      <span key={key} className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full bg-muted text-xs font-medium text-foreground">
                         <span className="w-1.5 h-1.5 rounded-full bg-primary inline-block" />
-                        {label}
+                        {t.profileFields[key]}
                       </span>
                     ))}
                   </div>
@@ -587,7 +486,7 @@ export default function DashboardPage() {
               <Button asChild size="sm" variant="outline" className="mt-4 gap-1.5 font-medium text-xs">
                 <Link href="/profil">
                   <User className="h-3.5 w-3.5" />
-                  Compléter mon profil
+                  {t.completion.cta}
                   <ArrowRight className="h-3 w-3" />
                 </Link>
               </Button>
@@ -598,20 +497,20 @@ export default function DashboardPage() {
             <div className="rounded-2xl border border-emerald-200 bg-emerald-50 p-4 shadow-sm mb-6 flex items-center gap-3">
               <CheckCircle2 className="h-5 w-5 text-emerald-600 shrink-0" />
               <div>
-                <p className="text-sm font-semibold text-emerald-800">Profil complété à 100%</p>
-                <p className="text-xs text-emerald-700">Votre profil est optimisé pour attirer des clients.</p>
+                <p className="text-sm font-semibold text-emerald-800">{t.completion.done}</p>
+                <p className="text-xs text-emerald-700">{t.completion.doneSub}</p>
               </div>
             </div>
           )}
 
-          {/* Services section */}
+          {/* My services */}
           <div className="mb-8">
             <div className="flex items-center justify-between mb-4">
-              <h2 className="text-lg font-black text-foreground">Mes services</h2>
+              <h2 className="text-lg font-black text-foreground">{t.services.title}</h2>
               <Button asChild size="sm" variant="ghost" className="gap-1.5 text-primary hover:text-primary font-medium text-xs">
                 <Link href="/services/nouveau">
                   <Plus className="h-3.5 w-3.5" />
-                  Ajouter
+                  {t.services.add}
                 </Link>
               </Button>
             </div>
@@ -621,45 +520,31 @@ export default function DashboardPage() {
                 <div className="w-14 h-14 rounded-2xl bg-primary/10 flex items-center justify-center mx-auto mb-4">
                   <Briefcase className="h-7 w-7 text-primary" />
                 </div>
-                <p className="font-bold text-foreground mb-1">Aucun service publié</p>
-                <p className="text-sm text-muted-foreground mb-5">
-                  Créez votre premier service et commencez à recevoir des clients.
-                </p>
+                <p className="font-bold text-foreground mb-1">{t.services.empty}</p>
+                <p className="text-sm text-muted-foreground mb-5">{t.services.emptySub}</p>
                 <Button asChild className="gap-2 bg-primary hover:bg-primary/90 text-primary-foreground font-semibold">
                   <Link href="/services/nouveau">
                     <Plus className="h-4 w-4" />
-                    Créer un service
+                    {t.services.createBtn}
                   </Link>
                 </Button>
               </div>
             ) : (
               <div className="grid gap-4 sm:grid-cols-2">
                 {publishedServices.map((service) => (
-                  <div
-                    key={service.id}
-                    className="rounded-2xl border border-border bg-card p-5 shadow-sm hover:shadow-md transition-shadow flex flex-col gap-3"
-                  >
+                  <div key={service.id} className="rounded-2xl border border-border bg-card p-5 shadow-sm hover:shadow-md transition-shadow flex flex-col gap-3">
                     <div className="flex items-start justify-between gap-2">
-                      <span
-                        className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-semibold ${
-                          CATEGORY_COLORS[service.category] ?? "bg-muted text-muted-foreground"
-                        }`}
-                      >
+                      <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-semibold ${CATEGORY_COLORS[service.category] ?? "bg-muted text-muted-foreground"}`}>
                         {getCategoryLabel(service.category)}
                       </span>
                       <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-emerald-100 text-emerald-700 text-xs font-semibold shrink-0">
                         <CheckCircle2 className="h-3 w-3" />
-                        Publié
+                        {t.services.published}
                       </span>
                     </div>
 
-                    <h3 className="font-bold text-foreground text-sm leading-snug line-clamp-2">
-                      {service.title}
-                    </h3>
-
-                    <p className="text-xs text-muted-foreground line-clamp-2 flex-1">
-                      {service.description}
-                    </p>
+                    <h3 className="font-bold text-foreground text-sm leading-snug line-clamp-2">{service.title}</h3>
+                    <p className="text-xs text-muted-foreground line-clamp-2 flex-1">{service.description}</p>
 
                     <div className="flex items-center justify-between pt-1 border-t border-border">
                       <div className="flex items-center gap-3">
@@ -675,7 +560,7 @@ export default function DashboardPage() {
                       <Button asChild size="sm" variant="ghost" className="h-7 px-2.5 text-xs gap-1 font-medium">
                         <Link href={`/services/${service.id}/modifier`}>
                           <Edit2 className="h-3 w-3" />
-                          Modifier
+                          {t.services.edit}
                         </Link>
                       </Button>
                     </div>
@@ -688,7 +573,7 @@ export default function DashboardPage() {
               <div className="mt-4 text-center">
                 <Button asChild variant="ghost" size="sm" className="gap-1.5 text-muted-foreground hover:text-foreground text-xs font-medium">
                   <Link href="/services">
-                    Voir tous les services
+                    {t.services.viewAll}
                     <ArrowRight className="h-3 w-3" />
                   </Link>
                 </Button>
@@ -696,12 +581,12 @@ export default function DashboardPage() {
             )}
           </div>
 
-          {/* Received orders section (freelancer view) */}
+          {/* Received orders */}
           <div className="mb-8">
             <div className="flex items-center justify-between mb-4">
               <h2 className="text-lg font-black text-foreground flex items-center gap-2">
                 <Package className="h-5 w-5 text-primary" />
-                Commandes reçues
+                {t.receivedOrders.title}
               </h2>
               {receivedOrders.length > 0 && (
                 <span className="text-xs font-semibold px-2.5 py-0.5 rounded-full bg-primary/10 text-primary">
@@ -715,10 +600,8 @@ export default function DashboardPage() {
                 <div className="w-12 h-12 rounded-2xl bg-primary/10 flex items-center justify-center mx-auto mb-3">
                   <Package className="h-6 w-6 text-primary" />
                 </div>
-                <p className="font-bold text-foreground text-sm mb-1">Aucune commande reçue</p>
-                <p className="text-xs text-muted-foreground">
-                  Les clients qui commandent vos services apparaîtront ici.
-                </p>
+                <p className="font-bold text-foreground text-sm mb-1">{t.receivedOrders.empty}</p>
+                <p className="text-xs text-muted-foreground">{t.receivedOrders.emptySub}</p>
               </div>
             ) : (
               <div className="space-y-2">
@@ -729,18 +612,19 @@ export default function DashboardPage() {
                     otherParty={profilesMap[order.client_id]}
                     role="freelancer"
                     onStatusChange={handleStatusChange}
+                    t={t}
                   />
                 ))}
               </div>
             )}
           </div>
 
-          {/* Sent orders section (client view) */}
+          {/* Sent orders */}
           <div className="mb-8">
             <div className="flex items-center justify-between mb-4">
               <h2 className="text-lg font-black text-foreground flex items-center gap-2">
                 <ShoppingBag className="h-5 w-5 text-primary" />
-                Mes commandes
+                {t.sentOrders.title}
               </h2>
               {sentOrders.length > 0 && (
                 <span className="text-xs font-semibold px-2.5 py-0.5 rounded-full bg-primary/10 text-primary">
@@ -754,13 +638,11 @@ export default function DashboardPage() {
                 <div className="w-12 h-12 rounded-2xl bg-primary/10 flex items-center justify-center mx-auto mb-3">
                   <ShoppingBag className="h-6 w-6 text-primary" />
                 </div>
-                <p className="font-bold text-foreground text-sm mb-1">Aucune commande passée</p>
-                <p className="text-xs text-muted-foreground mb-4">
-                  Explorez les services disponibles et passez votre première commande.
-                </p>
+                <p className="font-bold text-foreground text-sm mb-1">{t.sentOrders.empty}</p>
+                <p className="text-xs text-muted-foreground mb-4">{t.sentOrders.emptySub}</p>
                 <Button asChild size="sm" className="bg-primary hover:bg-primary/90 text-primary-foreground font-semibold gap-1.5">
                   <Link href="/services">
-                    Voir les services
+                    {t.sentOrders.viewServicesBtn}
                     <ArrowRight className="h-3.5 w-3.5" />
                   </Link>
                 </Button>
@@ -775,62 +657,65 @@ export default function DashboardPage() {
                     role="client"
                     hasReview={reviewedOrderIds.has(order.id)}
                     onReview={() => openReviewDialog(order)}
+                    t={t}
                   />
                 ))}
               </div>
             )}
           </div>
 
-          {/* Member since footer */}
           {since && (
             <p className="text-center text-xs text-muted-foreground mt-10">
-              Membre depuis {since}
+              {t.memberSince} {since}
             </p>
           )}
         </div>
       </main>
 
-      {/* Dialogue de publication d'un avis */}
+      {/* Review dialog */}
       <Dialog open={reviewDialog !== null} onOpenChange={(open) => { if (!open) closeReviewDialog() }}>
         <DialogContent className="sm:max-w-md">
           <DialogHeader>
-            <DialogTitle>Laisser un avis</DialogTitle>
+            <DialogTitle>{t.review.title}</DialogTitle>
             <DialogDescription>
-              Évaluez votre expérience avec {freelanceName} pour &quot;{reviewDialog?.service_title}&quot;.
+              {lang === "ar"
+                ? `قيّم تجربتك مع ${freelanceName} لـ "${reviewDialog?.service_title}".`
+                : `Évaluez votre expérience avec ${freelanceName} pour "${reviewDialog?.service_title}".`
+              }
             </DialogDescription>
           </DialogHeader>
 
           <div className="space-y-5 py-2">
             <div>
               <p className="text-sm font-semibold mb-2 text-foreground">
-                Note <span className="text-primary">*</span>
+                {t.review.ratingLabel} <span className="text-primary">*</span>
               </p>
               <StarPicker value={reviewRating} onChange={setReviewRating} />
               {reviewRating > 0 && (
-                <p className="text-sm text-muted-foreground mt-1.5">{RATING_LABELS[reviewRating]}</p>
+                <p className="text-sm text-muted-foreground mt-1.5">{t.ratingLabels[reviewRating]}</p>
               )}
             </div>
 
             <div>
               <p className="text-sm font-semibold mb-2 text-foreground">
-                Commentaire{" "}
-                <span className="text-muted-foreground font-normal">(optionnel)</span>
+                {t.review.commentLabel}{" "}
+                <span className="text-muted-foreground font-normal">{t.review.optional}</span>
               </p>
               <textarea
                 value={reviewComment}
                 onChange={(e) => setReviewComment(e.target.value)}
-                placeholder="Partagez votre expérience avec ce freelance..."
+                placeholder={t.review.placeholder}
                 maxLength={500}
                 rows={4}
                 className="w-full px-3 py-2 text-sm rounded-lg border border-border bg-background resize-none focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary transition-colors placeholder:text-muted-foreground/60"
               />
-              <p className="text-xs text-muted-foreground text-right mt-1">{reviewComment.length}/500</p>
+              <p className="text-xs text-muted-foreground text-end mt-1">{reviewComment.length}/500</p>
             </div>
           </div>
 
           <div className="flex gap-2 justify-end pt-2">
             <Button variant="outline" onClick={closeReviewDialog} disabled={reviewSubmitting}>
-              Annuler
+              {t.review.cancelBtn}
             </Button>
             <Button
               disabled={reviewRating === 0 || reviewSubmitting}
@@ -838,7 +723,7 @@ export default function DashboardPage() {
               className="bg-primary hover:bg-primary/90 text-primary-foreground gap-2"
             >
               {reviewSubmitting && <Loader2 className="h-4 w-4 animate-spin" />}
-              Publier l&apos;avis
+              {t.review.submitBtn}
             </Button>
           </div>
         </DialogContent>

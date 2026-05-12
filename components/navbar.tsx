@@ -6,6 +6,8 @@ import Link from "next/link"
 import { useRouter } from "next/navigation"
 import type { User } from "@supabase/supabase-js"
 import { createClient } from "@/lib/supabase/client"
+import { useLanguage } from "@/lib/language-context"
+import { translations } from "@/lib/translations"
 import { Button } from "@/components/ui/button"
 import {
   DropdownMenu,
@@ -25,9 +27,10 @@ function getInitials(user: User): string {
 
 export function Navbar() {
   const router = useRouter()
+  const { lang, toggleLang } = useLanguage()
+  const t = translations[lang].nav
   const [isScrolled, setIsScrolled] = useState(false)
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false)
-  const [language, setLanguage] = useState<"fr" | "ar">("fr")
   const [user, setUser] = useState<User | null | undefined>(undefined)
   const [unreadCount, setUnreadCount] = useState(0)
 
@@ -39,11 +42,6 @@ export function Navbar() {
     window.addEventListener("scroll", handleScroll)
     return () => window.removeEventListener("scroll", handleScroll)
   }, [])
-
-  useEffect(() => {
-    document.documentElement.dir = language === "ar" ? "rtl" : "ltr"
-    document.documentElement.lang = language === "ar" ? "ar" : "fr"
-  }, [language])
 
   useEffect(() => {
     const supabase = createClient()
@@ -125,45 +123,45 @@ export function Navbar() {
             </span>
           </a>
 
-          {/* Barre de recherche (md+) */}
+          {/* Search bar (md+) */}
           <div className="hidden md:flex flex-1 max-w-md mx-4">
             <div className="relative w-full group">
               <button
                 type="button"
-                aria-label="Rechercher"
+                aria-label={t.search}
                 onClick={() => handleSearch(desktopSearchRef.current?.value ?? "")}
-                className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground group-focus-within:text-primary transition-all duration-150 hover:text-primary hover:scale-110"
+                className="absolute start-3 top-1/2 -translate-y-1/2 text-muted-foreground group-focus-within:text-primary transition-all duration-150 hover:text-primary hover:scale-110"
               >
                 <Search className="h-4 w-4" />
               </button>
               <input
                 ref={desktopSearchRef}
                 type="text"
-                placeholder="Rechercher un service..."
+                placeholder={t.search}
                 onKeyDown={onDesktopSearchKey}
-                className="w-full h-10 pl-10 pr-4 rounded-full border border-border bg-card text-sm placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all"
+                className="w-full h-10 ps-10 pe-4 rounded-full border border-border bg-card text-sm placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all"
               />
             </div>
           </div>
 
-          {/* Navigation desktop (lg+) */}
+          {/* Desktop nav (lg+) */}
           <div className="hidden lg:flex items-center gap-2">
             <Button variant="ghost" size="sm" className="text-sm font-medium" asChild>
-              <Link href="/services">Explorer</Link>
+              <Link href="/services">{t.explore}</Link>
             </Button>
 
             <div className="w-px h-6 bg-border" />
 
-            {/* Bascule de langue */}
+            {/* Language toggle */}
             <button
-              onClick={() => setLanguage(language === "fr" ? "ar" : "fr")}
+              onClick={toggleLang}
               className="flex items-center gap-1.5 px-3 py-1.5 rounded-full border border-border bg-card hover:bg-muted text-sm font-medium transition-all duration-150 hover:scale-[1.04] active:scale-[0.97]"
               aria-label="Changer de langue"
             >
               <Globe className="h-4 w-4 text-muted-foreground" />
-              <span className={language === "fr" ? "text-foreground" : "text-muted-foreground"}>FR</span>
+              <span className={lang === "fr" ? "text-foreground" : "text-muted-foreground"}>FR</span>
               <span className="text-muted-foreground">|</span>
-              <span className={language === "ar" ? "text-foreground" : "text-muted-foreground"}>AR</span>
+              <span className={lang === "ar" ? "text-foreground" : "text-muted-foreground"}>AR</span>
             </button>
 
             <div className="w-px h-6 bg-border" />
@@ -174,16 +172,16 @@ export function Navbar() {
                 <Button variant="ghost" size="sm" className="text-sm font-medium relative" asChild>
                   <Link href="/messages">
                     <MessageSquare className="h-4 w-4" />
-                    Messages
+                    {t.messages}
                     {unreadCount > 0 && (
-                      <span className="absolute -top-1 -right-1 flex h-4 w-4 items-center justify-center rounded-full bg-primary text-[10px] font-bold text-primary-foreground">
+                      <span className="absolute -top-1 -end-1 flex h-4 w-4 items-center justify-center rounded-full bg-primary text-[10px] font-bold text-primary-foreground">
                         {unreadCount > 99 ? "99+" : unreadCount}
                       </span>
                     )}
                   </Link>
                 </Button>
 
-                {/* Menu utilisateur */}
+                {/* User menu */}
                 <DropdownMenu>
                   <DropdownMenuTrigger asChild>
                     <button className="flex items-center gap-1.5 px-2 py-1.5 rounded-full border border-border bg-card hover:bg-muted transition-all duration-150 hover:scale-[1.04] active:scale-[0.97] focus:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2">
@@ -197,13 +195,13 @@ export function Navbar() {
                     <DropdownMenuItem asChild>
                       <Link href="/dashboard" className="flex items-center gap-2 cursor-pointer">
                         <LayoutDashboard className="h-4 w-4" />
-                        Tableau de bord
+                        {t.dashboard}
                       </Link>
                     </DropdownMenuItem>
                     <DropdownMenuItem asChild>
                       <Link href="/profil" className="flex items-center gap-2 cursor-pointer">
                         <UserIcon className="h-4 w-4" />
-                        Mon profil
+                        {t.myProfile}
                       </Link>
                     </DropdownMenuItem>
                     <DropdownMenuSeparator />
@@ -212,7 +210,7 @@ export function Navbar() {
                       className="flex items-center gap-2 cursor-pointer text-destructive focus:text-destructive"
                     >
                       <LogOut className="h-4 w-4" />
-                      Déconnexion
+                      {t.logout}
                     </DropdownMenuItem>
                   </DropdownMenuContent>
                 </DropdownMenu>
@@ -220,29 +218,29 @@ export function Navbar() {
             ) : (
               <>
                 <Button variant="ghost" size="sm" className="text-sm font-medium" asChild>
-                  <Link href="/connexion">Connexion</Link>
+                  <Link href="/connexion">{t.login}</Link>
                 </Button>
                 <Button size="sm" className="text-sm font-medium bg-primary hover:bg-primary/90 text-primary-foreground" asChild>
-                  <Link href="/inscription">S&apos;inscrire</Link>
+                  <Link href="/inscription">{t.signup}</Link>
                 </Button>
               </>
             )}
           </div>
 
-          {/* Bouton menu mobile */}
+          {/* Mobile menu button */}
           <Button
             variant="ghost"
             size="icon"
             className="lg:hidden"
             onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
-            aria-label="Ouvrir le menu"
+            aria-label={t.openMenu}
           >
             {isMobileMenuOpen ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}
           </Button>
         </div>
       </div>
 
-      {/* Menu mobile */}
+      {/* Mobile menu */}
       <div
         className={`lg:hidden overflow-hidden transition-all duration-300 ${
           isMobileMenuOpen ? "max-h-[calc(100dvh-4rem)]" : "max-h-0"
@@ -251,40 +249,40 @@ export function Navbar() {
       >
         <div className="px-4 py-4 space-y-2 bg-background/95 backdrop-blur-md border-t border-border">
 
-          {/* Recherche mobile */}
+          {/* Mobile search */}
           <div className="relative">
             <button
               type="button"
-              aria-label="Rechercher"
+              aria-label={t.search}
               onClick={() => handleSearch(mobileSearchRef.current?.value ?? "")}
-              className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-primary transition-all duration-150 hover:scale-110"
+              className="absolute start-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-primary transition-all duration-150 hover:scale-110"
             >
               <Search className="h-4 w-4" />
             </button>
             <input
               ref={mobileSearchRef}
               type="text"
-              placeholder="Rechercher un service..."
+              placeholder={t.search}
               onKeyDown={onMobileSearchKey}
-              className="w-full h-10 pl-10 pr-4 rounded-full border border-border bg-card text-sm placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all"
+              className="w-full h-10 ps-10 pe-4 rounded-full border border-border bg-card text-sm placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all"
             />
           </div>
 
           <Button variant="ghost" className="w-full justify-start text-sm font-medium" asChild>
-            <Link href="/services">Explorer</Link>
+            <Link href="/services">{t.explore}</Link>
           </Button>
 
           <div className="h-px bg-border" />
 
-          {/* Bascule de langue */}
+          {/* Language toggle mobile */}
           <button
-            onClick={() => setLanguage(language === "fr" ? "ar" : "fr")}
+            onClick={toggleLang}
             className="flex items-center justify-center gap-2 w-full px-3 py-2 rounded-lg border border-border bg-card hover:bg-muted text-sm font-medium transition-colors"
           >
             <Globe className="h-4 w-4 text-muted-foreground" />
-            <span className={language === "fr" ? "text-foreground" : "text-muted-foreground"}>Français</span>
+            <span className={lang === "fr" ? "text-foreground" : "text-muted-foreground"}>{t.french}</span>
             <span className="text-muted-foreground">/</span>
-            <span className={language === "ar" ? "text-foreground" : "text-muted-foreground"}>العربية</span>
+            <span className={lang === "ar" ? "text-foreground" : "text-muted-foreground"}>{t.arabic}</span>
           </button>
 
           <div className="h-px bg-border" />
@@ -301,22 +299,22 @@ export function Navbar() {
               </div>
               <Button variant="ghost" className="w-full justify-start text-sm font-medium" asChild>
                 <Link href="/dashboard">
-                  <LayoutDashboard className="h-4 w-4 mr-2" />
-                  Tableau de bord
+                  <LayoutDashboard className="h-4 w-4 me-2" />
+                  {t.dashboard}
                 </Link>
               </Button>
               <Button variant="ghost" className="w-full justify-start text-sm font-medium" asChild>
                 <Link href="/profil">
-                  <UserIcon className="h-4 w-4 mr-2" />
-                  Mon profil
+                  <UserIcon className="h-4 w-4 me-2" />
+                  {t.myProfile}
                 </Link>
               </Button>
               <Button variant="ghost" className="w-full justify-start text-sm font-medium" asChild>
                 <Link href="/messages" className="flex items-center gap-2">
                   <MessageSquare className="h-4 w-4" />
-                  Messages
+                  {t.messages}
                   {unreadCount > 0 && (
-                    <span className="ml-auto flex h-5 w-5 items-center justify-center rounded-full bg-primary text-[10px] font-bold text-primary-foreground">
+                    <span className="ms-auto flex h-5 w-5 items-center justify-center rounded-full bg-primary text-[10px] font-bold text-primary-foreground">
                       {unreadCount > 99 ? "99+" : unreadCount}
                     </span>
                   )}
@@ -327,17 +325,17 @@ export function Navbar() {
                 className="w-full justify-start text-sm font-medium text-destructive hover:text-destructive"
                 onClick={handleLogout}
               >
-                <LogOut className="h-4 w-4 mr-2" />
-                Déconnexion
+                <LogOut className="h-4 w-4 me-2" />
+                {t.logout}
               </Button>
             </>
           ) : (
             <>
               <Button variant="ghost" className="w-full justify-start text-sm font-medium" asChild>
-                <Link href="/connexion">Connexion</Link>
+                <Link href="/connexion">{t.login}</Link>
               </Button>
               <Button className="w-full text-sm font-medium bg-primary hover:bg-primary/90 text-primary-foreground" asChild>
-                <Link href="/inscription">S&apos;inscrire</Link>
+                <Link href="/inscription">{t.signup}</Link>
               </Button>
             </>
           )}

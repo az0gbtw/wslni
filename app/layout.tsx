@@ -1,11 +1,18 @@
 import type { Metadata, Viewport } from 'next'
-import { Inter } from 'next/font/google'
+import { Inter, Cairo } from 'next/font/google'
 import { Analytics } from '@vercel/analytics/next'
+import { Providers } from '@/components/providers'
 import './globals.css'
 
-const inter = Inter({ 
+const inter = Inter({
   subsets: ["latin"],
   variable: '--font-inter',
+})
+
+const cairo = Cairo({
+  subsets: ["arabic", "latin"],
+  variable: '--font-cairo',
+  display: 'swap',
 })
 
 export const metadata: Metadata = {
@@ -45,8 +52,10 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="fr" className="bg-background">
-      <body className={`${inter.variable} font-sans antialiased`}>
-        {children}
+      <body className={`${inter.variable} ${cairo.variable} font-sans antialiased`}>
+        <Providers>
+          {children}
+        </Providers>
         {process.env.NODE_ENV === 'production' && <Analytics />}
       </body>
     </html>

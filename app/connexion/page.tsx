@@ -4,12 +4,17 @@ import { useState } from "react"
 import { useRouter } from "next/navigation"
 import Link from "next/link"
 import { createClient } from "@/lib/supabase/client"
+import { useLanguage } from "@/lib/language-context"
+import { translations } from "@/lib/translations"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 
 export default function ConnexionPage() {
   const router = useRouter()
+  const { lang } = useLanguage()
+  const t = translations[lang].login
+
   const [email, setEmail] = useState("")
   const [password, setPassword] = useState("")
   const [error, setError] = useState<string | null>(null)
@@ -24,7 +29,7 @@ export default function ConnexionPage() {
     const { error } = await supabase.auth.signInWithPassword({ email, password })
 
     if (error) {
-      setError(getErrorMessage(error.message))
+      setError(getErrorMessage(error.message, t.errors))
       setLoading(false)
       return
     }
@@ -36,7 +41,6 @@ export default function ConnexionPage() {
   return (
     <div className="min-h-screen flex items-center justify-center bg-background px-4">
       <div className="w-full max-w-md">
-        {/* Logo */}
         <div className="flex justify-center mb-8">
           <Link href="/" className="flex items-center gap-2">
             <div className="flex items-center justify-center w-10 h-10 rounded-xl bg-primary">
@@ -48,19 +52,17 @@ export default function ConnexionPage() {
 
         <div className="bg-card border border-border rounded-2xl p-8 shadow-sm">
           <div className="mb-6 text-center">
-            <h1 className="text-2xl font-bold text-foreground">Connexion</h1>
-            <p className="text-sm text-muted-foreground mt-1">
-              Bienvenue ! Connectez-vous à votre compte.
-            </p>
+            <h1 className="text-2xl font-bold text-foreground">{t.title}</h1>
+            <p className="text-sm text-muted-foreground mt-1">{t.subtitle}</p>
           </div>
 
           <form onSubmit={handleSubmit} className="space-y-4">
             <div className="space-y-1.5">
-              <Label htmlFor="email">Adresse e-mail</Label>
+              <Label htmlFor="email">{t.emailLabel}</Label>
               <Input
                 id="email"
                 type="email"
-                placeholder="vous@exemple.com"
+                placeholder={t.emailPlaceholder}
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
                 required
@@ -70,12 +72,9 @@ export default function ConnexionPage() {
 
             <div className="space-y-1.5">
               <div className="flex items-center justify-between">
-                <Label htmlFor="password">Mot de passe</Label>
-                <Link
-                  href="/mot-de-passe-oublie"
-                  className="text-xs text-primary hover:underline"
-                >
-                  Mot de passe oublié ?
+                <Label htmlFor="password">{t.passwordLabel}</Label>
+                <Link href="/mot-de-passe-oublie" className="text-xs text-primary hover:underline">
+                  {t.forgotPassword}
                 </Link>
               </div>
               <Input
@@ -100,14 +99,14 @@ export default function ConnexionPage() {
               className="w-full bg-primary hover:bg-primary/90 text-primary-foreground"
               disabled={loading}
             >
-              {loading ? "Connexion en cours..." : "Se connecter"}
+              {loading ? t.submitting : t.submitBtn}
             </Button>
           </form>
 
           <p className="mt-6 text-center text-sm text-muted-foreground">
-            Pas encore de compte ?{" "}
+            {t.noAccount}{" "}
             <Link href="/inscription" className="text-primary font-medium hover:underline">
-              S&apos;inscrire
+              {t.signupLink}
             </Link>
           </p>
         </div>
@@ -116,15 +115,12 @@ export default function ConnexionPage() {
   )
 }
 
-function getErrorMessage(message: string): string {
-  if (message.includes("Invalid login credentials")) {
-    return "E-mail ou mot de passe incorrect."
-  }
-  if (message.includes("Email not confirmed")) {
-    return "Veuillez confirmer votre adresse e-mail avant de vous connecter."
-  }
-  if (message.includes("Too many requests")) {
-    return "Trop de tentatives. Veuillez réessayer plus tard."
-  }
-  return "Une erreur est survenue. Veuillez réessayer."
+function getErrorMessage(
+  message: string,
+  errors: { invalidCredentials: string; emailNotConfirmed: string; tooManyRequests: string; default: string }
+): string {
+  if (message.includes("Invalid login credentials")) return errors.invalidCredentials
+  if (message.includes("Email not confirmed")) return errors.emailNotConfirmed
+  if (message.includes("Too many requests")) return errors.tooManyRequests
+  return errors.default
 }
