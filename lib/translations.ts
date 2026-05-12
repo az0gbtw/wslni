@@ -297,6 +297,12 @@ const fr = {
       saveBtn: "Sauvegarder les modifications",
     },
   },
+  notifications: {
+    title: "Notifications",
+    markAllRead: "Tout marquer comme lu",
+    empty: "Aucune notification",
+    emptySub: "Vous êtes à jour !",
+  },
   services: {
     header: "Services disponibles",
     headerSub:
@@ -628,6 +634,12 @@ const ar: typeof fr = {
       saving: "جاري الحفظ...",
       saveBtn: "حفظ التغييرات",
     },
+  },
+  notifications: {
+    title: "الإشعارات",
+    markAllRead: "تحديد الكل كمقروء",
+    empty: "لا توجد إشعارات",
+    emptySub: "أنت على اطلاع بكل شيء!",
   },
   services: {
     header: "الخدمات المتاحة",
