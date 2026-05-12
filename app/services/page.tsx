@@ -57,7 +57,7 @@ function ServicesContent() {
   const [services, setServices] = useState<ServiceWithProfile[]>([])
   const [loading, setLoading] = useState(true)
   const [search, setSearch]                     = useState(searchParams.get("q") ?? "")
-  const [selectedCategory, setSelectedCategory] = useState("")
+  const [selectedCategory, setSelectedCategory] = useState(searchParams.get("category") ?? "")
   const [minPrice, setMinPrice]                 = useState("")
   const [maxPrice, setMaxPrice]                 = useState("")
   const [maxDelivery, setMaxDelivery]           = useState(0)

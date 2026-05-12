@@ -1,11 +1,13 @@
 "use client"
 
+import Link from "next/link"
 import {
   Palette, Video, Music, Code, Share2, Camera, Languages, GraduationCap,
   TrendingUp, Scale, Mic, Box, PenTool, ClipboardList, PartyPopper, Shirt
 } from "lucide-react"
 import { useLanguage } from "@/lib/language-context"
 import { translations } from "@/lib/translations"
+import { CATEGORIES } from "@/lib/categories"
 
 const categoryIcons = [
   Palette, Video, Music, Code, Share2, Camera, Languages, GraduationCap,
@@ -53,9 +55,11 @@ export function CategoriesSection() {
           {t.items.map((label, index) => {
             const Icon = categoryIcons[index]
             const color = categoryColors[index]
+            const categoryId = CATEGORIES[index]?.value
             return (
-              <button
+              <Link
                 key={index}
+                href={`/services?category=${categoryId}`}
                 className={`group relative flex flex-col items-center justify-center p-4 md:p-6 rounded-xl ${color} border border-transparent hover:border-current/20 transition-all duration-300 hover:scale-[1.02] hover:shadow-lg cursor-pointer`}
               >
                 <div className="mb-3 p-3 rounded-lg bg-white/60 group-hover:bg-white/80 transition-colors">
@@ -64,19 +68,19 @@ export function CategoriesSection() {
                 <span className="text-xs md:text-sm font-medium text-center leading-tight text-foreground/90">
                   {label}
                 </span>
-              </button>
+              </Link>
             )
           })}
         </div>
 
         {/* View All Link */}
         <div className="text-center mt-10">
-          <button className="inline-flex items-center gap-2 text-primary font-medium hover:underline underline-offset-4 transition-all">
+          <Link href="/services" className="inline-flex items-center gap-2 text-primary font-medium hover:underline underline-offset-4 transition-all">
             {t.viewAll}
             <svg className="w-4 h-4 rtl:rotate-180" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
             </svg>
-          </button>
+          </Link>
         </div>
       </div>
     </section>
