@@ -1,12 +1,12 @@
 import type { Metadata, Viewport } from 'next'
-import { Outfit, Cairo, Cormorant_Garamond } from 'next/font/google'
+import { Plus_Jakarta_Sans, Cairo, Libre_Baskerville } from 'next/font/google'
 import { Analytics } from '@vercel/analytics/next'
 import { Providers } from '@/components/providers'
 import './globals.css'
 
-const outfit = Outfit({
+const plusJakartaSans = Plus_Jakarta_Sans({
   subsets: ["latin"],
-  variable: '--font-outfit',
+  variable: '--font-jakarta',
   display: 'swap',
 })
 
@@ -16,11 +16,11 @@ const cairo = Cairo({
   display: 'swap',
 })
 
-const cormorant = Cormorant_Garamond({
+const libreBaskerville = Libre_Baskerville({
   subsets: ["latin"],
-  variable: '--font-cormorant',
+  variable: '--font-baskerville',
   display: 'swap',
-  weight: ['300', '400', '500', '600', '700'],
+  weight: ['400', '700'],
   style: ['normal', 'italic'],
 })
 
@@ -61,7 +61,7 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="fr" className="bg-background" suppressHydrationWarning>
-      <body className={`${outfit.variable} ${cairo.variable} ${cormorant.variable} font-sans antialiased`}>
+      <body className={`${plusJakartaSans.variable} ${cairo.variable} ${libreBaskerville.variable} font-sans antialiased`}>
         <Providers>
           {children}
         </Providers>

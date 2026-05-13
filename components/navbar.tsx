@@ -1,7 +1,7 @@
 "use client"
 
 import { useState, useEffect, useRef } from "react"
-import { Search, Menu, X, Globe, LogOut, LayoutDashboard, MessageSquare, ShoppingBag, User as UserIcon } from "lucide-react"
+import { Search, Menu, X, Globe, LogOut, LayoutDashboard, MessageSquare, ShoppingBag, ChevronDown, User as UserIcon } from "lucide-react"
 import { NotificationBell } from "@/components/notification-bell"
 import Link from "next/link"
 import { useRouter } from "next/navigation"
@@ -10,6 +10,13 @@ import { createClient } from "@/lib/supabase/client"
 import { useLanguage } from "@/lib/language-context"
 import { translations } from "@/lib/translations"
 import { Button } from "@/components/ui/button"
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu"
 
 function getInitials(user: User): string {
   const name = user.user_metadata?.full_name as string | undefined
@@ -197,6 +204,40 @@ export function Navbar() {
                     {t.orders}
                   </Link>
                 </Button>
+
+                {/* User menu */}
+                <DropdownMenu>
+                  <DropdownMenuTrigger asChild>
+                    <button className="flex items-center gap-1.5 px-2 py-1.5 rounded-full border border-border bg-card hover:bg-muted transition-all duration-150 hover:scale-[1.04] active:scale-[0.97] focus:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2">
+                      <div className="w-7 h-7 rounded-full bg-primary flex items-center justify-center text-xs font-bold text-primary-foreground shrink-0">
+                        {getInitials(user)}
+                      </div>
+                      <ChevronDown className="h-3.5 w-3.5 text-muted-foreground shrink-0" />
+                    </button>
+                  </DropdownMenuTrigger>
+                  <DropdownMenuContent align="end" className="w-52">
+                    <DropdownMenuItem asChild>
+                      <Link href="/dashboard" className="flex items-center gap-2 cursor-pointer">
+                        <LayoutDashboard className="h-4 w-4" />
+                        {t.dashboard}
+                      </Link>
+                    </DropdownMenuItem>
+                    <DropdownMenuItem asChild>
+                      <Link href="/profil" className="flex items-center gap-2 cursor-pointer">
+                        <UserIcon className="h-4 w-4" />
+                        {t.myProfile}
+                      </Link>
+                    </DropdownMenuItem>
+                    <DropdownMenuSeparator />
+                    <DropdownMenuItem
+                      onClick={handleLogout}
+                      className="flex items-center gap-2 cursor-pointer text-destructive focus:text-destructive"
+                    >
+                      <LogOut className="h-4 w-4" />
+                      {t.logout}
+                    </DropdownMenuItem>
+                  </DropdownMenuContent>
+                </DropdownMenu>
 
               </>
             ) : (

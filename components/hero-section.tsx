@@ -88,7 +88,7 @@ export function HeroSection() {
           {/* Main Headline — Playfair Display */}
           <h1
             className="font-display font-black text-[2.6rem] sm:text-[3.8rem] md:text-[5rem] lg:text-[5.8rem] leading-[1.06] tracking-tight text-foreground mb-7 text-balance animate-fade-in-up"
-            style={{ animationDelay: "60ms" }}
+            style={{ animationDelay: "60ms", userSelect: "none", WebkitUserSelect: "none" }}
           >
             {t.headline1}{" "}
             <span className="text-primary relative inline-block">

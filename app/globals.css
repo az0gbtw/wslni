@@ -76,8 +76,8 @@
 }
 
 @theme inline {
-  --font-sans: var(--font-outfit), system-ui, sans-serif;
-  --font-display: var(--font-cormorant), Georgia, serif;
+  --font-sans: var(--font-jakarta), system-ui, sans-serif;
+  --font-display: var(--font-baskerville), Georgia, serif;
   --font-arabic: 'Cairo', system-ui, sans-serif;
   --font-mono: 'Geist Mono', 'Geist Mono Fallback';
   --color-background: var(--background);
