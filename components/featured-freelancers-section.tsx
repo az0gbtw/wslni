@@ -33,12 +33,12 @@ export function FeaturedFreelancersSection() {
   return (
     <section
       ref={sectionRef as React.RefObject<HTMLElement>}
-      className="py-12 md:py-28 bg-background overflow-hidden"
+      className="py-20 md:py-32 bg-background overflow-hidden"
     >
       <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
-        <div className="reveal flex flex-col sm:flex-row sm:items-end sm:justify-between gap-4 mb-10" style={{ transitionDelay: "0ms" }}>
+        <div className="reveal flex flex-col sm:flex-row sm:items-end sm:justify-between gap-4 mb-12" style={{ transitionDelay: "0ms" }}>
           <div>
-            <h2 className="text-3xl sm:text-4xl font-bold text-foreground mb-2 text-balance">
+            <h2 className="font-display font-black text-3xl sm:text-4xl md:text-5xl text-foreground mb-2 text-balance leading-tight">
               {t.title}
             </h2>
             <p className="text-lg text-muted-foreground">
@@ -70,7 +70,7 @@ export function FeaturedFreelancersSection() {
 
         <div
           ref={scrollContainerRef}
-          className="flex gap-5 overflow-x-auto pt-4 pb-4 -mx-4 px-4 -mt-4 scrollbar-hide snap-x snap-mandatory"
+          className="flex gap-5 overflow-x-auto pt-4 pb-6 -mx-4 px-4 -mt-4 scrollbar-hide snap-x snap-mandatory"
           style={{ scrollbarWidth: "none", msOverflowStyle: "none" }}
         >
           {freelancers.map((freelancer, index) => (
@@ -79,15 +79,15 @@ export function FeaturedFreelancersSection() {
               className="reveal flex-shrink-0 w-72 snap-start overflow-visible"
               style={{ transitionDelay: `${(index + 1) * 90}ms` }}
             >
-              <div className="group relative bg-card rounded-2xl border border-border p-5 shadow-sm hover:shadow-xl hover:border-primary/30 transition-all duration-300 hover:-translate-y-1.5 cursor-pointer overflow-visible">
+              <div className="group relative bg-gradient-to-br from-card via-card to-secondary/40 rounded-2xl border border-border/60 p-6 shadow-sm hover:shadow-xl hover:shadow-primary/8 hover:border-primary/25 transition-all duration-300 hover:-translate-y-2 cursor-pointer overflow-visible">
                 {freelancer.rating === 5.0 && (
-                  <div className="absolute -top-2 end-3 px-2 py-1 bg-primary text-primary-foreground text-xs font-medium rounded-full z-10">
+                  <div className="absolute -top-2.5 end-4 px-3 py-1 bg-primary text-primary-foreground text-xs font-bold rounded-full z-10 shadow-sm shadow-primary/30">
                     Top Rated
                   </div>
                 )}
 
-                <div className="flex items-start gap-4 mb-4">
-                  <div className={`w-14 h-14 rounded-xl bg-gradient-to-br ${freelancer.gradient} flex items-center justify-center text-white font-semibold text-lg shadow-lg`}>
+                <div className="flex items-start gap-4 mb-5">
+                  <div className={`w-14 h-14 rounded-xl bg-gradient-to-br ${freelancer.gradient} flex items-center justify-center text-white font-bold text-base shadow-lg`}>
                     {freelancer.avatar}
                   </div>
                   <div className="flex-1 min-w-0">
@@ -96,27 +96,27 @@ export function FeaturedFreelancersSection() {
                   </div>
                 </div>
 
-                <div className="flex items-center gap-2 mb-4">
+                <div className="flex items-center gap-2 mb-5">
                   <div className="flex items-center gap-1">
                     <Star className="w-4 h-4 text-amber-400 fill-amber-400" />
-                    <span className="font-medium text-foreground">{freelancer.rating}</span>
+                    <span className="font-semibold text-foreground">{freelancer.rating}</span>
                   </div>
                   <span className="text-sm text-muted-foreground">
                     ({freelancer.reviews} {t.reviews})
                   </span>
                 </div>
 
-                <div className="flex items-center justify-between pt-4 border-t border-border">
+                <div className="flex items-center justify-between pt-4 border-t border-border/50">
                   <div>
-                    <p className="text-xs text-muted-foreground">{t.from}</p>
-                    <p className="text-lg font-bold text-primary">
-                      {freelancer.price} <span className="text-sm font-normal">DH</span>
+                    <p className="text-xs text-muted-foreground mb-0.5">{t.from}</p>
+                    <p className="text-xl font-black text-primary font-display">
+                      {freelancer.price} <span className="text-sm font-normal text-muted-foreground">DH</span>
                     </p>
                   </div>
                   <Button
                     size="sm"
                     variant="outline"
-                    className="border-primary/30 text-primary hover:bg-primary hover:text-primary-foreground hover:scale-[1.02] transition-all duration-200"
+                    className="border-primary/25 text-primary hover:bg-primary hover:text-primary-foreground hover:border-primary hover:scale-[1.03] transition-all duration-200 rounded-full"
                   >
                     {t.viewProfile}
                   </Button>

@@ -24,10 +24,29 @@ export function TrustBannerSection() {
   return (
     <section
       ref={sectionRef as React.RefObject<HTMLElement>}
-      className="py-16 md:py-20 bg-primary text-primary-foreground"
+      className="relative py-20 md:py-28 bg-primary text-primary-foreground overflow-hidden"
     >
-      <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-8 md:gap-12">
+      {/* Subtle zellige overlay on trust banner */}
+      <div className="absolute inset-0 pointer-events-none" aria-hidden="true">
+        <svg width="100%" height="100%" xmlns="http://www.w3.org/2000/svg" className="absolute inset-0">
+          <defs>
+            <pattern id="zellige-trust" x="0" y="0" width="48" height="48" patternUnits="userSpaceOnUse">
+              <path d="M24 2 L46 24 L24 46 L2 24 Z" fill="none" stroke="white" strokeWidth="0.5" />
+              <circle cx="24" cy="24" r="1.5" fill="white" />
+              <circle cx="0" cy="0" r="0.8" fill="white" />
+              <circle cx="48" cy="0" r="0.8" fill="white" />
+              <circle cx="0" cy="48" r="0.8" fill="white" />
+              <circle cx="48" cy="48" r="0.8" fill="white" />
+            </pattern>
+          </defs>
+          <rect width="100%" height="100%" fill="url(#zellige-trust)" opacity="0.06" />
+        </svg>
+        {/* Gradient vignette */}
+        <div className="absolute inset-0 bg-gradient-to-br from-black/15 via-transparent to-black/10" />
+      </div>
+
+      <div className="relative z-10 mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-8 md:gap-16">
           {statCounters.map((stat, index) => {
             const Icon = statIcons[index]
             return (
@@ -36,17 +55,17 @@ export function TrustBannerSection() {
                 className="reveal flex flex-col items-center text-center group"
                 style={{ transitionDelay: `${index * 120}ms` }}
               >
-                <div className="mb-3 p-3 rounded-xl bg-white/10 group-hover:bg-white/20 transition-colors duration-300">
-                  <Icon className="w-6 h-6 md:w-7 md:h-7" />
+                <div className="mb-4 p-4 rounded-2xl bg-white/10 group-hover:bg-white/20 transition-colors duration-300 shadow-inner">
+                  <Icon className="w-7 h-7 md:w-8 md:h-8" />
                 </div>
-                <div className="text-2xl md:text-3xl font-bold mb-1">
+                <div className="font-display font-black text-3xl md:text-4xl mb-1.5">
                   {stat.static ? (
                     stat.static
                   ) : (
                     <CountUp to={stat.to} suffix={stat.suffix} decimals={stat.decimals} duration={1400} />
                   )}
                 </div>
-                <div className="text-sm md:text-base text-primary-foreground/80">
+                <div className="text-sm md:text-base text-primary-foreground/75 font-medium">
                   {statLabels[index]}
                 </div>
               </div>

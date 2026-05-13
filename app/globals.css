@@ -5,25 +5,25 @@
 
 :root {
   /* Wslni.ma Moroccan Color Palette */
-  --background: oklch(0.99 0.002 90); /* Off-white with warm undertone */
-  --foreground: oklch(0.18 0.01 285); /* Deep charcoal #1C1C1E */
+  --background: oklch(0.978 0.009 83); /* Warm off-white #FAF7F2 */
+  --foreground: oklch(0.11 0.001 0);  /* Near-black #1A1A1A */
   --card: oklch(1 0 0);
-  --card-foreground: oklch(0.18 0.01 285);
+  --card-foreground: oklch(0.11 0.001 0);
   --popover: oklch(1 0 0);
-  --popover-foreground: oklch(0.18 0.01 285);
-  --primary: oklch(0.48 0.18 25); /* Crimson red #C1121F */
-  --primary-foreground: oklch(0.99 0.002 90);
-  --secondary: oklch(0.95 0.02 85); /* Warm sand #F5ECD7 */
-  --secondary-foreground: oklch(0.18 0.01 285);
-  --muted: oklch(0.95 0.02 85);
-  --muted-foreground: oklch(0.45 0.01 285);
-  --accent: oklch(0.95 0.02 85);
-  --accent-foreground: oklch(0.18 0.01 285);
-  --destructive: oklch(0.48 0.18 25);
-  --destructive-foreground: oklch(0.99 0.002 90);
-  --border: oklch(0.90 0.02 85);
-  --input: oklch(0.90 0.02 85);
-  --ring: oklch(0.48 0.18 25);
+  --popover-foreground: oklch(0.11 0.001 0);
+  --primary: oklch(0.528 0.212 26);   /* Deep crimson #DC2626 */
+  --primary-foreground: oklch(0.978 0.009 83);
+  --secondary: oklch(0.94 0.022 85);  /* Warm sand */
+  --secondary-foreground: oklch(0.11 0.001 0);
+  --muted: oklch(0.94 0.022 85);
+  --muted-foreground: oklch(0.44 0.012 285);
+  --accent: oklch(0.94 0.022 85);
+  --accent-foreground: oklch(0.11 0.001 0);
+  --destructive: oklch(0.528 0.212 26);
+  --destructive-foreground: oklch(0.978 0.009 83);
+  --border: oklch(0.87 0.016 80);
+  --input: oklch(0.87 0.016 80);
+  --ring: oklch(0.528 0.212 26);
   --chart-1: oklch(0.48 0.18 25);
   --chart-2: oklch(0.60 0.12 85);
   --chart-3: oklch(0.40 0.08 285);
@@ -77,6 +77,7 @@
 
 @theme inline {
   --font-sans: 'Inter', 'Inter Fallback', system-ui, sans-serif;
+  --font-display: var(--font-playfair), Georgia, 'Times New Roman', serif;
   --font-arabic: 'Cairo', system-ui, sans-serif;
   --font-mono: 'Geist Mono', 'Geist Mono Fallback';
   --color-background: var(--background);
@@ -175,6 +176,11 @@
   transform: translateY(0);
 }
 
+/* Hero parallax layer */
+.parallax-hero {
+  will-change: transform;
+}
+
 /* Reduced motion: disable all custom animations */
 @media (prefers-reduced-motion: reduce) {
   .animate-fade-in-up {
@@ -189,6 +195,10 @@
   .animate-float,
   .animate-pulse-subtle {
     animation: none;
+  }
+  .parallax-hero {
+    will-change: auto;
+    transform: none !important;
   }
 }
 

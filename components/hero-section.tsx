@@ -1,5 +1,6 @@
 "use client"
 
+import { useRef, useEffect } from "react"
 import { Button } from "@/components/ui/button"
 import { ArrowRight, Sparkles } from "lucide-react"
 import { useRouter } from "next/navigation"
@@ -8,50 +9,23 @@ import { translations } from "@/lib/translations"
 import { createClient } from "@/lib/supabase/client"
 import { CountUp } from "@/components/count-up"
 
-function ZelligePattern() {
-  return (
-    <div className="absolute inset-0 overflow-hidden pointer-events-none">
-      <svg
-        className="absolute -end-20 top-20 w-96 h-96 opacity-10 animate-float"
-        viewBox="0 0 200 200"
-        fill="none"
-      >
-        <path
-          d="M100 0L117.32 50L170.71 50L127.69 80.9L145.04 130.9L100 100L54.96 130.9L72.31 80.9L29.29 50L82.68 50L100 0Z"
-          fill="currentColor"
-          className="text-primary"
-        />
-      </svg>
-      <svg
-        className="absolute start-10 bottom-10 w-64 h-64 opacity-8"
-        viewBox="0 0 100 100"
-        fill="none"
-        style={{ animationDelay: "1s" }}
-      >
-        <rect
-          x="10"
-          y="10"
-          width="80"
-          height="80"
-          rx="4"
-          fill="currentColor"
-          className="text-secondary"
-          transform="rotate(45 50 50)"
-        />
-      </svg>
-      <div className="absolute end-1/4 top-1/3 w-3 h-3 bg-primary/20 rotate-45 animate-pulse-subtle" />
-      <div className="absolute start-1/3 top-1/4 w-2 h-2 bg-primary/30 rotate-45" style={{ animationDelay: "0.5s" }} />
-      <div className="absolute end-1/3 bottom-1/4 w-4 h-4 border-2 border-primary/20 rotate-45" />
-      <div className="absolute top-0 start-0 w-full h-32 bg-gradient-to-b from-secondary/50 to-transparent" />
-      <div className="absolute bottom-0 start-0 w-full h-32 bg-gradient-to-t from-background to-transparent" />
-    </div>
-  )
-}
-
 export function HeroSection() {
   const { lang } = useLanguage()
   const t = translations[lang].hero
   const router = useRouter()
+  const parallaxRef = useRef<HTMLDivElement>(null)
+
+  useEffect(() => {
+    const mq = window.matchMedia("(prefers-reduced-motion: reduce)")
+    if (mq.matches) return
+    function onScroll() {
+      if (parallaxRef.current) {
+        parallaxRef.current.style.transform = `translateY(${window.scrollY * 0.22}px)`
+      }
+    }
+    window.addEventListener("scroll", onScroll, { passive: true })
+    return () => window.removeEventListener("scroll", onScroll)
+  }, [])
 
   async function handleOfferServices() {
     const supabase = createClient()
@@ -64,29 +38,60 @@ export function HeroSection() {
   }
 
   return (
-    <section className="relative min-h-[90vh] flex items-center justify-center bg-gradient-to-br from-secondary via-background to-secondary/30 pt-16">
-      <ZelligePattern />
+    <section className="relative min-h-[92vh] flex items-center justify-center bg-background overflow-hidden pt-16">
 
-      <div className="relative z-10 mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 py-8 md:py-24">
+      {/* Zellige background pattern — parallax layer */}
+      <div
+        ref={parallaxRef}
+        className="parallax-hero absolute pointer-events-none"
+        aria-hidden="true"
+        style={{ top: "-20%", bottom: "-20%", left: 0, right: 0 }}
+      >
+        <svg width="100%" height="100%" xmlns="http://www.w3.org/2000/svg" className="absolute inset-0">
+          <defs>
+            <pattern id="zellige-hero" x="0" y="0" width="64" height="64" patternUnits="userSpaceOnUse">
+              {/* Outer diamond */}
+              <path d="M32 2 L62 32 L32 62 L2 32 Z" fill="none" stroke="#1A1A1A" strokeWidth="0.75" />
+              {/* Inner rotated square */}
+              <rect x="16" y="16" width="32" height="32" fill="none" stroke="#1A1A1A" strokeWidth="0.4" transform="rotate(45 32 32)" />
+              {/* Center jewel */}
+              <circle cx="32" cy="32" r="2" fill="#1A1A1A" />
+              {/* Corner connectors */}
+              <circle cx="0" cy="0" r="1.2" fill="#1A1A1A" />
+              <circle cx="64" cy="0" r="1.2" fill="#1A1A1A" />
+              <circle cx="0" cy="64" r="1.2" fill="#1A1A1A" />
+              <circle cx="64" cy="64" r="1.2" fill="#1A1A1A" />
+            </pattern>
+          </defs>
+          <rect width="100%" height="100%" fill="url(#zellige-hero)" opacity="0.026" />
+        </svg>
+        {/* Atmospheric glow — top-end crimson */}
+        <div className="absolute -top-32 -end-32 w-[600px] h-[600px] rounded-full bg-primary/6 blur-3xl" />
+        {/* Atmospheric glow — bottom-start warm */}
+        <div className="absolute -bottom-32 -start-32 w-[500px] h-[500px] rounded-full bg-amber-400/5 blur-3xl" />
+      </div>
+
+      <div className="relative z-10 mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 py-12 md:py-28">
         <div className="text-center max-w-4xl mx-auto">
+
           {/* Badge */}
           <div
-            className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-primary/10 border border-primary/20 mb-8 animate-fade-in-up"
+            className="inline-flex items-center gap-2 px-5 py-2.5 rounded-full bg-primary/8 border border-primary/15 mb-10 animate-fade-in-up"
             style={{ animationDelay: "0ms" }}
           >
             <Sparkles className="w-4 h-4 text-primary" />
-            <span className="text-sm font-medium text-primary">
+            <span className="text-xs font-bold tracking-widest text-primary uppercase">
               {t.badge}
             </span>
           </div>
 
-          {/* Main Headline */}
+          {/* Main Headline — Playfair Display */}
           <h1
-            className="text-3xl sm:text-5xl md:text-6xl lg:text-7xl font-bold tracking-tight text-foreground mb-5 sm:mb-6 text-balance animate-fade-in-up"
+            className="font-display font-black text-[2.6rem] sm:text-[3.8rem] md:text-[5rem] lg:text-[5.8rem] leading-[1.06] tracking-tight text-foreground mb-7 text-balance animate-fade-in-up"
             style={{ animationDelay: "160ms" }}
           >
             {t.headline1}{" "}
-            <span className="text-primary relative">
+            <span className="text-primary relative inline-block">
               {t.headline2}
               <svg
                 className="absolute -bottom-2 start-0 w-full h-3 text-primary/30"
@@ -103,12 +108,14 @@ export function HeroSection() {
               </svg>
             </span>
             <br />
-            <span className="text-muted-foreground">{t.headline3}</span>
+            <span className="text-foreground/35 text-[1.8rem] sm:text-[2.6rem] md:text-[3.2rem] lg:text-[3.8rem] font-bold tracking-wide">
+              {t.headline3}
+            </span>
           </h1>
 
           {/* Subtext */}
           <p
-            className="text-base sm:text-xl text-muted-foreground max-w-2xl mx-auto mb-8 sm:mb-10 text-pretty animate-fade-in-up"
+            className="text-base sm:text-xl text-muted-foreground max-w-2xl mx-auto mb-11 sm:mb-14 text-pretty leading-relaxed animate-fade-in-up"
             style={{ animationDelay: "310ms" }}
           >
             {t.subtext}
@@ -121,7 +128,7 @@ export function HeroSection() {
           >
             <Button
               size="lg"
-              className="w-full sm:w-auto text-base px-8 py-4 sm:py-6 bg-primary hover:bg-primary/90 text-primary-foreground shadow-lg shadow-primary/20 hover:shadow-xl hover:shadow-primary/30 hover:scale-[1.02] transition-all duration-300 group"
+              className="w-full sm:w-auto text-base px-9 h-14 bg-primary hover:bg-primary/90 text-primary-foreground shadow-lg shadow-primary/25 hover:shadow-xl hover:shadow-primary/35 hover:scale-[1.02] transition-all duration-300 group font-semibold rounded-full"
               onClick={() => router.push("/services")}
             >
               {t.ctaFind}
@@ -130,54 +137,56 @@ export function HeroSection() {
             <Button
               size="lg"
               variant="outline"
-              className="w-full sm:w-auto text-base px-8 py-4 sm:py-6 border-2 border-foreground/20 hover:border-primary hover:text-primary hover:scale-[1.02] transition-all duration-300"
+              className="w-full sm:w-auto text-base px-9 h-14 border-2 border-foreground/15 hover:border-primary hover:text-primary hover:bg-primary/4 hover:scale-[1.02] transition-all duration-300 font-semibold rounded-full"
               onClick={handleOfferServices}
             >
               {t.ctaOffer}
             </Button>
           </div>
 
-          {/* Stats row with count-up */}
+          {/* Stats row */}
           <div
-            className="mt-8 sm:mt-14 flex flex-wrap items-center justify-center gap-4 sm:gap-8 text-sm text-muted-foreground animate-fade-in-up"
+            className="mt-14 sm:mt-20 flex flex-wrap items-center justify-center gap-6 sm:gap-12 animate-fade-in-up"
             style={{ animationDelay: "620ms" }}
           >
-            <div className="flex items-center gap-2">
-              <div className="flex -space-x-2 rtl:space-x-reverse">
+            <div className="flex items-center gap-3">
+              <div className="flex -space-x-2.5 rtl:space-x-reverse">
                 {[1, 2, 3, 4].map((i) => (
                   <div
                     key={i}
-                    className="w-8 h-8 rounded-full bg-gradient-to-br from-primary/80 to-primary border-2 border-background flex items-center justify-center text-xs font-medium text-primary-foreground"
+                    className="w-9 h-9 rounded-full bg-gradient-to-br from-primary/70 to-primary border-2 border-background flex items-center justify-center text-xs font-bold text-primary-foreground shadow-sm"
                   >
                     {String.fromCharCode(64 + i)}
                   </div>
                 ))}
               </div>
-              <span>
-                +<CountUp to={12000} duration={1800} />
-                {" "}{t.freelancesLabel}
-              </span>
+              <div className="text-start rtl:text-end">
+                <div className="text-sm font-bold text-foreground">
+                  +<CountUp to={12000} duration={1800} />
+                </div>
+                <div className="text-xs text-muted-foreground">{t.freelancesLabel}</div>
+              </div>
             </div>
-            <div className="hidden sm:block w-px h-6 bg-border" />
-            <div className="flex items-center gap-2">
+
+            <div className="hidden sm:block w-px h-10 bg-border" />
+
+            <div className="flex items-center gap-3">
               <div className="flex">
                 {[1, 2, 3, 4, 5].map((i) => (
-                  <svg
-                    key={i}
-                    className="w-4 h-4 text-amber-400"
-                    fill="currentColor"
-                    viewBox="0 0 20 20"
-                  >
+                  <svg key={i} className="w-4 h-4 text-amber-400" fill="currentColor" viewBox="0 0 20 20">
                     <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z" />
                   </svg>
                 ))}
               </div>
-              <span>
-                <CountUp to={4.9} decimals={1} duration={1600} />/5
-                {" "}{t.satisfactionLabel}
-              </span>
+              <div className="text-start rtl:text-end">
+                <div className="text-sm font-bold text-foreground">
+                  <CountUp to={4.9} decimals={1} duration={1600} />/5
+                </div>
+                <div className="text-xs text-muted-foreground">{t.satisfactionLabel}</div>
+              </div>
             </div>
           </div>
+
         </div>
       </div>
     </section>

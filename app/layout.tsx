@@ -1,5 +1,5 @@
 import type { Metadata, Viewport } from 'next'
-import { Inter, Cairo } from 'next/font/google'
+import { Inter, Cairo, Playfair_Display } from 'next/font/google'
 import { Analytics } from '@vercel/analytics/next'
 import { Providers } from '@/components/providers'
 import './globals.css'
@@ -13,6 +13,13 @@ const cairo = Cairo({
   subsets: ["arabic", "latin"],
   variable: '--font-cairo',
   display: 'swap',
+})
+
+const playfair = Playfair_Display({
+  subsets: ["latin"],
+  variable: '--font-playfair',
+  display: 'swap',
+  weight: ['700', '800', '900'],
 })
 
 export const metadata: Metadata = {
@@ -40,7 +47,7 @@ export const metadata: Metadata = {
 }
 
 export const viewport: Viewport = {
-  themeColor: '#C1121F',
+  themeColor: '#DC2626',
   width: 'device-width',
   initialScale: 1,
 }
@@ -52,7 +59,7 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="fr" className="bg-background" suppressHydrationWarning>
-      <body className={`${inter.variable} ${cairo.variable} font-sans antialiased`}>
+      <body className={`${inter.variable} ${cairo.variable} ${playfair.variable} font-sans antialiased`}>
         <Providers>
           {children}
         </Providers>
