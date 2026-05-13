@@ -1,25 +1,25 @@
 "use client"
 
-import { Users, Grid3X3, ShieldCheck, HeadphonesIcon } from "lucide-react"
+import { Users, Grid3X3 } from "lucide-react"
 import { useLanguage } from "@/lib/language-context"
 import { translations } from "@/lib/translations"
 import { CountUp } from "@/components/count-up"
 import { useScrollReveal } from "@/hooks/use-scroll-reveal"
 
-const statIcons = [Users, Grid3X3, ShieldCheck, HeadphonesIcon]
+interface TrustBannerSectionProps {
+  freelancerCount: number
+  serviceCount: number
+}
 
-const statCounters = [
-  { to: 12000, suffix: "+", decimals: 0, static: null },
-  { to: 50, suffix: "+", decimals: 0, static: null },
-  { to: 100, suffix: "%", decimals: 0, static: null },
-  { to: 0, suffix: "", decimals: 0, static: "7j/7" },
-]
-
-export function TrustBannerSection() {
+export function TrustBannerSection({ freelancerCount, serviceCount }: TrustBannerSectionProps) {
   const { lang } = useLanguage()
   const t = translations[lang].trust
-  const statLabels = [t.freelances, t.categories, t.securePay, t.support]
   const sectionRef = useScrollReveal(0.1)
+
+  const stats = [
+    { icon: Users, to: freelancerCount, suffix: "", label: t.freelances },
+    { icon: Grid3X3, to: serviceCount, suffix: "", label: t.categories },
+  ]
 
   return (
     <section
@@ -46,9 +46,9 @@ export function TrustBannerSection() {
       </div>
 
       <div className="relative z-10 mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-8 md:gap-16">
-          {statCounters.map((stat, index) => {
-            const Icon = statIcons[index]
+        <div className="grid grid-cols-2 max-w-2xl mx-auto gap-8 md:gap-24">
+          {stats.map((stat, index) => {
+            const Icon = stat.icon
             return (
               <div
                 key={index}
@@ -59,14 +59,10 @@ export function TrustBannerSection() {
                   <Icon className="w-7 h-7 md:w-8 md:h-8" />
                 </div>
                 <div className="font-display font-black text-3xl md:text-4xl mb-1.5">
-                  {stat.static ? (
-                    stat.static
-                  ) : (
-                    <CountUp to={stat.to} suffix={stat.suffix} decimals={stat.decimals} duration={1200} />
-                  )}
+                  <CountUp to={stat.to} suffix={stat.suffix} duration={1200} />
                 </div>
                 <div className="text-sm md:text-base text-primary-foreground/75 font-medium">
-                  {statLabels[index]}
+                  {stat.label}
                 </div>
               </div>
             )

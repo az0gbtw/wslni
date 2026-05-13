@@ -24,10 +24,8 @@ const fr = {
       "Des milliers de freelances qualifiés, prêts à travailler sur ton projet. Design, développement, marketing et bien plus.",
     ctaFind: "Je cherche un freelance",
     ctaOffer: "Je propose mes services",
-    freelancesActive: "+12,000 freelances actifs",
-    freelancesLabel: "freelances actifs",
-    satisfaction: "4.9/5 satisfaction client",
-    satisfactionLabel: "satisfaction client",
+    freelancesLabel: "freelances inscrits",
+    servicesLabel: "services disponibles",
   },
   categories: {
     title: "Explore nos catégories",
@@ -76,9 +74,7 @@ const fr = {
   },
   trust: {
     freelances: "Freelances",
-    categories: "Catégories",
-    securePay: "Paiement sécurisé",
-    support: "Support client",
+    categories: "Services",
   },
   footer: {
     tagline:
@@ -378,10 +374,8 @@ const ar: typeof fr = {
       "آلاف المستقلين المؤهلين، جاهزون للعمل على مشروعك. تصميم، تطوير، تسويق والمزيد.",
     ctaFind: "أبحث عن مستقل",
     ctaOffer: "أقدم خدماتي",
-    freelancesActive: "+12,000 مستقل نشط",
-    freelancesLabel: "مستقل نشط",
-    satisfaction: "4.9/5 رضا العملاء",
-    satisfactionLabel: "رضا العملاء",
+    freelancesLabel: "مستقل مسجل",
+    servicesLabel: "خدمة متاحة",
   },
   categories: {
     title: "استكشف فئاتنا",
@@ -430,9 +424,7 @@ const ar: typeof fr = {
   },
   trust: {
     freelances: "مستقل",
-    categories: "فئة",
-    securePay: "دفع آمن",
-    support: "دعم العملاء",
+    categories: "خدمة",
   },
   footer: {
     tagline:
