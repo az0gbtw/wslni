@@ -5,6 +5,7 @@ import { Palette, Code2, TrendingUp, Video, PenTool, Music, Briefcase, Graduatio
 import { useLanguage } from "@/lib/language-context"
 import { translations } from "@/lib/translations"
 import { CATEGORY_GROUPS } from "@/lib/categories"
+import { useScrollReveal } from "@/hooks/use-scroll-reveal"
 
 const GROUP_ICONS = [Palette, Code2, TrendingUp, Video, PenTool, Music, Briefcase, GraduationCap, Sparkles]
 
@@ -23,12 +24,16 @@ const GROUP_COLORS = [
 export function CategoriesSection() {
   const { lang } = useLanguage()
   const t = translations[lang].categories
+  const sectionRef = useScrollReveal(0.05)
 
   return (
-    <section className="py-12 md:py-28 bg-background">
+    <section
+      ref={sectionRef as React.RefObject<HTMLElement>}
+      className="py-12 md:py-28 bg-background"
+    >
       <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
         {/* Section Header */}
-        <div className="text-center mb-8 md:mb-14">
+        <div className="text-center mb-8 md:mb-14 reveal" style={{ transitionDelay: "0ms" }}>
           <h2 className="text-2xl sm:text-4xl font-bold text-foreground mb-3 text-balance">
             {t.title}
           </h2>
@@ -47,7 +52,8 @@ export function CategoriesSection() {
               <Link
                 key={group.value}
                 href={`/services?group=${group.value}`}
-                className={`group relative flex flex-col items-center justify-center p-4 md:p-6 rounded-xl ${color} border border-transparent hover:border-current/20 transition-all duration-300 hover:scale-[1.02] hover:shadow-lg cursor-pointer`}
+                className={`reveal group relative flex flex-col items-center justify-center p-4 md:p-6 rounded-xl ${color} border border-transparent hover:border-current/20 transition-all duration-300 hover:scale-[1.02] hover:shadow-md cursor-pointer`}
+                style={{ transitionDelay: `${(index + 1) * 70}ms` }}
               >
                 <div className="mb-3 p-3 rounded-lg bg-white/60 group-hover:bg-white/80 transition-colors">
                   <Icon className="w-6 h-6 md:w-7 md:h-7 transition-transform duration-200 group-hover:scale-110" />
@@ -61,7 +67,7 @@ export function CategoriesSection() {
         </div>
 
         {/* View All Link */}
-        <div className="text-center mt-10">
+        <div className="text-center mt-10 reveal" style={{ transitionDelay: "720ms" }}>
           <Link href="/services" className="inline-flex items-center gap-2 text-primary font-medium hover:underline underline-offset-4 transition-all">
             {t.viewAll}
             <svg className="w-4 h-4 rtl:rotate-180" fill="none" stroke="currentColor" viewBox="0 0 24 24">

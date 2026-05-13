@@ -5,6 +5,7 @@ import { Star, ChevronLeft, ChevronRight } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { useLanguage } from "@/lib/language-context"
 import { translations } from "@/lib/translations"
+import { useScrollReveal } from "@/hooks/use-scroll-reveal"
 
 const freelancers = [
   { name: "Yasmine B.", skill: "UI/UX Design", rating: 4.9, reviews: 127, price: 250, avatar: "YB", gradient: "from-rose-400 to-pink-500" },
@@ -19,6 +20,7 @@ export function FeaturedFreelancersSection() {
   const { lang } = useLanguage()
   const t = translations[lang].featured
   const scrollContainerRef = useRef<HTMLDivElement>(null)
+  const sectionRef = useScrollReveal(0.08)
 
   const scroll = (direction: "left" | "right") => {
     if (scrollContainerRef.current) {
@@ -29,9 +31,12 @@ export function FeaturedFreelancersSection() {
   }
 
   return (
-    <section className="py-12 md:py-28 bg-background overflow-hidden">
+    <section
+      ref={sectionRef as React.RefObject<HTMLElement>}
+      className="py-12 md:py-28 bg-background overflow-hidden"
+    >
       <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
-        <div className="flex flex-col sm:flex-row sm:items-end sm:justify-between gap-4 mb-10">
+        <div className="reveal flex flex-col sm:flex-row sm:items-end sm:justify-between gap-4 mb-10" style={{ transitionDelay: "0ms" }}>
           <div>
             <h2 className="text-3xl sm:text-4xl font-bold text-foreground mb-2 text-balance">
               {t.title}
@@ -69,8 +74,12 @@ export function FeaturedFreelancersSection() {
           style={{ scrollbarWidth: "none", msOverflowStyle: "none" }}
         >
           {freelancers.map((freelancer, index) => (
-            <div key={index} className="flex-shrink-0 w-72 snap-start group overflow-visible">
-              <div className="relative bg-card rounded-2xl border border-border p-5 shadow-sm hover:shadow-2xl hover:border-primary/30 transition-all duration-200 hover:-translate-y-2 cursor-pointer overflow-visible">
+            <div
+              key={index}
+              className="reveal flex-shrink-0 w-72 snap-start overflow-visible"
+              style={{ transitionDelay: `${(index + 1) * 90}ms` }}
+            >
+              <div className="group relative bg-card rounded-2xl border border-border p-5 shadow-sm hover:shadow-xl hover:border-primary/30 transition-all duration-300 hover:-translate-y-1.5 cursor-pointer overflow-visible">
                 {freelancer.rating === 5.0 && (
                   <div className="absolute -top-2 end-3 px-2 py-1 bg-primary text-primary-foreground text-xs font-medium rounded-full z-10">
                     Top Rated
@@ -107,7 +116,7 @@ export function FeaturedFreelancersSection() {
                   <Button
                     size="sm"
                     variant="outline"
-                    className="border-primary/30 text-primary hover:bg-primary hover:text-primary-foreground transition-colors"
+                    className="border-primary/30 text-primary hover:bg-primary hover:text-primary-foreground hover:scale-[1.02] transition-all duration-200"
                   >
                     {t.viewProfile}
                   </Button>

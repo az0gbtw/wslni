@@ -6,6 +6,7 @@ import { useRouter } from "next/navigation"
 import { useLanguage } from "@/lib/language-context"
 import { translations } from "@/lib/translations"
 import { createClient } from "@/lib/supabase/client"
+import { CountUp } from "@/components/count-up"
 
 function ZelligePattern() {
   return (
@@ -69,7 +70,10 @@ export function HeroSection() {
       <div className="relative z-10 mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 py-8 md:py-24">
         <div className="text-center max-w-4xl mx-auto">
           {/* Badge */}
-          <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-primary/10 border border-primary/20 mb-8 animate-fade-in">
+          <div
+            className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-primary/10 border border-primary/20 mb-8 animate-fade-in-up"
+            style={{ animationDelay: "0ms" }}
+          >
             <Sparkles className="w-4 h-4 text-primary" />
             <span className="text-sm font-medium text-primary">
               {t.badge}
@@ -77,7 +81,10 @@ export function HeroSection() {
           </div>
 
           {/* Main Headline */}
-          <h1 className="text-3xl sm:text-5xl md:text-6xl lg:text-7xl font-bold tracking-tight text-foreground mb-5 sm:mb-6 text-balance">
+          <h1
+            className="text-3xl sm:text-5xl md:text-6xl lg:text-7xl font-bold tracking-tight text-foreground mb-5 sm:mb-6 text-balance animate-fade-in-up"
+            style={{ animationDelay: "160ms" }}
+          >
             {t.headline1}{" "}
             <span className="text-primary relative">
               {t.headline2}
@@ -100,15 +107,21 @@ export function HeroSection() {
           </h1>
 
           {/* Subtext */}
-          <p className="text-base sm:text-xl text-muted-foreground max-w-2xl mx-auto mb-8 sm:mb-10 text-pretty">
+          <p
+            className="text-base sm:text-xl text-muted-foreground max-w-2xl mx-auto mb-8 sm:mb-10 text-pretty animate-fade-in-up"
+            style={{ animationDelay: "310ms" }}
+          >
             {t.subtext}
           </p>
 
           {/* CTA Buttons */}
-          <div className="flex flex-col sm:flex-row items-center justify-center gap-4">
+          <div
+            className="flex flex-col sm:flex-row items-center justify-center gap-4 animate-fade-in-up"
+            style={{ animationDelay: "460ms" }}
+          >
             <Button
               size="lg"
-              className="w-full sm:w-auto text-base px-8 py-4 sm:py-6 bg-primary hover:bg-primary/90 text-primary-foreground shadow-lg shadow-primary/20 hover:shadow-xl hover:shadow-primary/30 transition-all duration-300 group"
+              className="w-full sm:w-auto text-base px-8 py-4 sm:py-6 bg-primary hover:bg-primary/90 text-primary-foreground shadow-lg shadow-primary/20 hover:shadow-xl hover:shadow-primary/30 hover:scale-[1.02] transition-all duration-300 group"
               onClick={() => router.push("/services")}
             >
               {t.ctaFind}
@@ -117,15 +130,18 @@ export function HeroSection() {
             <Button
               size="lg"
               variant="outline"
-              className="w-full sm:w-auto text-base px-8 py-4 sm:py-6 border-2 border-foreground/20 hover:border-primary hover:text-primary transition-all duration-300"
+              className="w-full sm:w-auto text-base px-8 py-4 sm:py-6 border-2 border-foreground/20 hover:border-primary hover:text-primary hover:scale-[1.02] transition-all duration-300"
               onClick={handleOfferServices}
             >
               {t.ctaOffer}
             </Button>
           </div>
 
-          {/* Trust indicators */}
-          <div className="mt-8 sm:mt-14 flex flex-wrap items-center justify-center gap-4 sm:gap-8 text-sm text-muted-foreground">
+          {/* Stats row with count-up */}
+          <div
+            className="mt-8 sm:mt-14 flex flex-wrap items-center justify-center gap-4 sm:gap-8 text-sm text-muted-foreground animate-fade-in-up"
+            style={{ animationDelay: "620ms" }}
+          >
             <div className="flex items-center gap-2">
               <div className="flex -space-x-2 rtl:space-x-reverse">
                 {[1, 2, 3, 4].map((i) => (
@@ -137,7 +153,10 @@ export function HeroSection() {
                   </div>
                 ))}
               </div>
-              <span>{t.freelancesActive}</span>
+              <span>
+                +<CountUp to={12000} duration={1800} />
+                {" "}{t.freelancesLabel}
+              </span>
             </div>
             <div className="hidden sm:block w-px h-6 bg-border" />
             <div className="flex items-center gap-2">
@@ -153,7 +172,10 @@ export function HeroSection() {
                   </svg>
                 ))}
               </div>
-              <span>{t.satisfaction}</span>
+              <span>
+                <CountUp to={4.9} decimals={1} duration={1600} />/5
+                {" "}{t.satisfactionLabel}
+              </span>
             </div>
           </div>
         </div>

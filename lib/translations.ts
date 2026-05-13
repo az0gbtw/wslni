@@ -25,7 +25,9 @@ const fr = {
     ctaFind: "Je cherche un freelance",
     ctaOffer: "Je propose mes services",
     freelancesActive: "+12,000 freelances actifs",
+    freelancesLabel: "freelances actifs",
     satisfaction: "4.9/5 satisfaction client",
+    satisfactionLabel: "satisfaction client",
   },
   categories: {
     title: "Explore nos catégories",
@@ -377,7 +379,9 @@ const ar: typeof fr = {
     ctaFind: "أبحث عن مستقل",
     ctaOffer: "أقدم خدماتي",
     freelancesActive: "+12,000 مستقل نشط",
+    freelancesLabel: "مستقل نشط",
     satisfaction: "4.9/5 رضا العملاء",
+    satisfactionLabel: "رضا العملاء",
   },
   categories: {
     title: "استكشف فئاتنا",

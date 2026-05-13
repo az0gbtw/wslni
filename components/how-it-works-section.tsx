@@ -3,6 +3,7 @@
 import { FileText, Users, CheckCircle } from "lucide-react"
 import { useLanguage } from "@/lib/language-context"
 import { translations } from "@/lib/translations"
+import { useScrollReveal } from "@/hooks/use-scroll-reveal"
 
 const stepIcons = [FileText, Users, CheckCircle]
 const stepNumbers = ["01", "02", "03"]
@@ -10,12 +11,16 @@ const stepNumbers = ["01", "02", "03"]
 export function HowItWorksSection() {
   const { lang } = useLanguage()
   const t = translations[lang].howItWorks
+  const sectionRef = useScrollReveal(0.1)
 
   return (
-    <section className="py-20 md:py-28 bg-secondary/50">
+    <section
+      ref={sectionRef as React.RefObject<HTMLElement>}
+      className="py-20 md:py-28 bg-secondary/50"
+    >
       <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
         {/* Section Header */}
-        <div className="text-center mb-16">
+        <div className="text-center mb-16 reveal" style={{ transitionDelay: "0ms" }}>
           <h2 className="text-3xl sm:text-4xl font-bold text-foreground mb-4 text-balance">
             {t.title}
           </h2>
@@ -33,7 +38,8 @@ export function HowItWorksSection() {
             return (
               <div
                 key={index}
-                className="relative flex flex-col items-center text-center group"
+                className="reveal relative flex flex-col items-center text-center group"
+                style={{ transitionDelay: `${(index + 1) * 150}ms` }}
               >
                 <div className="absolute -top-4 start-1/2 -translate-x-1/2 text-6xl md:text-7xl font-bold text-primary/10 select-none">
                   {stepNumbers[index]}
