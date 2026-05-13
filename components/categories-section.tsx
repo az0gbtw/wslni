@@ -52,13 +52,13 @@ export function CategoriesSection() {
               <Link
                 key={group.value}
                 href={`/services?group=${group.value}`}
-                className={`reveal group relative flex flex-col items-center justify-center p-5 md:p-8 rounded-2xl bg-gradient-to-br ${color} border border-current/10 hover:border-current/25 transition-all duration-300 hover:scale-[1.03] hover:shadow-lg hover:shadow-current/10 cursor-pointer`}
+                className={`reveal category-card-hover group relative flex flex-col items-center justify-center p-5 md:p-8 rounded-2xl bg-gradient-to-br ${color} border border-current/10 hover:border-current/25 hover:shadow-lg hover:shadow-current/10 cursor-pointer`}
                 style={{ transitionDelay: `${(index + 1) * 70}ms` }}
               >
                 <div className="mb-4 p-3.5 rounded-xl bg-white/70 group-hover:bg-white/90 shadow-sm transition-all duration-200 group-hover:shadow-md">
                   <Icon className="w-6 h-6 md:w-7 md:h-7 transition-transform duration-200 group-hover:scale-110" />
                 </div>
-                <span className="text-xs md:text-sm font-semibold text-center leading-tight text-foreground/80 group-hover:text-foreground transition-colors">
+                <span className="font-display font-bold text-sm md:text-base text-center leading-tight text-foreground/80 group-hover:text-foreground transition-colors">
                   {label}
                 </span>
               </Link>

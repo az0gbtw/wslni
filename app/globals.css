@@ -76,8 +76,8 @@
 }
 
 @theme inline {
-  --font-sans: 'Inter', 'Inter Fallback', system-ui, sans-serif;
-  --font-display: var(--font-playfair), Georgia, 'Times New Roman', serif;
+  --font-sans: var(--font-outfit), system-ui, sans-serif;
+  --font-display: var(--font-cormorant), Georgia, serif;
   --font-arabic: 'Cairo', system-ui, sans-serif;
   --font-mono: 'Geist Mono', 'Geist Mono Fallback';
   --color-background: var(--background);
@@ -125,6 +125,11 @@
   body {
     @apply bg-background text-foreground;
   }
+  h1, h2, h3, h4 {
+    font-family: var(--font-display);
+    font-synthesis: none;
+    letter-spacing: -0.02em;
+  }
 }
 
 /* Zellige Pattern Animation */
@@ -150,7 +155,7 @@
 @keyframes fade-in-up {
   from {
     opacity: 0;
-    transform: translateY(22px);
+    transform: translateY(20px);
   }
   to {
     opacity: 1;
@@ -160,20 +165,52 @@
 
 .animate-fade-in-up {
   opacity: 0;
-  animation: fade-in-up 0.65s ease-out forwards;
+  animation: fade-in-up 0.4s cubic-bezier(0.16, 1, 0.3, 1) forwards;
 }
 
 /* Scroll-triggered reveal */
 .reveal {
   opacity: 0;
   transform: translateY(20px);
-  transition: opacity 0.55s ease-out, transform 0.55s ease-out;
+  transition: opacity 0.4s cubic-bezier(0.16, 1, 0.3, 1), transform 0.4s cubic-bezier(0.16, 1, 0.3, 1);
   will-change: opacity, transform;
 }
 
 .reveal.in-view {
   opacity: 1;
   transform: translateY(0);
+}
+
+/* Button spring hover — scale 1.03 in 150ms with spring bounce */
+.hover-spring {
+  transition: transform 150ms cubic-bezier(0.34, 1.56, 0.64, 1),
+              box-shadow 150ms cubic-bezier(0.34, 1.56, 0.64, 1),
+              background-color 150ms cubic-bezier(0.16, 1, 0.3, 1),
+              border-color 150ms cubic-bezier(0.16, 1, 0.3, 1),
+              color 150ms cubic-bezier(0.16, 1, 0.3, 1),
+              opacity 150ms cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.hover-spring:hover {
+  transform: scale(1.03);
+}
+
+/* Category card hover — 200ms enter, 300ms leave (asymmetric feels natural) */
+.category-card-hover {
+  transform: translateY(0);
+  transition: transform 300ms cubic-bezier(0.16, 1, 0.3, 1),
+              box-shadow 300ms cubic-bezier(0.16, 1, 0.3, 1),
+              border-color 300ms cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.category-card-hover:hover {
+  transform: translateY(-4px);
+  transition-duration: 200ms;
+}
+
+/* Kill all transitions on press so navigation is instant */
+.category-card-hover:active {
+  transition-duration: 0ms;
 }
 
 /* Hero parallax layer */
@@ -199,6 +236,17 @@
   .parallax-hero {
     will-change: auto;
     transform: none !important;
+  }
+  .hover-spring,
+  .hover-spring:hover {
+    transform: none;
+    transition: none;
+  }
+  .category-card-hover,
+  .category-card-hover:hover,
+  .category-card-hover:active {
+    transform: none;
+    transition: none;
   }
 }
 

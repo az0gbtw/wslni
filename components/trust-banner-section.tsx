@@ -19,7 +19,7 @@ export function TrustBannerSection() {
   const { lang } = useLanguage()
   const t = translations[lang].trust
   const statLabels = [t.freelances, t.categories, t.securePay, t.support]
-  const sectionRef = useScrollReveal(0.2)
+  const sectionRef = useScrollReveal(0.1)
 
   return (
     <section
@@ -62,7 +62,7 @@ export function TrustBannerSection() {
                   {stat.static ? (
                     stat.static
                   ) : (
-                    <CountUp to={stat.to} suffix={stat.suffix} decimals={stat.decimals} duration={1400} />
+                    <CountUp to={stat.to} suffix={stat.suffix} decimals={stat.decimals} duration={1200} />
                   )}
                 </div>
                 <div className="text-sm md:text-base text-primary-foreground/75 font-medium">

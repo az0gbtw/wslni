@@ -39,7 +39,7 @@ export function HowItWorksSection() {
               <div
                 key={index}
                 className="reveal relative flex flex-col items-center text-center group"
-                style={{ transitionDelay: `${(index + 1) * 150}ms` }}
+                style={{ transitionDelay: `${(index + 1) * 80}ms` }}
               >
                 <div className="absolute -top-5 start-1/2 -translate-x-1/2 text-7xl md:text-8xl font-black text-primary/8 select-none font-display">
                   {stepNumbers[index]}

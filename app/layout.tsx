@@ -1,12 +1,13 @@
 import type { Metadata, Viewport } from 'next'
-import { Inter, Cairo, Playfair_Display } from 'next/font/google'
+import { Outfit, Cairo, Cormorant_Garamond } from 'next/font/google'
 import { Analytics } from '@vercel/analytics/next'
 import { Providers } from '@/components/providers'
 import './globals.css'
 
-const inter = Inter({
+const outfit = Outfit({
   subsets: ["latin"],
-  variable: '--font-inter',
+  variable: '--font-outfit',
+  display: 'swap',
 })
 
 const cairo = Cairo({
@@ -15,11 +16,12 @@ const cairo = Cairo({
   display: 'swap',
 })
 
-const playfair = Playfair_Display({
+const cormorant = Cormorant_Garamond({
   subsets: ["latin"],
-  variable: '--font-playfair',
+  variable: '--font-cormorant',
   display: 'swap',
-  weight: ['700', '800', '900'],
+  weight: ['300', '400', '500', '600', '700'],
+  style: ['normal', 'italic'],
 })
 
 export const metadata: Metadata = {
@@ -59,7 +61,7 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="fr" className="bg-background" suppressHydrationWarning>
-      <body className={`${inter.variable} ${cairo.variable} ${playfair.variable} font-sans antialiased`}>
+      <body className={`${outfit.variable} ${cairo.variable} ${cormorant.variable} font-sans antialiased`}>
         <Providers>
           {children}
         </Providers>

@@ -88,7 +88,7 @@ export function HeroSection() {
           {/* Main Headline — Playfair Display */}
           <h1
             className="font-display font-black text-[2.6rem] sm:text-[3.8rem] md:text-[5rem] lg:text-[5.8rem] leading-[1.06] tracking-tight text-foreground mb-7 text-balance animate-fade-in-up"
-            style={{ animationDelay: "160ms" }}
+            style={{ animationDelay: "60ms" }}
           >
             {t.headline1}{" "}
             <span className="text-primary relative inline-block">
@@ -116,7 +116,7 @@ export function HeroSection() {
           {/* Subtext */}
           <p
             className="text-base sm:text-xl text-muted-foreground max-w-2xl mx-auto mb-11 sm:mb-14 text-pretty leading-relaxed animate-fade-in-up"
-            style={{ animationDelay: "310ms" }}
+            style={{ animationDelay: "120ms" }}
           >
             {t.subtext}
           </p>
@@ -124,11 +124,11 @@ export function HeroSection() {
           {/* CTA Buttons */}
           <div
             className="flex flex-col sm:flex-row items-center justify-center gap-4 animate-fade-in-up"
-            style={{ animationDelay: "460ms" }}
+            style={{ animationDelay: "180ms" }}
           >
             <Button
               size="lg"
-              className="w-full sm:w-auto text-base px-9 h-14 bg-primary hover:bg-primary/90 text-primary-foreground shadow-lg shadow-primary/25 hover:shadow-xl hover:shadow-primary/35 hover:scale-[1.02] transition-all duration-300 group font-semibold rounded-full"
+              className="w-full sm:w-auto text-base px-9 h-14 bg-primary hover:bg-primary/90 text-primary-foreground shadow-lg shadow-primary/25 hover:shadow-xl hover:shadow-primary/35 hover-spring group font-semibold rounded-full"
               onClick={() => router.push("/services")}
             >
               {t.ctaFind}
@@ -137,7 +137,7 @@ export function HeroSection() {
             <Button
               size="lg"
               variant="outline"
-              className="w-full sm:w-auto text-base px-9 h-14 border-2 border-foreground/15 hover:border-primary hover:text-primary hover:bg-primary/4 hover:scale-[1.02] transition-all duration-300 font-semibold rounded-full"
+              className="w-full sm:w-auto text-base px-9 h-14 border-2 border-foreground/15 hover:border-primary hover:text-primary hover:bg-primary/4 hover-spring font-semibold rounded-full"
               onClick={handleOfferServices}
             >
               {t.ctaOffer}
@@ -147,7 +147,7 @@ export function HeroSection() {
           {/* Stats row */}
           <div
             className="mt-14 sm:mt-20 flex flex-wrap items-center justify-center gap-6 sm:gap-12 animate-fade-in-up"
-            style={{ animationDelay: "620ms" }}
+            style={{ animationDelay: "240ms" }}
           >
             <div className="flex items-center gap-3">
               <div className="flex -space-x-2.5 rtl:space-x-reverse">
@@ -162,7 +162,7 @@ export function HeroSection() {
               </div>
               <div className="text-start rtl:text-end">
                 <div className="text-sm font-bold text-foreground">
-                  +<CountUp to={12000} duration={1800} />
+                  +<CountUp to={12000} duration={1200} />
                 </div>
                 <div className="text-xs text-muted-foreground">{t.freelancesLabel}</div>
               </div>
@@ -180,7 +180,7 @@ export function HeroSection() {
               </div>
               <div className="text-start rtl:text-end">
                 <div className="text-sm font-bold text-foreground">
-                  <CountUp to={4.9} decimals={1} duration={1600} />/5
+                  <CountUp to={4.9} decimals={1} duration={1200} />/5
                 </div>
                 <div className="text-xs text-muted-foreground">{t.satisfactionLabel}</div>
               </div>

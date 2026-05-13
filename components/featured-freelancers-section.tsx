@@ -77,7 +77,7 @@ export function FeaturedFreelancersSection() {
             <div
               key={index}
               className="reveal flex-shrink-0 w-72 snap-start overflow-visible"
-              style={{ transitionDelay: `${(index + 1) * 90}ms` }}
+              style={{ transitionDelay: `${(index + 1) * 80}ms` }}
             >
               <div className="group relative bg-gradient-to-br from-card via-card to-secondary/40 rounded-2xl border border-border/60 p-6 shadow-sm hover:shadow-xl hover:shadow-primary/8 hover:border-primary/25 transition-all duration-300 hover:-translate-y-2 cursor-pointer overflow-visible">
                 {freelancer.rating === 5.0 && (
@@ -116,7 +116,7 @@ export function FeaturedFreelancersSection() {
                   <Button
                     size="sm"
                     variant="outline"
-                    className="border-primary/25 text-primary hover:bg-primary hover:text-primary-foreground hover:border-primary hover:scale-[1.03] transition-all duration-200 rounded-full"
+                    className="border-primary/25 text-primary hover:bg-primary hover:text-primary-foreground hover:border-primary hover-spring rounded-full"
                   >
                     {t.viewProfile}
                   </Button>

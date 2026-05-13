@@ -2,7 +2,7 @@
 
 import { useEffect, useRef } from "react"
 
-export function useScrollReveal(threshold = 0.12) {
+export function useScrollReveal(threshold = 0.1) {
   const ref = useRef<HTMLElement | null>(null)
 
   useEffect(() => {
@@ -23,6 +23,17 @@ export function useScrollReveal(threshold = 0.12) {
           if (entry.isIntersecting) {
             entry.target.classList.add("in-view")
             observer.unobserve(entry.target)
+            // Clear stagger delay after reveal finishes so hover/click feel instant.
+            // Filter to the element itself — child transitionend events bubble and would
+            // fire the listener before the reveal animation actually completes.
+            const el = entry.target as HTMLElement
+            const clearDelay = (e: Event) => {
+              if (e.target === el) {
+                el.style.transitionDelay = ""
+                el.removeEventListener("transitionend", clearDelay)
+              }
+            }
+            el.addEventListener("transitionend", clearDelay)
           }
         })
       },
