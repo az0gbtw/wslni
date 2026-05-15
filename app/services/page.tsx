@@ -85,9 +85,16 @@ function ServicesContent() {
   useEffect(() => {
     async function fetchData() {
       const [{ data: servicesData }, { data: reviewsData }] = await Promise.all([
-        supabase.from("services").select("*, profiles (id, full_name, avatar_url, job_title)").eq("status", "published"),
+        supabase.from("services").select("*").eq("status", "published"),
         supabase.from("reviews").select("freelancer_id, rating"),
       ])
+
+      const userIds = [...new Set((servicesData ?? []).map((s: any) => s.user_id as string))]
+      const { data: profilesData } = userIds.length > 0
+        ? await supabase.from("profiles").select("id, full_name, avatar_url, job_title").in("id", userIds)
+        : { data: [] }
+
+      const profileMap = Object.fromEntries((profilesData ?? []).map((p: any) => [p.id, p]))
 
       const ratingMap: Record<string, { sum: number; count: number }> = {}
       reviewsData?.forEach(({ freelancer_id, rating }: { freelancer_id: string; rating: number }) => {
@@ -96,9 +103,9 @@ function ServicesContent() {
         ratingMap[freelancer_id].count += 1
       })
 
-      const enriched: ServiceWithProfile[] = (servicesData ?? []).map((s: ServiceWithProfile) => {
+      const enriched: ServiceWithProfile[] = (servicesData ?? []).map((s: any) => {
         const r = ratingMap[s.user_id]
-        return { ...s, avgRating: r ? r.sum / r.count : null, reviewCount: r?.count ?? 0 }
+        return { ...s, profiles: profileMap[s.user_id] ?? null, avgRating: r ? r.sum / r.count : null, reviewCount: r?.count ?? 0 }
       })
 
       setServices(enriched)
