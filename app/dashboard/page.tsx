@@ -393,7 +393,7 @@ export default function DashboardPage() {
                 {t.header}
               </p>
               <h1 className="text-xl sm:text-3xl font-black text-white drop-shadow truncate">
-                {t.greeting}, {displayName.split(" ")[0]} 👋
+                {t.greeting}, {displayName.split(" ")[0]}
               </h1>
             </div>
           </div>
