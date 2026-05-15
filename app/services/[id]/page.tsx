@@ -279,7 +279,7 @@ export default async function ServiceDetailPage({
                         }`}
                         variant={cfg.popular ? "default" : "outline"}
                       >
-                        <Link href={`/paiement/${service.id}`}>
+                        <Link href={`/commande/${service.id}`}>
                           {t.order}
                         </Link>
                       </Button>
@@ -303,7 +303,7 @@ export default async function ServiceDetailPage({
                 </div>
               </div>
               <Button asChild className="bg-primary hover:bg-primary/90 text-primary-foreground font-bold rounded-xl px-8 shrink-0">
-                <Link href={`/paiement/${service.id}`}>{t.orderService}</Link>
+                <Link href={`/commande/${service.id}`}>{t.orderService}</Link>
               </Button>
             </div>
           )}
