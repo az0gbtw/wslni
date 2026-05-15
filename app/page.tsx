@@ -22,35 +22,44 @@ export default async function HomePage() {
       .select("id, full_name, job_title, avatar_url")
       .not("full_name", "is", null)
       .not("job_title", "is", null)
-      .order("created_at", { ascending: false })
-      .limit(4),
+      .limit(20),
   ])
 
-  // Fetch the cheapest service price per featured profile in one query
-  let profileServices: { user_id: string; price: number }[] = []
+  // Fetch reviews for candidate profiles to compute avg rating
   const profileIds = rawProfiles?.map((p) => p.id) ?? []
+  let reviews: { freelancer_id: string; rating: number }[] = []
   if (profileIds.length > 0) {
     const { data } = await supabase
-      .from("services")
-      .select("user_id, price")
-      .in("user_id", profileIds)
-    profileServices = data ?? []
+      .from("reviews")
+      .select("freelancer_id, rating")
+      .in("freelancer_id", profileIds)
+    reviews = data ?? []
   }
 
-  const minPriceMap: Record<string, number> = {}
-  for (const s of profileServices) {
-    if (minPriceMap[s.user_id] == null || s.price < minPriceMap[s.user_id]) {
-      minPriceMap[s.user_id] = s.price
-    }
+  // Compute avg rating and review count per profile
+  const ratingMap: Record<string, { sum: number; count: number }> = {}
+  for (const r of reviews) {
+    if (!ratingMap[r.freelancer_id]) ratingMap[r.freelancer_id] = { sum: 0, count: 0 }
+    ratingMap[r.freelancer_id].sum += r.rating
+    ratingMap[r.freelancer_id].count += 1
   }
 
-  const featuredProfiles = (rawProfiles ?? []).map((p) => ({
-    id: p.id as string,
-    full_name: p.full_name as string,
-    job_title: p.job_title as string,
-    avatar_url: (p.avatar_url as string | null) ?? null,
-    min_price: minPriceMap[p.id] ?? null,
-  }))
+  const featuredProfiles = (rawProfiles ?? [])
+    .map((p) => ({
+      id: p.id as string,
+      full_name: p.full_name as string,
+      job_title: p.job_title as string,
+      avatar_url: (p.avatar_url as string | null) ?? null,
+      rating: ratingMap[p.id] ? ratingMap[p.id].sum / ratingMap[p.id].count : null,
+      review_count: ratingMap[p.id]?.count ?? 0,
+    }))
+    .sort((a, b) => {
+      if (a.rating == null && b.rating == null) return 0
+      if (a.rating == null) return 1
+      if (b.rating == null) return -1
+      return b.rating - a.rating
+    })
+    .slice(0, 4)
 
   return (
     <main className="min-h-screen">

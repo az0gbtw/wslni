@@ -66,11 +66,13 @@ const fr = {
     ],
   },
   featured: {
-    title: "Freelances en vedette",
+    title: "Freelances les mieux notés",
     subtitle: "Découvre nos talents les mieux notés",
     reviews: "avis",
     from: "À partir de",
     viewProfile: "Voir profil",
+    emptyMessage: "Soyez parmi les premiers freelances sur Wslni — créez votre profil dès maintenant",
+    emptyAction: "Créer mon profil",
   },
   trust: {
     freelances: "Freelances",
@@ -416,11 +418,13 @@ const ar: typeof fr = {
     ],
   },
   featured: {
-    title: "مستقلون مميزون",
+    title: "أفضل المستقلين تقييمًا",
     subtitle: "اكتشف أفضل المواهب تقييمًا",
     reviews: "تقييم",
     from: "ابتداءً من",
     viewProfile: "عرض الملف",
+    emptyMessage: "كن من أوائل المستقلين على Wslni — أنشئ ملفك الشخصي الآن",
+    emptyAction: "إنشاء ملفي",
   },
   trust: {
     freelances: "مستقل",
