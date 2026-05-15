@@ -127,14 +127,16 @@ export function Navbar() {
         <div className="flex h-16 items-center justify-between gap-4">
 
           {/* Logo */}
-          <a href="/" className="flex items-center gap-2 shrink-0">
-            <div className="flex items-center justify-center w-9 h-9 rounded-lg bg-primary">
-              <span className="text-xl font-bold text-primary-foreground">W</span>
-            </div>
-            <span className="text-xl font-bold text-foreground hidden sm:block">
-              Wslni.ma
+          <Link href="/">
+            <span style={{fontFamily: 'Cormorant Garamond, serif', fontSize: '32px', fontWeight: '700', letterSpacing: '-0.5px'}}>
+              <span style={{color: '#DC2626'}}>W</span>
+              <span style={{position: 'relative', display: 'inline-block'}}>
+                <span style={{position: 'absolute', top: '-14px', left: '50%', transform: 'translateX(-50%)', fontSize: '10px', color: '#DC2626', lineHeight: 1}}>ّ</span>
+                s
+              </span>
+              <span style={{color: '#1A1A1A'}}>lni</span>
             </span>
-          </a>
+          </Link>
 
           {/* Search bar (md+) */}
           <div className="hidden md:flex flex-1 max-w-md mx-4">
