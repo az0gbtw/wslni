@@ -1,6 +1,7 @@
 import { Navbar } from "@/components/navbar"
 import { HeroSection } from "@/components/hero-section"
 import { CategoriesSection } from "@/components/categories-section"
+import { TrendingCategoriesSection } from "@/components/trending-categories-section"
 import { HowItWorksSection } from "@/components/how-it-works-section"
 import { FeaturedFreelancersSection } from "@/components/featured-freelancers-section"
 import { TrustBannerSection } from "@/components/trust-banner-section"
@@ -14,6 +15,7 @@ export default async function HomePage() {
     { count: freelancerCount },
     { count: serviceCount },
     { data: rawProfiles },
+    { data: rawServiceCategories },
   ] = await Promise.all([
     supabase.from("profiles").select("*", { count: "exact", head: true }),
     supabase.from("services").select("*", { count: "exact", head: true }),
@@ -23,7 +25,28 @@ export default async function HomePage() {
       .not("full_name", "is", null)
       .not("job_title", "is", null)
       .limit(20),
+    supabase
+      .from("services")
+      .select("category, category_group")
+      .eq("status", "published"),
   ])
+
+  // Aggregate service counts per subcategory for the trending section
+  const catCountMap = new Map<string, { count: number; group: string | null }>()
+  for (const s of rawServiceCategories ?? []) {
+    const cat = s.category as string
+    const grp = (s.category_group as string | null) ?? null
+    const entry = catCountMap.get(cat)
+    if (entry) {
+      entry.count++
+    } else {
+      catCountMap.set(cat, { count: 1, group: grp })
+    }
+  }
+  const trendingCategories = [...catCountMap.entries()]
+    .sort((a, b) => b[1].count - a[1].count)
+    .slice(0, 5)
+    .map(([category, { count, group }]) => ({ category, group, count }))
 
   // Fetch reviews for candidate profiles to compute avg rating
   const profileIds = rawProfiles?.map((p) => p.id) ?? []
@@ -66,6 +89,7 @@ export default async function HomePage() {
       <Navbar />
       <HeroSection freelancerCount={freelancerCount ?? 0} serviceCount={serviceCount ?? 0} />
       <CategoriesSection />
+      <TrendingCategoriesSection categories={trendingCategories} />
       <HowItWorksSection />
       <FeaturedFreelancersSection profiles={featuredProfiles} />
       <TrustBannerSection freelancerCount={freelancerCount ?? 0} serviceCount={serviceCount ?? 0} />

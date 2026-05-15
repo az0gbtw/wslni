@@ -2,10 +2,10 @@
 
 import { useState, useEffect, useMemo, Suspense } from "react"
 import Link from "next/link"
-import { Search, Clock, Loader2, Plus, Star, SlidersHorizontal, X } from "lucide-react"
+import { Search, Clock, Loader2, Plus, Star, SlidersHorizontal, X, Palette, Code2, TrendingUp, Video, PenTool, Music, Briefcase, GraduationCap, Sparkles } from "lucide-react"
 import { useSearchParams } from "next/navigation"
 import { createClient } from "@/lib/supabase/client"
-import { CATEGORY_GROUPS, CATEGORY_COLORS, getCategoryLabel } from "@/lib/categories"
+import { CATEGORY_GROUPS, CATEGORY_COLORS, getCategoryLabel, getGroupForCategory, GROUP_GRADIENTS } from "@/lib/categories"
 import { useLanguage } from "@/lib/language-context"
 import { translations } from "@/lib/translations"
 import { Navbar } from "@/components/navbar"
@@ -17,6 +17,8 @@ interface ServiceWithProfile {
   title: string
   description: string
   category: string
+  category_group: string | null
+  images: string[] | null
   price: number
   delivery_days: number
   created_at: string
@@ -30,6 +32,8 @@ interface ServiceWithProfile {
     job_title: string | null
   } | null
 }
+
+const GROUP_ICONS = [Palette, Code2, TrendingUp, Video, PenTool, Music, Briefcase, GraduationCap, Sparkles]
 
 export default function ServicesPage() {
   return (
@@ -419,18 +423,44 @@ function ServiceCard({ service, t }: { service: ServiceWithProfile; t: typeof tr
     ? profile.full_name.split(" ").map((n) => n[0]).slice(0, 2).join("").toUpperCase()
     : "?"
 
+  const coverImage = service.images?.[0] ?? null
+  const groupValue = service.category_group ?? getGroupForCategory(service.category) ?? ""
+  const groupIdx   = CATEGORY_GROUPS.findIndex((g) => g.value === groupValue)
+  const GroupIcon  = GROUP_ICONS[groupIdx] ?? Palette
+  const gradient   = GROUP_GRADIENTS[groupValue] ?? { bg: "from-gray-50 to-gray-100", icon: "text-gray-400" }
+
   return (
     <div className="group flex flex-col rounded-2xl border border-border bg-card shadow-sm hover:shadow-md transition-shadow overflow-hidden">
-      <div className="px-5 pt-5 pb-0">
+
+      {/* ── Cover image 16:9 ── */}
+      <Link href={`/services/${service.id}`} className="relative block aspect-video overflow-hidden bg-muted">
+        {coverImage ? (
+          // eslint-disable-next-line @next/next/no-img-element
+          <img
+            src={coverImage}
+            alt={service.title}
+            className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-105"
+          />
+        ) : (
+          <div className={`w-full h-full bg-gradient-to-br ${gradient.bg} flex items-center justify-center`}>
+            <GroupIcon className={`h-12 w-12 opacity-40 ${gradient.icon}`} />
+          </div>
+        )}
+      </Link>
+
+      {/* ── Category badge ── */}
+      <div className="px-5 pt-4 pb-0">
         <span className={`inline-block rounded-full px-2.5 py-0.5 text-xs font-medium ${categoryColor}`}>
           {categoryLabel}
         </span>
       </div>
 
-      <div className="flex flex-col flex-1 p-5 gap-3">
-        <h2 className="text-base font-semibold text-foreground leading-snug line-clamp-2 group-hover:text-primary transition-colors">
-          {service.title}
-        </h2>
+      <div className="flex flex-col flex-1 p-5 pt-3 gap-3">
+        <Link href={`/services/${service.id}`}>
+          <h2 className="text-base font-semibold text-foreground leading-snug line-clamp-2 group-hover:text-primary transition-colors">
+            {service.title}
+          </h2>
+        </Link>
         <p className="text-sm text-muted-foreground line-clamp-3 flex-1">{service.description}</p>
 
         {service.avgRating !== null && (
@@ -445,6 +475,7 @@ function ServiceCard({ service, t }: { service: ServiceWithProfile; t: typeof tr
 
         <div className="flex items-center gap-2 pt-1">
           {profile?.avatar_url ? (
+            // eslint-disable-next-line @next/next/no-img-element
             <img
               src={profile.avatar_url}
               alt={profile.full_name ?? "Freelance"}
