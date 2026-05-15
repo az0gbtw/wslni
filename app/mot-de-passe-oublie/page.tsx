@@ -57,12 +57,10 @@ export default function MotDePasseOubliePage() {
               <CheckCircle2 className="h-7 w-7 text-emerald-600" />
             </div>
             <h2 className="text-xl font-bold text-foreground mb-2">Email envoyé !</h2>
-            <p className="text-sm text-muted-foreground mb-1">
-              Un lien de réinitialisation a été envoyé à{" "}
-              <span className="font-medium text-foreground">{email}</span>.
-            </p>
-            <p className="text-xs text-muted-foreground mb-6">
-              Pensez à vérifier vos spams si vous ne voyez pas l&apos;email.
+            <p className="text-sm text-muted-foreground mb-6">
+              Un email de réinitialisation a été envoyé à{" "}
+              <span className="font-medium text-foreground">{email}</span>.{" "}
+              Vérifiez votre boîte mail et vos spams.
             </p>
             <Button asChild variant="outline" className="w-full">
               <Link href="/connexion">

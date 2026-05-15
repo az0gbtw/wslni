@@ -10,6 +10,24 @@ import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 
 type PageState = "loading" | "ready" | "submitting" | "success" | "invalid"
+type PasswordStrength = "faible" | "moyen" | "fort"
+
+function getPasswordStrength(pwd: string): PasswordStrength | null {
+  if (!pwd) return null
+  if (pwd.length < 8) return "faible"
+  const hasUpper = /[A-Z]/.test(pwd)
+  const hasNumber = /[0-9]/.test(pwd)
+  const hasSpecial = /[^A-Za-z0-9]/.test(pwd)
+  const score = [hasUpper, hasNumber, hasSpecial].filter(Boolean).length
+  if (score >= 2) return "fort"
+  return "moyen"
+}
+
+const strengthConfig = {
+  faible: { label: "Faible", color: "bg-red-500", width: "w-1/3", textColor: "text-red-600" },
+  moyen: { label: "Moyen", color: "bg-amber-500", width: "w-2/3", textColor: "text-amber-600" },
+  fort: { label: "Fort", color: "bg-emerald-500", width: "w-full", textColor: "text-emerald-600" },
+}
 
 function Logo() {
   return (
@@ -208,6 +226,20 @@ export default function ResetPasswordPage() {
                 </button>
               </div>
             </div>
+
+            {(() => {
+              const strength = getPasswordStrength(password)
+              if (!strength) return null
+              const cfg = strengthConfig[strength]
+              return (
+                <div className="space-y-1">
+                  <div className="h-1.5 w-full bg-muted rounded-full overflow-hidden">
+                    <div className={`h-full rounded-full transition-all duration-300 ${cfg.color} ${cfg.width}`} />
+                  </div>
+                  <p className={`text-xs font-medium ${cfg.textColor}`}>Sécurité : {cfg.label}</p>
+                </div>
+              )
+            })()}
 
             <div className="space-y-1.5">
               <Label htmlFor="confirm">Confirmer le mot de passe</Label>
