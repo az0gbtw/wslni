@@ -6,6 +6,7 @@ import { Search, Clock, Loader2, Plus, Star, SlidersHorizontal, X, Palette, Code
 import { useSearchParams } from "next/navigation"
 import { createClient } from "@/lib/supabase/client"
 import { CATEGORY_GROUPS, CATEGORY_COLORS, getCategoryLabel, getGroupForCategory, GROUP_GRADIENTS } from "@/lib/categories"
+import { formatPrice } from "@/lib/utils"
 import { useLanguage } from "@/lib/language-context"
 import { translations } from "@/lib/translations"
 import { Navbar } from "@/components/navbar"
@@ -250,14 +251,20 @@ function ServicesContent() {
                   className="w-full h-9 rounded-md border border-input bg-background px-3 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
                 >
                   <option value="">{t.allCategories}</option>
-                  {CATEGORY_GROUPS.map((group) => (
-                    <optgroup key={group.value} label={group.label}>
-                      <option value={`__group__${group.value}`}>— {group.label} ({t.allSubcategories})</option>
-                      {group.subcategories.map((sub) => (
-                        <option key={sub.value} value={sub.value}>{sub.label}</option>
-                      ))}
-                    </optgroup>
-                  ))}
+                  {CATEGORY_GROUPS.map((group) => {
+                    const groupLabel = lang === "ar" ? (group.arLabel ?? group.label) : group.label
+                    return (
+                      <optgroup key={group.value} label={groupLabel}>
+                        <option value={`__group__${group.value}`}>— {groupLabel} ({t.allSubcategories})</option>
+                        {group.subcategories.map((sub) => {
+                          const subLabel = lang === "ar" ? (sub.arLabel ?? sub.label) : sub.label
+                          return (
+                            <option key={sub.value} value={sub.value}>{subLabel}</option>
+                          )
+                        })}
+                      </optgroup>
+                    )
+                  })}
                 </select>
               </div>
 
@@ -387,7 +394,7 @@ function ServicesContent() {
                 <p className="text-sm text-muted-foreground mb-5">{t.servicesFound(filtered.length)}</p>
                 <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-5">
                   {filtered.map((service) => (
-                    <ServiceCard key={service.id} service={service} t={t} />
+                    <ServiceCard key={service.id} service={service} t={t} lang={lang} />
                   ))}
                 </div>
               </>
@@ -415,10 +422,10 @@ function StarDisplay({ rating }: { rating: number }) {
   )
 }
 
-function ServiceCard({ service, t }: { service: ServiceWithProfile; t: typeof translations["fr"]["services"] }) {
+function ServiceCard({ service, t, lang }: { service: ServiceWithProfile; t: typeof translations["fr"]["services"]; lang: "fr" | "ar" }) {
   const profile = service.profiles
   const categoryColor = CATEGORY_COLORS[service.category] ?? "bg-gray-100 text-gray-700"
-  const categoryLabel = getCategoryLabel(service.category)
+  const categoryLabel = getCategoryLabel(service.category, lang)
   const ini = profile?.full_name
     ? profile.full_name.split(" ").map((n) => n[0]).slice(0, 2).join("").toUpperCase()
     : "?"
@@ -500,7 +507,7 @@ function ServiceCard({ service, t }: { service: ServiceWithProfile; t: typeof tr
         </div>
         <div className="flex items-center gap-3">
           <span className="text-base font-bold text-primary">
-            {service.price.toLocaleString("fr-MA")} MAD
+            {formatPrice(service.price, lang)} MAD
           </span>
           <Button
             asChild

@@ -11,6 +11,9 @@ import { createClient } from "@/lib/supabase/client"
 import { Navbar } from "@/components/navbar"
 import { Button } from "@/components/ui/button"
 import { getCategoryLabel, CATEGORY_COLORS } from "@/lib/categories"
+import { useLanguage } from "@/lib/language-context"
+import { translations } from "@/lib/translations"
+import { formatPrice } from "@/lib/utils"
 
 interface ServiceWithProfile {
   id: string
@@ -33,6 +36,8 @@ export default function PaiementPage() {
   const router = useRouter()
   const params = useParams()
   const serviceId = params.serviceId as string
+  const { lang } = useLanguage()
+  const t = translations[lang].paiement
 
   const [user, setUser] = useState<SupabaseUser | null>(null)
   const [service, setService] = useState<ServiceWithProfile | null>(null)
@@ -56,14 +61,14 @@ export default function PaiementPage() {
         .single()
 
       if (error || !data) {
-        setErrorMsg("Ce service est introuvable ou n'est plus disponible.")
+        setErrorMsg(t.errorMessage)
         setStep("error")
         return
       }
 
       const svc = data as ServiceWithProfile
       if (svc.user_id === user.id) {
-        setErrorMsg("Vous ne pouvez pas commander votre propre service.")
+        setErrorMsg(t.ownServiceError)
         setStep("error")
         return
       }
@@ -88,7 +93,7 @@ export default function PaiementPage() {
     })
 
     if (error) {
-      setErrorMsg("Une erreur est survenue. Veuillez réessayer.")
+      setErrorMsg(t.serverError)
       setStep("details")
       return
     }
@@ -132,8 +137,8 @@ export default function PaiementPage() {
             <p className="text-lg font-semibold text-foreground mb-2">{errorMsg}</p>
             <Button asChild variant="outline" className="mt-4">
               <Link href="/services">
-                <ArrowLeft className="h-4 w-4 mr-2" />
-                Retour aux services
+                <ArrowLeft className={`h-4 w-4 me-2 ${lang === "ar" ? "rotate-180" : ""}`} />
+                {t.backToServices}
               </Link>
             </Button>
           </div>
@@ -151,24 +156,20 @@ export default function PaiementPage() {
             <div className="w-20 h-20 rounded-full bg-emerald-100 flex items-center justify-center mx-auto mb-6">
               <CheckCircle2 className="h-10 w-10 text-emerald-600" />
             </div>
-            <h1 className="text-2xl font-black text-foreground mb-2">Commande confirmée !</h1>
+            <h1 className="text-2xl font-black text-foreground mb-2">{t.successTitle}</h1>
             <p className="text-muted-foreground mb-2">
-              Votre commande pour{" "}
-              <span className="font-semibold text-foreground">{service.title}</span>{" "}
-              a été transmise au freelance.
+              <span className="font-semibold text-foreground">{service.title}</span>
             </p>
-            <p className="text-sm text-muted-foreground mb-8">
-              Votre commande est en attente de traitement. Vous pouvez suivre son état depuis votre tableau de bord.
-            </p>
+            <p className="text-sm text-muted-foreground mb-8">{t.successMessage}</p>
             <div className="flex flex-col sm:flex-row gap-3 justify-center">
               <Button asChild variant="outline">
                 <Link href="/services">
-                  <ArrowLeft className="h-4 w-4 mr-2" />
-                  Retour aux services
+                  <ArrowLeft className={`h-4 w-4 me-2 ${lang === "ar" ? "rotate-180" : ""}`} />
+                  {t.backToServices}
                 </Link>
               </Button>
               <Button asChild className="bg-primary hover:bg-primary/90 text-primary-foreground">
-                <Link href="/dashboard">Voir mes commandes</Link>
+                <Link href="/dashboard">{t.goToOrders}</Link>
               </Button>
             </div>
           </div>
@@ -181,7 +182,7 @@ export default function PaiementPage() {
 
   const profile = service.profiles
   const categoryColor = CATEGORY_COLORS[service.category] ?? "bg-gray-100 text-gray-700"
-  const categoryLabel = getCategoryLabel(service.category)
+  const categoryLabel = getCategoryLabel(service.category, lang)
   const ini = profile?.full_name
     ? profile.full_name.split(" ").map((n) => n[0]).slice(0, 2).join("").toUpperCase()
     : "?"
@@ -195,11 +196,11 @@ export default function PaiementPage() {
             href="/services"
             className="inline-flex items-center gap-1.5 text-sm text-muted-foreground hover:text-foreground transition-colors mb-6"
           >
-            <ArrowLeft className="h-4 w-4" />
-            Retour aux services
+            <ArrowLeft className={`h-4 w-4 ${lang === "ar" ? "rotate-180" : ""}`} />
+            {t.backToServices}
           </Link>
 
-          <h1 className="text-2xl font-black text-foreground mb-6">Récapitulatif de commande</h1>
+          <h1 className="text-2xl font-black text-foreground mb-6">{t.orderSummary}</h1>
 
           {/* Service card */}
           <div className="rounded-2xl border border-border bg-card p-6 shadow-sm mb-4">
@@ -213,9 +214,10 @@ export default function PaiementPage() {
             {/* Freelancer info */}
             <div className="flex items-center gap-3 p-3 rounded-xl bg-muted/50 mb-5">
               {profile?.avatar_url ? (
+                // eslint-disable-next-line @next/next/no-img-element
                 <img
                   src={profile.avatar_url}
-                  alt={profile.full_name ?? "Freelance"}
+                  alt={profile.full_name ?? t.freelancer}
                   className="h-10 w-10 rounded-full object-cover shrink-0"
                 />
               ) : (
@@ -224,7 +226,7 @@ export default function PaiementPage() {
                 </div>
               )}
               <div>
-                <p className="text-sm font-semibold text-foreground">{profile?.full_name ?? "Freelance"}</p>
+                <p className="text-sm font-semibold text-foreground">{profile?.full_name ?? t.freelancer}</p>
                 {profile?.job_title && (
                   <p className="text-xs text-muted-foreground">{profile.job_title}</p>
                 )}
@@ -235,15 +237,13 @@ export default function PaiementPage() {
             <div className="flex items-center justify-between pt-4 border-t border-border">
               <div className="flex items-center gap-1.5 text-sm text-muted-foreground">
                 <Clock className="h-4 w-4" />
-                <span>
-                  Livraison en {service.delivery_days} jour{service.delivery_days > 1 ? "s" : ""}
-                </span>
+                <span>{t.delivery} — {t.days(service.delivery_days)}</span>
               </div>
-              <div className="text-right">
+              <div className="text-end">
                 <span className="text-2xl font-black text-primary">
-                  {service.price.toLocaleString("fr-MA")}
+                  {formatPrice(service.price, lang)}
                 </span>
-                <span className="text-sm font-semibold text-muted-foreground ml-1">MAD</span>
+                <span className="text-sm font-semibold text-muted-foreground ms-1">MAD</span>
               </div>
             </div>
           </div>
@@ -251,7 +251,7 @@ export default function PaiementPage() {
           {/* Security notice */}
           <div className="flex items-center gap-2 text-xs text-muted-foreground mb-6 px-1">
             <ShieldCheck className="h-4 w-4 text-emerald-500 shrink-0" />
-            <span>Paiement simulé — aucune donnée bancaire requise.</span>
+            <span>{t.securePayment}</span>
           </div>
 
           {/* Confirm button */}
@@ -262,11 +262,11 @@ export default function PaiementPage() {
           >
             {step === "confirming" ? (
               <>
-                <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                Traitement en cours…
+                <Loader2 className="h-4 w-4 me-2 animate-spin" />
+                {t.processing}
               </>
             ) : (
-              <>Confirmer le paiement — {service.price.toLocaleString("fr-MA")} MAD</>
+              <>{t.confirmOrder} — {formatPrice(service.price, lang)} MAD</>
             )}
           </Button>
 

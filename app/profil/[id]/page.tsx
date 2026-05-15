@@ -17,6 +17,9 @@ import {
   DialogTitle,
   DialogDescription,
 } from "@/components/ui/dialog"
+import { useLanguage } from "@/lib/language-context"
+import { translations } from "@/lib/translations"
+import { formatPrice } from "@/lib/utils"
 
 interface Profile {
   id: string
@@ -42,15 +45,6 @@ interface Review {
 function initials(name: string | null) {
   if (!name) return "?"
   return name.split(" ").map((w) => w[0]).join("").toUpperCase().slice(0, 2)
-}
-
-function memberSince(ts?: string | null) {
-  if (!ts) return "—"
-  return new Date(ts).toLocaleDateString("fr-FR", { month: "long", year: "numeric" })
-}
-
-function formatDate(ts: string) {
-  return new Date(ts).toLocaleDateString("fr-FR", { day: "numeric", month: "long", year: "numeric" })
 }
 
 function StarDisplay({ rating, size = "sm" }: { rating: number; size?: "sm" | "lg" }) {
@@ -104,6 +98,9 @@ function ZelligeCover() {
 
 export default function PublicProfilePage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = use(params)
+  const { lang } = useLanguage()
+  const t = translations[lang].publicProfil
+
   const [profile, setProfile] = useState<Profile | null | undefined>(undefined)
   const [viewer, setViewer] = useState<User | null>(null)
   const [reviews, setReviews] = useState<Review[]>([])
@@ -143,6 +140,17 @@ export default function PublicProfilePage({ params }: { params: Promise<{ id: st
     })
   }, [id])
 
+  const dateLocale = lang === "ar" ? "ar-MA-u-nu-arab" : "fr-FR"
+
+  function memberSince(ts?: string | null) {
+    if (!ts) return "—"
+    return new Date(ts).toLocaleDateString(dateLocale, { month: "long", year: "numeric" })
+  }
+
+  function formatDate(ts: string) {
+    return new Date(ts).toLocaleDateString(dateLocale, { day: "numeric", month: "long", year: "numeric" })
+  }
+
   if (profile === undefined) {
     return (
       <div className="min-h-screen flex items-center justify-center">
@@ -157,14 +165,12 @@ export default function PublicProfilePage({ params }: { params: Promise<{ id: st
         <Navbar />
         <main className="min-h-screen bg-background pt-16 flex items-center justify-center px-4">
           <div className="text-center">
-            <h1 className="text-2xl font-bold mb-2">Profil introuvable</h1>
-            <p className="text-muted-foreground mb-6 text-sm">
-              Ce profil n&apos;existe pas ou a été supprimé.
-            </p>
+            <h1 className="text-2xl font-bold mb-2">{t.notFound}</h1>
+            <p className="text-muted-foreground mb-6 text-sm">{t.notFoundSub}</p>
             <Button asChild variant="outline">
               <Link href="/">
-                <ArrowLeft className="h-4 w-4" />
-                Retour à l&apos;accueil
+                <ArrowLeft className={`h-4 w-4 ${lang === "ar" ? "rotate-180" : ""}`} />
+                {t.backHome}
               </Link>
             </Button>
           </div>
@@ -190,12 +196,12 @@ export default function PublicProfilePage({ params }: { params: Promise<{ id: st
       <main className="min-h-screen bg-background">
         <div className="relative">
           <ZelligeCover />
-          <div className="absolute top-20 right-4 sm:right-8 z-10">
+          <div className="absolute top-20 end-4 sm:end-8 z-10">
             {isOwner ? (
               <Button asChild variant="outline" size="sm" className="bg-white/90 hover:bg-white text-gray-800 border-white/40 shadow-md backdrop-blur-sm font-medium">
                 <Link href="/profil">
                   <Edit2 className="h-3.5 w-3.5" />
-                  Modifier mon profil
+                  {t.editProfile}
                 </Link>
               </Button>
             ) : (
@@ -205,7 +211,7 @@ export default function PublicProfilePage({ params }: { params: Promise<{ id: st
                 onClick={() => setContactOpen(true)}
               >
                 <MessageCircle className="h-3.5 w-3.5" />
-                Contacter
+                {t.contact}
               </Button>
             )}
           </div>
@@ -219,6 +225,7 @@ export default function PublicProfilePage({ params }: { params: Promise<{ id: st
               <div className="w-32 h-32 rounded-full bg-white shadow-xl shrink-0 p-1.5">
                 <div className="w-full h-full rounded-full bg-primary overflow-hidden flex items-center justify-center">
                   {profile.avatar_url ? (
+                    // eslint-disable-next-line @next/next/no-img-element
                     <img src={profile.avatar_url} alt={displayName} className="w-full h-full object-cover" />
                   ) : (
                     <span className="text-4xl font-bold text-white leading-none select-none">{ini}</span>
@@ -238,13 +245,13 @@ export default function PublicProfilePage({ params }: { params: Promise<{ id: st
                   {profile.hourly_rate != null && (
                     <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-muted text-foreground text-xs font-semibold border border-border">
                       <span className="w-1.5 h-1.5 rounded-full bg-primary inline-block" />
-                      {profile.hourly_rate.toLocaleString("fr-MA")} MAD/h
+                      {formatPrice(profile.hourly_rate, lang)} MAD/h
                     </span>
                   )}
                   {avgRating !== null && (
                     <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-amber-50 text-amber-700 text-xs font-semibold border border-amber-200">
                       <Star className="h-3 w-3 fill-amber-400 text-amber-400" />
-                      {avgRating.toFixed(1)} ({reviews.length} avis)
+                      {avgRating.toFixed(1)} ({t.reviewsCount(reviews.length)})
                     </span>
                   )}
                 </div>
@@ -257,7 +264,7 @@ export default function PublicProfilePage({ params }: { params: Promise<{ id: st
             <div className="text-center px-4">
               <div className="flex items-center justify-center gap-1.5 text-muted-foreground mb-1.5">
                 <Calendar className="h-3.5 w-3.5 shrink-0" />
-                <span className="text-xs uppercase tracking-wide font-medium">Membre depuis</span>
+                <span className="text-xs uppercase tracking-wide font-medium">{t.memberSince}</span>
               </div>
               <p className="text-sm font-semibold text-foreground capitalize">
                 {memberSince(profile.updated_at)}
@@ -266,7 +273,7 @@ export default function PublicProfilePage({ params }: { params: Promise<{ id: st
             <div className="text-center px-4">
               <div className="flex items-center justify-center gap-1.5 text-muted-foreground mb-1.5">
                 <Star className="h-3.5 w-3.5 shrink-0" />
-                <span className="text-xs uppercase tracking-wide font-medium">Note moyenne</span>
+                <span className="text-xs uppercase tracking-wide font-medium">{t.avgRating}</span>
               </div>
               {avgRating !== null ? (
                 <div className="flex items-center justify-center gap-1.5">
@@ -280,7 +287,7 @@ export default function PublicProfilePage({ params }: { params: Promise<{ id: st
             <div className="text-center px-4">
               <div className="flex items-center justify-center gap-1.5 text-muted-foreground mb-1.5">
                 <CheckCircle2 className="h-3.5 w-3.5 shrink-0" />
-                <span className="text-xs uppercase tracking-wide font-medium">Missions réalisées</span>
+                <span className="text-xs uppercase tracking-wide font-medium">{t.missions}</span>
               </div>
               <p className="text-sm font-semibold text-foreground">
                 {reviews.length > 0 ? reviews.length : "—"}
@@ -296,7 +303,7 @@ export default function PublicProfilePage({ params }: { params: Promise<{ id: st
 
               {profile.bio && (
                 <section>
-                  <h2 className="text-base font-semibold mb-3 text-foreground">À propos</h2>
+                  <h2 className="text-base font-semibold mb-3 text-foreground">{t.about}</h2>
                   <p className="text-muted-foreground leading-relaxed whitespace-pre-wrap text-sm">
                     {profile.bio}
                   </p>
@@ -305,7 +312,7 @@ export default function PublicProfilePage({ params }: { params: Promise<{ id: st
 
               {profile.skills.length > 0 && (
                 <section>
-                  <h2 className="text-base font-semibold mb-3 text-foreground">Compétences</h2>
+                  <h2 className="text-base font-semibold mb-3 text-foreground">{t.skills}</h2>
                   <div className="flex flex-wrap gap-2">
                     {profile.skills.map((s) => (
                       <span
@@ -322,7 +329,7 @@ export default function PublicProfilePage({ params }: { params: Promise<{ id: st
 
               {portfolioLinks.length > 0 && (
                 <section>
-                  <h2 className="text-base font-semibold mb-3 text-foreground">Portfolio</h2>
+                  <h2 className="text-base font-semibold mb-3 text-foreground">{t.portfolio}</h2>
                   <div className="space-y-2">
                     {portfolioLinks.map((link, i) => (
                       <a
@@ -340,12 +347,12 @@ export default function PublicProfilePage({ params }: { params: Promise<{ id: st
                 </section>
               )}
 
-              {/* Avis clients */}
+              {/* Client reviews */}
               <section>
                 <div className="flex items-center justify-between mb-4">
                   <h2 className="text-base font-semibold text-foreground flex items-center gap-2">
                     <Star className="h-4 w-4 fill-amber-400 text-amber-400" />
-                    Avis clients
+                    {t.reviews}
                     {reviews.length > 0 && (
                       <span className="text-xs font-normal text-muted-foreground">
                         ({reviews.length})
@@ -367,11 +374,9 @@ export default function PublicProfilePage({ params }: { params: Promise<{ id: st
                         <Star key={n} className="h-6 w-6 fill-muted-foreground/10 text-muted-foreground/25" />
                       ))}
                     </div>
-                    <p className="text-sm font-medium text-foreground mb-1">Aucun avis pour l&apos;instant</p>
+                    <p className="text-sm font-medium text-foreground mb-1">{t.noReviewsTitle}</p>
                     <p className="text-xs text-muted-foreground max-w-xs mx-auto">
-                      {isOwner
-                        ? "Terminez vos premières missions pour recevoir des avis de vos clients."
-                        : "Ce freelance n'a pas encore reçu d'avis."}
+                      {isOwner ? t.noReviewsOwner : t.noReviewsVisitor}
                     </p>
                   </div>
                 ) : (
@@ -384,6 +389,7 @@ export default function PublicProfilePage({ params }: { params: Promise<{ id: st
                           <div className="flex items-start gap-3">
                             <div className="shrink-0">
                               {review.client?.avatar_url ? (
+                                // eslint-disable-next-line @next/next/no-img-element
                                 <img
                                   src={review.client.avatar_url}
                                   alt={clientName}
@@ -417,23 +423,23 @@ export default function PublicProfilePage({ params }: { params: Promise<{ id: st
                 )}
               </section>
 
-              {/* Services proposés */}
+              {/* Proposed services */}
               <section>
-                <h2 className="text-base font-semibold mb-3 text-foreground">Services proposés</h2>
+                <h2 className="text-base font-semibold mb-3 text-foreground">{t.proposedServices}</h2>
                 <div className="rounded-2xl border border-dashed border-border bg-muted/20 p-8 text-center">
                   <div className="w-12 h-12 rounded-full bg-primary/10 flex items-center justify-center mx-auto mb-3">
                     <Briefcase className="h-5 w-5 text-primary" />
                   </div>
-                  <p className="text-sm font-medium text-foreground mb-1">Aucun service publié</p>
+                  <p className="text-sm font-medium text-foreground mb-1">{t.noServicesTitle}</p>
                   <p className="text-xs text-muted-foreground mb-4 max-w-xs mx-auto">
-                    {isOwner
-                      ? "Ajoutez vos premiers services pour attirer des clients et décrocher vos premières missions."
-                      : "Ce freelance n'a pas encore publié de services. Revenez bientôt !"}
+                    {isOwner ? t.noServicesOwner : t.noServicesVisitor}
                   </p>
                   {isOwner && (
-                    <Button size="sm" className="bg-primary hover:bg-primary/90 text-primary-foreground">
-                      <Plus className="h-3.5 w-3.5" />
-                      Ajouter un service
+                    <Button size="sm" className="bg-primary hover:bg-primary/90 text-primary-foreground" asChild>
+                      <Link href="/services/nouveau">
+                        <Plus className="h-3.5 w-3.5" />
+                        {t.addService}
+                      </Link>
                     </Button>
                   )}
                 </div>
@@ -445,20 +451,20 @@ export default function PublicProfilePage({ params }: { params: Promise<{ id: st
               <div className="rounded-2xl border border-border bg-card p-5 shadow-sm space-y-4 sticky top-24">
                 {profile.hourly_rate != null && (
                   <div className="pb-4 border-b border-border">
-                    <p className="text-xs text-muted-foreground mb-1">Tarif horaire</p>
+                    <p className="text-xs text-muted-foreground mb-1">{t.hourlyRate}</p>
                     <p className="text-2xl font-bold text-foreground">
-                      {profile.hourly_rate.toLocaleString("fr-MA")}
-                      <span className="text-sm font-normal text-muted-foreground ml-1">MAD/h</span>
+                      {formatPrice(profile.hourly_rate, lang)}
+                      <span className="text-sm font-normal text-muted-foreground ms-1">MAD/h</span>
                     </p>
                   </div>
                 )}
 
                 {avgRating !== null && (
                   <div className="pb-4 border-b border-border">
-                    <p className="text-xs text-muted-foreground mb-2">Note des clients</p>
+                    <p className="text-xs text-muted-foreground mb-2">{t.clientRating}</p>
                     <StarDisplay rating={Math.round(avgRating)} size="lg" />
                     <p className="text-xs text-muted-foreground mt-1.5">
-                      {avgRating.toFixed(1)}/5 · {reviews.length} avis
+                      {avgRating.toFixed(1)}/5 · {t.reviewsCount(reviews.length)}
                     </p>
                   </div>
                 )}
@@ -467,7 +473,7 @@ export default function PublicProfilePage({ params }: { params: Promise<{ id: st
                   <Button variant="outline" className="w-full" asChild>
                     <Link href="/profil">
                       <Edit2 className="h-4 w-4" />
-                      Modifier mon profil
+                      {t.editProfile}
                     </Link>
                   </Button>
                 ) : (
@@ -476,7 +482,7 @@ export default function PublicProfilePage({ params }: { params: Promise<{ id: st
                     onClick={() => setContactOpen(true)}
                   >
                     <MessageCircle className="h-4 w-4" />
-                    Contacter {displayName}
+                    {t.contact} {displayName}
                   </Button>
                 )}
               </div>
@@ -485,21 +491,17 @@ export default function PublicProfilePage({ params }: { params: Promise<{ id: st
         </div>
       </main>
 
-      {/* Dialogue de contact */}
+      {/* Contact dialog */}
       <Dialog open={contactOpen} onOpenChange={setContactOpen}>
         <DialogContent className="sm:max-w-md">
           <DialogHeader>
-            <DialogTitle>Contacter {displayName}</DialogTitle>
-            <DialogDescription>
-              La messagerie intégrée arrive bientôt sur Wslni.ma.
-            </DialogDescription>
+            <DialogTitle>{t.contactTitle(displayName)}</DialogTitle>
+            <DialogDescription>{t.contactDesc}</DialogDescription>
           </DialogHeader>
 
           {portfolioLinks.length > 0 ? (
             <div className="space-y-2">
-              <p className="text-sm font-medium text-foreground">
-                En attendant, retrouvez ce freelance sur :
-              </p>
+              <p className="text-sm font-medium text-foreground">{t.contactPortfolioPrompt}</p>
               {portfolioLinks.map((link, i) => (
                 <a
                   key={i}
@@ -514,10 +516,7 @@ export default function PublicProfilePage({ params }: { params: Promise<{ id: st
               ))}
             </div>
           ) : (
-            <p className="text-sm text-muted-foreground">
-              Ce freelance n&apos;a pas encore renseigné ses liens. Revenez bientôt pour
-              utiliser notre messagerie directement.
-            </p>
+            <p className="text-sm text-muted-foreground">{t.contactNoLinks}</p>
           )}
         </DialogContent>
       </Dialog>

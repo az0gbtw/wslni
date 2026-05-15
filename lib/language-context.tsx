@@ -28,6 +28,7 @@ export function LanguageProvider({ children }: { children: ReactNode }) {
     document.documentElement.dir = lang === "ar" ? "rtl" : "ltr"
     document.documentElement.lang = lang
     localStorage.setItem("lang", lang)
+    document.cookie = `lang=${lang}; path=/; max-age=31536000; SameSite=Lax`
   }, [lang])
 
   function setLang(l: Lang) { setLangState(l) }

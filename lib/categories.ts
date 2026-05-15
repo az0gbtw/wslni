@@ -2,106 +2,115 @@ export const CATEGORY_GROUPS = [
   {
     value: "graphics-design",
     label: "Graphics & Design",
+    arLabel: "الجرافيك والتصميم",
     subcategories: [
-      { value: "logo-identite",       label: "Logo & Identité de marque" },
-      { value: "design-web-app",      label: "Design Web & App" },
-      { value: "illustration-art",    label: "Illustration & Art" },
-      { value: "design-print",        label: "Design Print" },
-      { value: "design-mode",         label: "Design de Mode" },
-      { value: "design-3d",           label: "Design 3D" },
-      { value: "retouche-photo",      label: "Retouche Photo" },
+      { value: "logo-identite",       label: "Logo & Identité de marque",  arLabel: "شعار وهوية العلامة" },
+      { value: "design-web-app",      label: "Design Web & App",           arLabel: "تصميم الويب والتطبيقات" },
+      { value: "illustration-art",    label: "Illustration & Art",         arLabel: "الرسم والفن" },
+      { value: "design-print",        label: "Design Print",               arLabel: "تصميم المطبوعات" },
+      { value: "design-mode",         label: "Design de Mode",             arLabel: "تصميم الأزياء" },
+      { value: "design-3d",           label: "Design 3D",                  arLabel: "تصميم ثلاثي الأبعاد" },
+      { value: "retouche-photo",      label: "Retouche Photo",             arLabel: "تعديل الصور" },
     ],
   },
   {
     value: "programmation-tech",
     label: "Programmation & Tech",
+    arLabel: "البرمجة والتقنية",
     subcategories: [
-      { value: "developpement-web",    label: "Développement Web" },
-      { value: "developpement-mobile", label: "Développement Mobile" },
-      { value: "developpement-ai",     label: "Développement AI" },
-      { value: "cybersecurite",        label: "Cybersécurité" },
-      { value: "bases-donnees",        label: "Bases de données" },
-      { value: "devops",               label: "DevOps" },
-      { value: "support-it",           label: "Support IT" },
+      { value: "developpement-web",    label: "Développement Web",          arLabel: "تطوير الويب" },
+      { value: "developpement-mobile", label: "Développement Mobile",       arLabel: "تطوير التطبيقات" },
+      { value: "developpement-ai",     label: "Développement AI",           arLabel: "تطوير الذكاء الاصطناعي" },
+      { value: "cybersecurite",        label: "Cybersécurité",              arLabel: "الأمن السيبراني" },
+      { value: "bases-donnees",        label: "Bases de données",           arLabel: "قواعد البيانات" },
+      { value: "devops",               label: "DevOps",                     arLabel: "DevOps" },
+      { value: "support-it",           label: "Support IT",                 arLabel: "الدعم التقني" },
     ],
   },
   {
     value: "marketing-digital",
     label: "Marketing Digital",
+    arLabel: "التسويق الرقمي",
     subcategories: [
-      { value: "seo",                  label: "SEO" },
-      { value: "reseaux-sociaux",      label: "Réseaux Sociaux" },
-      { value: "pub-facebook-insta",   label: "Publicité Facebook/Instagram" },
-      { value: "email-marketing",      label: "Email Marketing" },
-      { value: "marketing-contenu",    label: "Marketing de Contenu" },
-      { value: "strategie-marketing",  label: "Stratégie Marketing" },
+      { value: "seo",                  label: "SEO",                        arLabel: "تحسين محركات البحث" },
+      { value: "reseaux-sociaux",      label: "Réseaux Sociaux",            arLabel: "التواصل الاجتماعي" },
+      { value: "pub-facebook-insta",   label: "Publicité Facebook/Instagram", arLabel: "إعلانات فيسبوك/إنستغرام" },
+      { value: "email-marketing",      label: "Email Marketing",            arLabel: "التسويق بالبريد" },
+      { value: "marketing-contenu",    label: "Marketing de Contenu",       arLabel: "تسويق المحتوى" },
+      { value: "strategie-marketing",  label: "Stratégie Marketing",        arLabel: "استراتيجية التسويق" },
     ],
   },
   {
     value: "video-animation",
     label: "Vidéo & Animation",
+    arLabel: "الفيديو والرسوم المتحركة",
     subcategories: [
-      { value: "montage-video",        label: "Montage Vidéo" },
-      { value: "animation",            label: "Animation" },
-      { value: "motion-graphics",      label: "Motion Graphics" },
-      { value: "videos-ugc",           label: "Vidéos UGC" },
-      { value: "production-video",     label: "Production Vidéo" },
-      { value: "sous-titres",          label: "Sous-titres" },
+      { value: "montage-video",        label: "Montage Vidéo",              arLabel: "مونتاج الفيديو" },
+      { value: "animation",            label: "Animation",                  arLabel: "الرسوم المتحركة" },
+      { value: "motion-graphics",      label: "Motion Graphics",            arLabel: "موشن جرافيك" },
+      { value: "videos-ugc",           label: "Vidéos UGC",                 arLabel: "فيديوهات UGC" },
+      { value: "production-video",     label: "Production Vidéo",           arLabel: "إنتاج الفيديو" },
+      { value: "sous-titres",          label: "Sous-titres",                arLabel: "الترجمة النصية" },
     ],
   },
   {
     value: "redaction-traduction",
     label: "Rédaction & Traduction",
+    arLabel: "الكتابة والترجمة",
     subcategories: [
-      { value: "redaction-web",        label: "Rédaction Web" },
-      { value: "copywriting",          label: "Copywriting" },
-      { value: "traduction",           label: "Traduction AR/FR/EN" },
-      { value: "correction-relecture", label: "Correction & Relecture" },
-      { value: "ghostwriting",         label: "Ghostwriting" },
-      { value: "cv-lettres",           label: "CV & Lettres" },
+      { value: "redaction-web",        label: "Rédaction Web",              arLabel: "كتابة المحتوى الإلكتروني" },
+      { value: "copywriting",          label: "Copywriting",                arLabel: "الكتابة الإعلانية" },
+      { value: "traduction",           label: "Traduction AR/FR/EN",        arLabel: "الترجمة AR/FR/EN" },
+      { value: "correction-relecture", label: "Correction & Relecture",     arLabel: "التصحيح والمراجعة" },
+      { value: "ghostwriting",         label: "Ghostwriting",               arLabel: "الكتابة بالنيابة" },
+      { value: "cv-lettres",           label: "CV & Lettres",               arLabel: "السيرة الذاتية والرسائل" },
     ],
   },
   {
     value: "musique-audio",
     label: "Musique & Audio",
+    arLabel: "الموسيقى والصوت",
     subcategories: [
-      { value: "production-musicale",  label: "Production Musicale" },
-      { value: "mixage-mastering",     label: "Mixage & Mastering" },
-      { value: "voice-over",           label: "Voice Over" },
-      { value: "podcasts",             label: "Podcasts" },
-      { value: "jingles",              label: "Jingles" },
-      { value: "cours-musique",        label: "Cours de Musique" },
+      { value: "production-musicale",  label: "Production Musicale",        arLabel: "الإنتاج الموسيقي" },
+      { value: "mixage-mastering",     label: "Mixage & Mastering",         arLabel: "المزج والماسترينج" },
+      { value: "voice-over",           label: "Voice Over",                 arLabel: "التعليق الصوتي" },
+      { value: "podcasts",             label: "Podcasts",                   arLabel: "البودكاست" },
+      { value: "jingles",              label: "Jingles",                    arLabel: "الجينغلز" },
+      { value: "cours-musique",        label: "Cours de Musique",           arLabel: "دروس الموسيقى" },
     ],
   },
   {
     value: "business",
     label: "Business",
+    arLabel: "الأعمال",
     subcategories: [
-      { value: "comptabilite",         label: "Comptabilité" },
-      { value: "conseil-financier",    label: "Conseil Financier" },
-      { value: "business-plan",        label: "Business Plan" },
-      { value: "ressources-humaines",  label: "Ressources Humaines" },
-      { value: "gestion-projet",       label: "Gestion de Projet" },
+      { value: "comptabilite",         label: "Comptabilité",               arLabel: "المحاسبة" },
+      { value: "conseil-financier",    label: "Conseil Financier",          arLabel: "الاستشارة المالية" },
+      { value: "business-plan",        label: "Business Plan",              arLabel: "خطة العمل" },
+      { value: "ressources-humaines",  label: "Ressources Humaines",        arLabel: "الموارد البشرية" },
+      { value: "gestion-projet",       label: "Gestion de Projet",          arLabel: "إدارة المشاريع" },
     ],
   },
   {
     value: "formation-cours",
     label: "Formation & Cours",
+    arLabel: "التدريب والدورات",
     subcategories: [
-      { value: "soutien-scolaire",     label: "Soutien Scolaire" },
-      { value: "cours-langues",        label: "Cours de Langues" },
-      { value: "coaching",             label: "Coaching" },
-      { value: "formation-pro",        label: "Formation Professionnelle" },
+      { value: "soutien-scolaire",     label: "Soutien Scolaire",           arLabel: "الدعم الدراسي" },
+      { value: "cours-langues",        label: "Cours de Langues",           arLabel: "دروس اللغات" },
+      { value: "coaching",             label: "Coaching",                   arLabel: "التدريب الشخصي" },
+      { value: "formation-pro",        label: "Formation Professionnelle",  arLabel: "التدريب المهني" },
     ],
   },
   {
     value: "mode-de-vie",
     label: "Mode de Vie",
+    arLabel: "أسلوب الحياة",
     subcategories: [
-      { value: "design-interieur",          label: "Design d'Intérieur" },
-      { value: "photographie",              label: "Photographie" },
-      { value: "planification-evenements",  label: "Planification d'Événements" },
-      { value: "bien-etre-fitness",         label: "Bien-être & Fitness" },
+      { value: "design-interieur",          label: "Design d'Intérieur",            arLabel: "التصميم الداخلي" },
+      { value: "photographie",              label: "Photographie",                  arLabel: "التصوير" },
+      { value: "planification-evenements",  label: "Planification d'Événements",    arLabel: "تنظيم الفعاليات" },
+      { value: "bien-etre-fitness",         label: "Bien-être & Fitness",           arLabel: "الرفاهية واللياقة" },
     ],
   },
 ]
@@ -128,12 +137,18 @@ export const CATEGORY_COLORS: Record<string, string> = Object.fromEntries(
   )
 )
 
-export function getCategoryLabel(value: string): string {
+export function getCategoryLabel(value: string, lang: "fr" | "ar" = "fr"): string {
   for (const g of CATEGORY_GROUPS) {
     const sub = g.subcategories.find((s) => s.value === value)
-    if (sub) return sub.label
+    if (sub) return lang === "ar" ? (sub.arLabel ?? sub.label) : sub.label
   }
   return value
+}
+
+export function getGroupLabel(value: string, lang: "fr" | "ar" = "fr"): string {
+  const group = CATEGORY_GROUPS.find((g) => g.value === value)
+  if (!group) return value
+  return lang === "ar" ? (group.arLabel ?? group.label) : group.label
 }
 
 export function getGroupForCategory(categoryValue: string): string | undefined {

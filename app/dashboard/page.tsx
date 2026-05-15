@@ -17,6 +17,7 @@ import {
   Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription,
 } from "@/components/ui/dialog"
 import { getCategoryLabel, CATEGORY_COLORS } from "@/lib/categories"
+import { formatPrice, formatDate as fmtDate } from "@/lib/utils"
 
 interface Profile {
   id: string
@@ -158,9 +159,7 @@ function OrderRow({
   const actions = role === "freelancer" ? (nextStatuses[order.status] ?? []) : []
 
   function formatDate(ts: string) {
-    return new Date(ts).toLocaleDateString(t === translations.ar.dashboard ? "ar-MA" : "fr-FR", {
-      day: "numeric", month: "short", year: "numeric",
-    })
+    return fmtDate(ts, lang)
   }
 
   return (
@@ -188,7 +187,7 @@ function OrderRow({
 
         <div className="flex flex-col items-end gap-1 shrink-0">
           <span className="text-sm font-black text-foreground">
-            {order.price.toLocaleString("fr-MA")} MAD
+            {formatPrice(order.price, lang)} MAD
           </span>
           <span className={`text-[10px] font-semibold px-2 py-0.5 rounded-full ${statusClasses[order.status] ?? "bg-muted text-muted-foreground"}`}>
             {t.statuses[order.status] ?? order.status}
@@ -263,7 +262,7 @@ export default function DashboardPage() {
 
   function memberSince(ts?: string | null) {
     if (!ts) return null
-    return new Date(ts).toLocaleDateString(lang === "ar" ? "ar-MA" : "fr-FR", { month: "long", year: "numeric" })
+    return new Date(ts).toLocaleDateString(lang === "ar" ? "ar-MA-u-nu-arab" : "fr-FR", { month: "long", year: "numeric" })
   }
 
   useEffect(() => {
@@ -378,7 +377,7 @@ export default function DashboardPage() {
   const since = memberSince(profile.updated_at)
 
   const pctColor = pct >= 80 ? "bg-emerald-500" : pct >= 50 ? "bg-amber-500" : "bg-primary"
-  const freelanceName = reviewDialog ? (profilesMap[reviewDialog.freelancer_id]?.full_name ?? "ce freelance") : ""
+  const freelanceName = reviewDialog ? (profilesMap[reviewDialog.freelancer_id]?.full_name ?? t.orderRow.user) : ""
 
   return (
     <>
@@ -535,7 +534,7 @@ export default function DashboardPage() {
                   <div key={service.id} className="rounded-2xl border border-border bg-card p-5 shadow-sm hover:shadow-md transition-shadow flex flex-col gap-3">
                     <div className="flex items-start justify-between gap-2">
                       <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-semibold ${CATEGORY_COLORS[service.category] ?? "bg-muted text-muted-foreground"}`}>
-                        {getCategoryLabel(service.category)}
+                        {getCategoryLabel(service.category, lang)}
                       </span>
                       <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-emerald-100 text-emerald-700 text-xs font-semibold shrink-0">
                         <CheckCircle2 className="h-3 w-3" />
@@ -549,7 +548,7 @@ export default function DashboardPage() {
                     <div className="flex items-center justify-between pt-1 border-t border-border">
                       <div className="flex items-center gap-3">
                         <span className="font-black text-foreground text-base">
-                          {service.price.toLocaleString("fr-MA")}{" "}
+                          {formatPrice(service.price, lang)}{" "}
                           <span className="text-xs font-semibold text-muted-foreground">MAD</span>
                         </span>
                         <span className="flex items-center gap-1 text-xs text-muted-foreground">

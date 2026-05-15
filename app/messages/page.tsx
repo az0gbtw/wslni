@@ -3,10 +3,12 @@
 import { useState, useEffect, useRef, useMemo, useCallback } from "react"
 import { useRouter } from "next/navigation"
 import { format, isToday, isYesterday } from "date-fns"
-import { fr } from "date-fns/locale"
+import { ar as arLocale, fr as frLocale } from "date-fns/locale"
 import { Loader2, Send, Search, Plus, ArrowLeft, MessageSquare, X } from "lucide-react"
 import type { User as SupabaseUser } from "@supabase/supabase-js"
 import { createClient } from "@/lib/supabase/client"
+import { useLanguage } from "@/lib/language-context"
+import { translations } from "@/lib/translations"
 import { Navbar } from "@/components/navbar"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
@@ -85,10 +87,10 @@ function UserAvatar({
   )
 }
 
-function formatConvTime(dateStr: string): string {
+function formatConvTime(dateStr: string, yesterday: string): string {
   const d = new Date(dateStr)
   if (isToday(d)) return format(d, "HH:mm")
-  if (isYesterday(d)) return "Hier"
+  if (isYesterday(d)) return yesterday
   return format(d, "dd/MM")
 }
 
@@ -96,7 +98,10 @@ function formatConvTime(dateStr: string): string {
 
 export default function MessagesPage() {
   const router = useRouter()
+  const { lang } = useLanguage()
+  const tm = translations[lang].messages
   const supabase = useMemo(() => createClient(), [])
+  const locale = lang === "ar" ? arLocale : frLocale
 
   const [user, setUser] = useState<SupabaseUser | null>(null)
   const [conversations, setConversations] = useState<Conversation[]>([])
@@ -114,25 +119,15 @@ export default function MessagesPage() {
   const [searchingUsers, setSearchingUsers] = useState(false)
   const [mobileView, setMobileView] = useState<"list" | "chat">("list")
 
-  // Refs to read current state inside realtime callbacks without stale closures
   const activeConvIdRef = useRef<string | null>(null)
   const userIdRef = useRef<string | null>(null)
   const messagesEndRef = useRef<HTMLDivElement>(null)
 
-  useEffect(() => {
-    activeConvIdRef.current = activeConvId
-  }, [activeConvId])
+  useEffect(() => { activeConvIdRef.current = activeConvId }, [activeConvId])
+  useEffect(() => { userIdRef.current = user?.id ?? null }, [user])
+  useEffect(() => { messagesEndRef.current?.scrollIntoView({ behavior: "smooth" }) }, [messages])
 
-  useEffect(() => {
-    userIdRef.current = user?.id ?? null
-  }, [user])
-
-  // Scroll to newest message
-  useEffect(() => {
-    messagesEndRef.current?.scrollIntoView({ behavior: "smooth" })
-  }, [messages])
-
-  // ── Fetch conversations + profiles + unread counts ──────────────────────
+  // ── Fetch conversations ─────────────────────────────────────────────────────
   const loadConversations = useCallback(
     async (uid: string) => {
       const { data: convs } = await supabase
@@ -179,17 +174,13 @@ export default function MessagesPage() {
 
       setConversations(enriched)
 
-      // Unread counts: messages not sent by me and not yet read
       if (convs.length > 0) {
         const { data: unread } = await supabase
           .from("messages")
           .select("conversation_id")
           .eq("is_read", false)
           .neq("sender_id", uid)
-          .in(
-            "conversation_id",
-            convs.map((c) => c.id)
-          )
+          .in("conversation_id", convs.map((c) => c.id))
 
         const counts: Record<string, number> = {}
         for (const m of unread ?? []) {
@@ -201,20 +192,17 @@ export default function MessagesPage() {
     [supabase]
   )
 
-  // ── Auth + initial load ─────────────────────────────────────────────────
+  // ── Auth + initial load ─────────────────────────────────────────────────────
   useEffect(() => {
     supabase.auth.getUser().then(async ({ data: { user } }) => {
-      if (!user) {
-        router.replace("/connexion")
-        return
-      }
+      if (!user) { router.replace("/connexion"); return }
       setUser(user)
       await loadConversations(user.id)
       setLoading(false)
     })
   }, [router, supabase, loadConversations])
 
-  // ── Realtime: listen to new messages (RLS filters automatically) ────────
+  // ── Realtime ────────────────────────────────────────────────────────────────
   useEffect(() => {
     if (!user) return
 
@@ -228,16 +216,11 @@ export default function MessagesPage() {
           const currentUserId = userIdRef.current
           const currentActiveId = activeConvIdRef.current
 
-          // Keep conversations list sorted by latest activity
           setConversations((prev) =>
             prev
               .map((c) =>
                 c.id === msg.conversation_id
-                  ? {
-                      ...c,
-                      last_message_preview: msg.content,
-                      last_message_at: msg.created_at,
-                    }
+                  ? { ...c, last_message_preview: msg.content, last_message_at: msg.created_at }
                   : c
               )
               .sort(
@@ -248,20 +231,13 @@ export default function MessagesPage() {
           )
 
           if (msg.conversation_id === currentActiveId) {
-            // Append to active chat (deduplicate optimistic inserts)
             setMessages((prev) =>
               prev.some((m) => m.id === msg.id) ? prev : [...prev, msg]
             )
-            // Auto-mark as read when received in the open chat
             if (msg.sender_id !== currentUserId) {
-              supabase
-                .from("messages")
-                .update({ is_read: true })
-                .eq("id", msg.id)
-                .then(() => {})
+              supabase.from("messages").update({ is_read: true }).eq("id", msg.id).then(() => {})
             }
           } else if (msg.sender_id !== currentUserId) {
-            // Increment unread badge on other conversations
             setUnreadCounts((prev) => ({
               ...prev,
               [msg.conversation_id]: (prev[msg.conversation_id] ?? 0) + 1,
@@ -271,12 +247,10 @@ export default function MessagesPage() {
       )
       .subscribe()
 
-    return () => {
-      supabase.removeChannel(channel)
-    }
+    return () => { supabase.removeChannel(channel) }
   }, [user, supabase])
 
-  // ── Load messages when active conversation changes ──────────────────────
+  // ── Load messages on conversation change ────────────────────────────────────
   useEffect(() => {
     if (!activeConvId || !user) return
 
@@ -295,17 +269,13 @@ export default function MessagesPage() {
           .map((m: Message) => m.id)
 
         if (unreadIds.length > 0) {
-          supabase
-            .from("messages")
-            .update({ is_read: true })
-            .in("id", unreadIds)
-            .then(() => {})
+          supabase.from("messages").update({ is_read: true }).in("id", unreadIds).then(() => {})
         }
         setUnreadCounts((prev) => ({ ...prev, [activeConvId]: 0 }))
       })
   }, [activeConvId, user, supabase])
 
-  // ── Send message ────────────────────────────────────────────────────────
+  // ── Send message ────────────────────────────────────────────────────────────
   async function sendMessage() {
     if (!newMessage.trim() || !activeConvId || !user || sending) return
     const content = newMessage.trim()
@@ -335,7 +305,7 @@ export default function MessagesPage() {
             senderName:
               (user.user_metadata?.full_name as string | undefined) ??
               user.email?.split("@")[0] ??
-              "Utilisateur",
+              tm.user,
             messagePreview: content,
           }),
         }).catch(() => {})
@@ -344,7 +314,7 @@ export default function MessagesPage() {
     setSending(false)
   }
 
-  // ── User search for new conversation dialog ─────────────────────────────
+  // ── User search ─────────────────────────────────────────────────────────────
   useEffect(() => {
     if (!userSearch.trim() || userSearch.length < 2) {
       setUserResults([])
@@ -365,11 +335,9 @@ export default function MessagesPage() {
     return () => clearTimeout(timer)
   }, [userSearch, user?.id, supabase])
 
-  // ── Start or open a conversation with a user ────────────────────────────
+  // ── Start / open conversation ───────────────────────────────────────────────
   async function openConversationWith(other: Profile) {
     if (!user) return
-
-    // Always sort UUIDs to match the UNIQUE constraint
     const [p1, p2] = [user.id, other.id].sort()
 
     const { data: existing } = await supabase
@@ -380,7 +348,6 @@ export default function MessagesPage() {
       .maybeSingle()
 
     let convId: string
-
     if (existing) {
       convId = existing.id
     } else {
@@ -408,18 +375,14 @@ export default function MessagesPage() {
     setUserResults([])
   }
 
-  // ── Derived state ───────────────────────────────────────────────────────
   const activeConv = conversations.find((c) => c.id === activeConvId)
 
   const filteredConvs = convSearch
     ? conversations.filter((c) =>
-        c.otherParticipant.full_name
-          ?.toLowerCase()
-          .includes(convSearch.toLowerCase())
+        c.otherParticipant.full_name?.toLowerCase().includes(convSearch.toLowerCase())
       )
     : conversations
 
-  // ── Loading screen ──────────────────────────────────────────────────────
   if (loading) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-background">
@@ -428,55 +391,49 @@ export default function MessagesPage() {
     )
   }
 
-  // ── Layout ──────────────────────────────────────────────────────────────
   return (
     <>
       <Navbar />
 
-      {/* Full-height panel below the fixed Navbar (h-16) */}
       <div className="fixed inset-x-0 bottom-0 top-16 flex overflow-hidden bg-background">
 
-        {/* ── Left panel: conversation list ── */}
+        {/* ── Conversation list ── */}
         <aside
           className={cn(
-            "w-full md:w-80 lg:w-96 border-r border-border flex flex-col shrink-0 bg-background",
+            "w-full md:w-80 lg:w-96 border-e border-border flex flex-col shrink-0 bg-background",
             mobileView === "chat" && "hidden md:flex"
           )}
         >
-          {/* Header */}
           <div className="p-4 border-b border-border space-y-3 shrink-0">
             <div className="flex items-center justify-between">
-              <h1 className="text-lg font-black text-foreground">Messages</h1>
+              <h1 className="text-lg font-black text-foreground">{tm.header}</h1>
               <Button
                 size="sm"
                 variant="ghost"
                 className="h-8 w-8 p-0 rounded-lg"
                 onClick={() => setShowNewConv(true)}
-                title="Nouvelle conversation"
+                title={tm.newConversation}
               >
                 <Plus className="h-4 w-4" />
               </Button>
             </div>
             <div className="relative">
-              <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground pointer-events-none" />
+              <Search className="absolute start-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground pointer-events-none" />
               <Input
-                placeholder="Rechercher..."
-                className="pl-9 h-9 text-sm rounded-xl"
+                placeholder={tm.searchPlaceholder}
+                className="ps-9 h-9 text-sm rounded-xl"
                 value={convSearch}
                 onChange={(e) => setConvSearch(e.target.value)}
               />
             </div>
           </div>
 
-          {/* List */}
           <div className="flex-1 overflow-y-auto divide-y divide-border/40">
             {filteredConvs.length === 0 ? (
               <div className="flex flex-col items-center justify-center h-full p-8 text-center gap-3">
                 <MessageSquare className="h-10 w-10 text-muted-foreground/30" />
                 <p className="text-sm text-muted-foreground font-medium">
-                  {convSearch
-                    ? "Aucune conversation trouvée"
-                    : "Aucune conversation"}
+                  {convSearch ? tm.noConvFound : tm.noConversations}
                 </p>
                 {!convSearch && (
                   <Button
@@ -486,7 +443,7 @@ export default function MessagesPage() {
                     onClick={() => setShowNewConv(true)}
                   >
                     <Plus className="h-3.5 w-3.5" />
-                    Nouvelle conversation
+                    {tm.newConversation}
                   </Button>
                 )}
               </div>
@@ -503,8 +460,8 @@ export default function MessagesPage() {
                       setMobileView("chat")
                     }}
                     className={cn(
-                      "w-full flex items-center gap-3 px-4 py-3 text-left transition-colors hover:bg-muted/40",
-                      isActive && "bg-primary/5 border-r-2 border-primary"
+                      "w-full flex items-center gap-3 px-4 py-3 text-start transition-colors hover:bg-muted/40",
+                      isActive && "bg-primary/5 border-e-2 border-primary"
                     )}
                   >
                     <UserAvatar profile={conv.otherParticipant} size="md" />
@@ -516,22 +473,20 @@ export default function MessagesPage() {
                             unread > 0 ? "font-bold" : "font-semibold"
                           )}
                         >
-                          {conv.otherParticipant.full_name || "Utilisateur"}
+                          {conv.otherParticipant.full_name || tm.user}
                         </span>
                         <span className="text-[11px] text-muted-foreground shrink-0">
-                          {formatConvTime(conv.last_message_at)}
+                          {formatConvTime(conv.last_message_at, tm.yesterday)}
                         </span>
                       </div>
                       <div className="flex items-center justify-between gap-1">
                         <span
                           className={cn(
                             "text-xs truncate",
-                            unread > 0
-                              ? "text-foreground font-medium"
-                              : "text-muted-foreground"
+                            unread > 0 ? "text-foreground font-medium" : "text-muted-foreground"
                           )}
                         >
-                          {conv.last_message_preview || "Nouvelle conversation"}
+                          {conv.last_message_preview || tm.newConversation}
                         </span>
                         {unread > 0 && (
                           <span className="shrink-0 min-w-[20px] h-5 px-1 rounded-full bg-primary text-primary-foreground text-[11px] font-bold flex items-center justify-center">
@@ -547,7 +502,7 @@ export default function MessagesPage() {
           </div>
         </aside>
 
-        {/* ── Right panel: chat ── */}
+        {/* ── Chat panel ── */}
         <main
           className={cn(
             "flex-1 flex flex-col min-w-0",
@@ -564,12 +519,12 @@ export default function MessagesPage() {
                   className="h-8 w-8 p-0 md:hidden"
                   onClick={() => setMobileView("list")}
                 >
-                  <ArrowLeft className="h-4 w-4" />
+                  <ArrowLeft className={cn("h-4 w-4", lang === "ar" && "rotate-180")} />
                 </Button>
                 <UserAvatar profile={activeConv.otherParticipant} size="md" />
                 <div className="min-w-0">
                   <p className="font-semibold text-sm text-foreground truncate">
-                    {activeConv.otherParticipant.full_name || "Utilisateur"}
+                    {activeConv.otherParticipant.full_name || tm.user}
                   </p>
                   {activeConv.otherParticipant.job_title && (
                     <p className="text-xs text-muted-foreground truncate">
@@ -591,9 +546,9 @@ export default function MessagesPage() {
                       <MessageSquare className="h-6 w-6 text-primary" />
                     </div>
                     <p className="text-sm text-muted-foreground">
-                      Commencez la conversation avec{" "}
+                      {tm.startChatWith}{" "}
                       <span className="font-semibold text-foreground">
-                        {activeConv.otherParticipant.full_name || "cet utilisateur"}
+                        {activeConv.otherParticipant.full_name || tm.user}
                       </span>
                     </p>
                   </div>
@@ -613,11 +568,7 @@ export default function MessagesPage() {
                           {showTimestamp && (
                             <div className="flex justify-center my-4">
                               <span className="text-[11px] text-muted-foreground bg-background border border-border px-3 py-1 rounded-full">
-                                {format(
-                                  new Date(msg.created_at),
-                                  "d MMMM · HH:mm",
-                                  { locale: fr }
-                                )}
+                                {format(new Date(msg.created_at), "d MMMM · HH:mm", { locale })}
                               </span>
                             </div>
                           )}
@@ -631,8 +582,8 @@ export default function MessagesPage() {
                               className={cn(
                                 "max-w-[75%] sm:max-w-[60%] px-4 py-2.5 rounded-2xl text-sm",
                                 isMe
-                                  ? "bg-primary text-primary-foreground rounded-br-md"
-                                  : "bg-background border border-border text-foreground shadow-sm rounded-bl-md"
+                                  ? "bg-primary text-primary-foreground rounded-br-md rtl:rounded-br-2xl rtl:rounded-bl-md"
+                                  : "bg-background border border-border text-foreground shadow-sm rounded-bl-md rtl:rounded-bl-2xl rtl:rounded-br-md"
                               )}
                             >
                               <p className="leading-relaxed whitespace-pre-wrap break-words">
@@ -640,10 +591,8 @@ export default function MessagesPage() {
                               </p>
                               <p
                                 className={cn(
-                                  "text-[10px] mt-1 text-right",
-                                  isMe
-                                    ? "text-primary-foreground/60"
-                                    : "text-muted-foreground"
+                                  "text-[10px] mt-1 text-end",
+                                  isMe ? "text-primary-foreground/60" : "text-muted-foreground"
                                 )}
                               >
                                 {format(new Date(msg.created_at), "HH:mm")}
@@ -661,10 +610,7 @@ export default function MessagesPage() {
               {/* Message input */}
               <div className="p-3 sm:p-4 border-t border-border bg-background shrink-0">
                 <form
-                  onSubmit={(e) => {
-                    e.preventDefault()
-                    sendMessage()
-                  }}
+                  onSubmit={(e) => { e.preventDefault(); sendMessage() }}
                   className="flex items-end gap-2"
                 >
                   <textarea
@@ -676,7 +622,7 @@ export default function MessagesPage() {
                         sendMessage()
                       }
                     }}
-                    placeholder="Écrivez un message…"
+                    placeholder={tm.writePlaceholder}
                     rows={1}
                     className={cn(
                       "flex-1 resize-none rounded-xl border border-border bg-muted/30 px-4 py-2.5",
@@ -694,33 +640,27 @@ export default function MessagesPage() {
                     {sending ? (
                       <Loader2 className="h-4 w-4 animate-spin" />
                     ) : (
-                      <Send className="h-4 w-4" />
+                      <Send className={cn("h-4 w-4", lang === "ar" && "rotate-180")} />
                     )}
                   </Button>
                 </form>
               </div>
             </>
           ) : (
-            /* Empty state — no conversation selected */
             <div className="flex-1 flex flex-col items-center justify-center text-center p-8 gap-5">
               <div className="w-20 h-20 rounded-3xl bg-primary/10 flex items-center justify-center">
                 <MessageSquare className="h-10 w-10 text-primary" />
               </div>
               <div>
-                <h2 className="text-xl font-black text-foreground mb-2">
-                  Vos messages
-                </h2>
-                <p className="text-sm text-muted-foreground max-w-xs">
-                  Sélectionnez une conversation à gauche ou démarrez-en une
-                  nouvelle pour commencer à discuter.
-                </p>
+                <h2 className="text-xl font-black text-foreground mb-2">{tm.yourMessages}</h2>
+                <p className="text-sm text-muted-foreground max-w-xs">{tm.yourMessagesSub}</p>
               </div>
               <Button
                 className="gap-2 bg-primary hover:bg-primary/90 text-primary-foreground font-semibold"
                 onClick={() => setShowNewConv(true)}
               >
                 <Plus className="h-4 w-4" />
-                Nouvelle conversation
+                {tm.newConversation}
               </Button>
             </div>
           )}
@@ -731,16 +671,11 @@ export default function MessagesPage() {
       {showNewConv && (
         <div
           className="fixed inset-0 bg-black/50 backdrop-blur-sm z-[60] flex items-center justify-center p-4"
-          onClick={(e) => {
-            if (e.target === e.currentTarget) closeNewConvDialog()
-          }}
+          onClick={(e) => { if (e.target === e.currentTarget) closeNewConvDialog() }}
         >
           <div className="bg-background rounded-2xl shadow-2xl w-full max-w-md border border-border overflow-hidden animate-in fade-in zoom-in-95 duration-200">
-            {/* Dialog header */}
             <div className="flex items-center justify-between px-5 py-4 border-b border-border">
-              <h2 className="font-black text-foreground">
-                Nouvelle conversation
-              </h2>
+              <h2 className="font-black text-foreground">{tm.newConversation}</h2>
               <Button
                 size="sm"
                 variant="ghost"
@@ -751,13 +686,12 @@ export default function MessagesPage() {
               </Button>
             </div>
 
-            {/* Search input */}
             <div className="px-5 pt-4 pb-2">
               <div className="relative">
-                <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground pointer-events-none" />
+                <Search className="absolute start-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground pointer-events-none" />
                 <Input
-                  placeholder="Rechercher un utilisateur par nom..."
-                  className="pl-9 rounded-xl"
+                  placeholder={tm.searchUserPlaceholder}
+                  className="ps-9 rounded-xl"
                   value={userSearch}
                   onChange={(e) => setUserSearch(e.target.value)}
                   autoFocus
@@ -765,7 +699,6 @@ export default function MessagesPage() {
               </div>
             </div>
 
-            {/* Results */}
             <div className="px-5 pb-5 max-h-72 overflow-y-auto space-y-1">
               {searchingUsers ? (
                 <div className="flex justify-center py-8">
@@ -776,28 +709,26 @@ export default function MessagesPage() {
                   <button
                     key={u.id}
                     onClick={() => openConversationWith(u)}
-                    className="w-full flex items-center gap-3 p-3 rounded-xl hover:bg-muted transition-colors text-left"
+                    className="w-full flex items-center gap-3 p-3 rounded-xl hover:bg-muted transition-colors text-start"
                   >
                     <UserAvatar profile={u} size="md" />
                     <div className="min-w-0">
                       <p className="text-sm font-semibold text-foreground truncate">
-                        {u.full_name || "Utilisateur"}
+                        {u.full_name || tm.user}
                       </p>
                       {u.job_title && (
-                        <p className="text-xs text-muted-foreground truncate">
-                          {u.job_title}
-                        </p>
+                        <p className="text-xs text-muted-foreground truncate">{u.job_title}</p>
                       )}
                     </div>
                   </button>
                 ))
               ) : userSearch.length >= 2 ? (
                 <p className="text-center py-8 text-sm text-muted-foreground">
-                  Aucun utilisateur trouvé pour «&nbsp;{userSearch}&nbsp;»
+                  {tm.noUserFound(userSearch)}
                 </p>
               ) : (
                 <p className="text-center py-8 text-sm text-muted-foreground">
-                  Saisissez au moins 2 caractères pour rechercher
+                  {tm.minCharsHint}
                 </p>
               )}
             </div>

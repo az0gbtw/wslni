@@ -10,6 +10,7 @@ import type { User as SupabaseUser } from "@supabase/supabase-js"
 import { createClient } from "@/lib/supabase/client"
 import { useLanguage } from "@/lib/language-context"
 import { translations } from "@/lib/translations"
+import { formatPrice, formatDate as fmtDate } from "@/lib/utils"
 import { Navbar } from "@/components/navbar"
 import { Button } from "@/components/ui/button"
 import {
@@ -128,7 +129,7 @@ function OrderCard({
 
         <div className="flex flex-col items-end gap-1.5 shrink-0">
           <span className="text-sm font-black text-foreground">
-            {order.price.toLocaleString("fr-MA")} MAD
+            {formatPrice(order.price, lang)} MAD
           </span>
           <span className={`text-[10px] font-semibold px-2 py-0.5 rounded-full ${statusClasses[order.status] ?? "bg-muted text-muted-foreground"}`}>
             {td.statuses[order.status] ?? order.status}
@@ -278,9 +279,7 @@ export default function CommandesPage() {
   }
 
   function formatDate(ts: string) {
-    return new Date(ts).toLocaleDateString(lang === "ar" ? "ar-MA" : "fr-FR", {
-      day: "numeric", month: "short", year: "numeric",
-    })
+    return fmtDate(ts, lang)
   }
 
   function openReview(order: Order) {
@@ -306,7 +305,7 @@ export default function CommandesPage() {
   if (!user) return null
 
   const freelanceName = reviewDialog
-    ? (profilesMap[reviewDialog.freelancer_id]?.full_name ?? "ce freelance")
+    ? (profilesMap[reviewDialog.freelancer_id]?.full_name ?? td.orderRow.user)
     : ""
 
   return (

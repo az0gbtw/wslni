@@ -11,6 +11,7 @@ import type { User } from "@supabase/supabase-js"
 import { createClient } from "@/lib/supabase/client"
 import { useLanguage } from "@/lib/language-context"
 import { translations } from "@/lib/translations"
+import { formatPrice } from "@/lib/utils"
 import { Navbar } from "@/components/navbar"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
@@ -98,7 +99,7 @@ export default function ProfilPage() {
 
   function memberSince(ts?: string | null) {
     if (!ts) return "—"
-    return new Date(ts).toLocaleDateString(lang === "ar" ? "ar-MA" : "fr-FR", { month: "long", year: "numeric" })
+    return new Date(ts).toLocaleDateString(lang === "ar" ? "ar-MA-u-nu-arab" : "fr-FR", { month: "long", year: "numeric" })
   }
 
   useEffect(() => {
@@ -221,7 +222,7 @@ export default function ProfilPage() {
                   {profile.hourly_rate != null && (
                     <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-muted text-foreground text-xs font-semibold border border-border">
                       <span className="w-1.5 h-1.5 rounded-full bg-primary inline-block" />
-                      {profile.hourly_rate.toLocaleString("fr-MA")} MAD/h
+                      {formatPrice(profile.hourly_rate, lang)} MAD/h
                     </span>
                   )}
                 </div>
