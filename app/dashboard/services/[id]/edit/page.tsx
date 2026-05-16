@@ -260,7 +260,7 @@ export default function EditServicePage({
 
     const allImages = [...draft.existingImageUrls, ...uploadedUrls]
 
-    const { error } = await supabase
+    const { data: updated, error } = await supabase
       .from("services")
       .update({
         title:          draft.title.trim(),
@@ -272,13 +272,16 @@ export default function EditServicePage({
         pricing_tiers:  draft.tiers,
         images:         allImages,
         requirements:   draft.requirements.filter(r => r.trim()),
-        updated_at:     new Date().toISOString(),
       })
       .eq("id", serviceId)
+      .eq("user_id", userId)
+      .select("id")
 
     setSaving(false)
     if (error) {
       setSaveError("Erreur lors de la sauvegarde : " + error.message)
+    } else if (!updated?.length) {
+      setSaveError("Modification impossible : service introuvable ou droits insuffisants. Vérifiez les politiques RLS dans Supabase.")
     } else {
       router.push(`/services/${serviceId}`)
     }

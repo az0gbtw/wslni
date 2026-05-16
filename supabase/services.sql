@@ -20,21 +20,59 @@ create table if not exists public.services (
 
 alter table public.services enable row level security;
 
-create policy "Les services publiés sont visibles par tous"
-  on public.services for select
-  using (status = 'published');
+-- Published services are visible to everyone
+DO $$
+BEGIN
+  IF NOT EXISTS (
+    SELECT 1 FROM pg_policies
+    WHERE schemaname = 'public' AND tablename = 'services'
+      AND policyname = 'Services are publicly viewable'
+  ) THEN
+    CREATE POLICY "Services are publicly viewable"
+      ON public.services FOR SELECT
+      USING (status = 'published');
+  END IF;
+END $$;
 
-create policy "Les utilisateurs peuvent créer leurs propres services"
-  on public.services for insert
-  with check (auth.uid() = user_id);
+-- Owners can insert, update, delete their own services
+DO $$
+BEGIN
+  IF NOT EXISTS (
+    SELECT 1 FROM pg_policies
+    WHERE schemaname = 'public' AND tablename = 'services'
+      AND policyname = 'Users can insert their own services'
+  ) THEN
+    CREATE POLICY "Users can insert their own services"
+      ON public.services FOR INSERT
+      WITH CHECK (auth.uid() = user_id);
+  END IF;
+END $$;
 
-create policy "Les utilisateurs peuvent modifier leurs propres services"
-  on public.services for update
-  using (auth.uid() = user_id);
+DO $$
+BEGIN
+  IF NOT EXISTS (
+    SELECT 1 FROM pg_policies
+    WHERE schemaname = 'public' AND tablename = 'services'
+      AND policyname = 'Users can update their own services'
+  ) THEN
+    CREATE POLICY "Users can update their own services"
+      ON public.services FOR UPDATE
+      USING (auth.uid() = user_id);
+  END IF;
+END $$;
 
-create policy "Les utilisateurs peuvent supprimer leurs propres services"
-  on public.services for delete
-  using (auth.uid() = user_id);
+DO $$
+BEGIN
+  IF NOT EXISTS (
+    SELECT 1 FROM pg_policies
+    WHERE schemaname = 'public' AND tablename = 'services'
+      AND policyname = 'Users can delete their own services'
+  ) THEN
+    CREATE POLICY "Users can delete their own services"
+      ON public.services FOR DELETE
+      USING (auth.uid() = user_id);
+  END IF;
+END $$;
 
 -- Reuses handle_updated_at() defined in schema.sql
 create trigger on_services_updated
