@@ -200,6 +200,11 @@ const fr = {
       createBtn: "Créer un service",
       published: "Publié",
       edit: "Modifier",
+      delete: "Supprimer",
+      deleteConfirmTitle: "Supprimer ce service ?",
+      deleteConfirmDesc: "Cette action est irréversible. Le service sera définitivement supprimé et ne sera plus visible par les clients.",
+      deleteConfirmBtn: "Oui, supprimer",
+      deleteCancelBtn: "Annuler",
       viewAll: "Voir tous les services",
     },
     receivedOrders: {
@@ -663,6 +668,11 @@ const ar: typeof fr = {
       createBtn: "إنشاء خدمة",
       published: "منشور",
       edit: "تعديل",
+      delete: "حذف",
+      deleteConfirmTitle: "حذف هذه الخدمة؟",
+      deleteConfirmDesc: "هذا الإجراء لا يمكن التراجع عنه. ستُحذف الخدمة نهائياً ولن تظهر للعملاء بعد الآن.",
+      deleteConfirmBtn: "نعم، احذف",
+      deleteCancelBtn: "إلغاء",
       viewAll: "عرض جميع الخدمات",
     },
     receivedOrders: {

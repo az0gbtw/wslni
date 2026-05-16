@@ -4,7 +4,7 @@ import { useState, useEffect } from "react"
 import { useRouter } from "next/navigation"
 import Link from "next/link"
 import {
-  Loader2, Plus, Edit2, Briefcase, CheckCircle2, Clock,
+  Loader2, Plus, Edit2, Trash2, Briefcase, CheckCircle2, Clock,
   ArrowRight, User, Star, TrendingUp, ShoppingBag, Package,
 } from "lucide-react"
 import type { User as SupabaseUser } from "@supabase/supabase-js"
@@ -16,6 +16,10 @@ import { Button } from "@/components/ui/button"
 import {
   Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription,
 } from "@/components/ui/dialog"
+import {
+  AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent,
+  AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle,
+} from "@/components/ui/alert-dialog"
 import { getCategoryLabel, CATEGORY_COLORS } from "@/lib/categories"
 import { formatPrice, formatDate as fmtDate } from "@/lib/utils"
 
@@ -259,6 +263,18 @@ export default function DashboardPage() {
   const [reviewComment, setReviewComment] = useState("")
   const [reviewSubmitting, setReviewSubmitting] = useState(false)
   const [loading, setLoading] = useState(true)
+  const [deleteTarget, setDeleteTarget] = useState<Service | null>(null)
+  const [deleting, setDeleting] = useState(false)
+
+  async function handleDeleteService() {
+    if (!deleteTarget) return
+    setDeleting(true)
+    const supabase = createClient()
+    await supabase.from("services").delete().eq("id", deleteTarget.id)
+    setServices((prev) => prev.filter((s) => s.id !== deleteTarget.id))
+    setDeleteTarget(null)
+    setDeleting(false)
+  }
 
   function memberSince(ts?: string | null) {
     if (!ts) return null
@@ -556,12 +572,23 @@ export default function DashboardPage() {
                           {service.delivery_days}j
                         </span>
                       </div>
-                      <Button asChild size="sm" variant="ghost" className="h-7 px-2.5 text-xs gap-1 font-medium">
-                        <Link href={`/services/${service.id}/modifier`}>
-                          <Edit2 className="h-3 w-3" />
-                          {t.services.edit}
-                        </Link>
-                      </Button>
+                      <div className="flex items-center gap-1">
+                        <Button asChild size="sm" variant="ghost" className="h-7 px-2.5 text-xs gap-1 font-medium">
+                          <Link href={`/services/${service.id}/modifier`}>
+                            <Edit2 className="h-3 w-3" />
+                            {t.services.edit}
+                          </Link>
+                        </Button>
+                        <Button
+                          size="sm"
+                          variant="ghost"
+                          className="h-7 px-2.5 text-xs gap-1 font-medium text-red-500 hover:text-red-600 hover:bg-red-50"
+                          onClick={() => setDeleteTarget(service)}
+                        >
+                          <Trash2 className="h-3 w-3" />
+                          {t.services.delete}
+                        </Button>
+                      </div>
                     </div>
                   </div>
                 ))}
@@ -670,6 +697,26 @@ export default function DashboardPage() {
           )}
         </div>
       </main>
+
+      {/* Delete service confirmation */}
+      <AlertDialog open={deleteTarget !== null} onOpenChange={(open) => { if (!open) setDeleteTarget(null) }}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>{t.services.deleteConfirmTitle}</AlertDialogTitle>
+            <AlertDialogDescription>{t.services.deleteConfirmDesc}</AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={deleting}>{t.services.deleteCancelBtn}</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={handleDeleteService}
+              disabled={deleting}
+              className="bg-red-600 hover:bg-red-700 focus:ring-red-600"
+            >
+              {deleting ? <Loader2 className="h-4 w-4 animate-spin" /> : t.services.deleteConfirmBtn}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
 
       {/* Review dialog */}
       <Dialog open={reviewDialog !== null} onOpenChange={(open) => { if (!open) closeReviewDialog() }}>
