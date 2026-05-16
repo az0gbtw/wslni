@@ -147,16 +147,13 @@ function OrderRow({
     ? otherParty.full_name.split(" ").map((n) => n[0]).slice(0, 2).join("").toUpperCase()
     : "?"
 
-  const showReviewAction = role === "client" && order.status === "livré"
-
   const nextStatuses: Record<string, Array<{ status: string; labelKey: "accept" | "cancel" | "markDelivered"; cls: string }>> = {
     en_attente: [
-      { status: "en_cours", labelKey: "accept",       cls: "text-blue-600 hover:bg-blue-50" },
-      { status: "annulé",   labelKey: "cancel",       cls: "text-red-600 hover:bg-red-50" },
+      { status: "en_cours", labelKey: "accept", cls: "text-blue-600 hover:bg-blue-50" },
+      { status: "annulé",   labelKey: "cancel", cls: "text-red-600 hover:bg-red-50" },
     ],
     en_cours: [
-      { status: "livré",  labelKey: "markDelivered", cls: "text-emerald-600 hover:bg-emerald-50" },
-      { status: "annulé", labelKey: "cancel",        cls: "text-red-600 hover:bg-red-50" },
+      { status: "livré", labelKey: "markDelivered", cls: "text-emerald-600 hover:bg-emerald-50" },
     ],
   }
 
@@ -199,28 +196,50 @@ function OrderRow({
         </div>
       </div>
 
-      {showReviewAction && (
+      {order.status === "terminé" ? (
+        <div className="px-4 py-2.5 border-t border-border/60 bg-muted/20 flex items-center justify-between gap-2">
+          <span className="inline-flex items-center gap-1.5 text-xs font-semibold text-emerald-600">
+            <CheckCircle2 className="h-3.5 w-3.5" />
+            {t.statuses["terminé"]}
+          </span>
+          {role === "client" && (
+            hasReview ? (
+              <div className="flex items-center gap-1.5 text-xs text-emerald-600 font-medium">
+                <CheckCircle2 className="h-3.5 w-3.5" />
+                {t.orderRow.reviewDone}
+              </div>
+            ) : (
+              <Button
+                variant="ghost"
+                size="sm"
+                className="h-7 px-2.5 text-xs gap-1.5 text-primary hover:text-primary hover:bg-primary/10 font-medium"
+                onClick={onReview}
+              >
+                <Star className="h-3.5 w-3.5" />
+                {t.orderRow.leaveReview}
+              </Button>
+            )
+          )}
+        </div>
+      ) : order.status === "livré" ? (
         <div className="px-4 py-2.5 border-t border-border/60 bg-muted/20 flex items-center">
-          {hasReview ? (
-            <div className="flex items-center gap-1.5 text-xs text-emerald-600 font-medium">
-              <CheckCircle2 className="h-3.5 w-3.5" />
-              {t.orderRow.reviewDone}
-            </div>
+          {role === "freelancer" ? (
+            <span className="text-xs text-amber-600 font-medium italic">
+              {t.orderRow.awaitingConfirmation}
+            </span>
           ) : (
             <Button
               variant="ghost"
               size="sm"
-              className="h-7 px-2.5 text-xs gap-1.5 text-primary hover:text-primary hover:bg-primary/10 font-medium -ms-1.5"
-              onClick={onReview}
+              className="h-7 px-2.5 text-xs gap-1.5 font-medium -ms-1.5 text-emerald-600 hover:bg-emerald-50"
+              onClick={() => onStatusChange?.(order.id, "terminé")}
             >
-              <Star className="h-3.5 w-3.5" />
-              {t.orderRow.leaveReview}
+              <CheckCircle2 className="h-3.5 w-3.5" />
+              {t.orderRow.confirmDelivery}
             </Button>
           )}
         </div>
-      )}
-
-      {actions.length > 0 && (
+      ) : actions.length > 0 ? (
         <div className="px-4 py-2.5 border-t border-border/60 bg-muted/20 flex items-center gap-2">
           {actions.map((a) => (
             <Button
@@ -234,7 +253,7 @@ function OrderRow({
             </Button>
           ))}
         </div>
-      )}
+      ) : null}
     </div>
   )
 }
@@ -242,8 +261,9 @@ function OrderRow({
 const statusClasses: Record<string, string> = {
   en_attente: "bg-amber-100 text-amber-700",
   en_cours: "bg-blue-100 text-blue-700",
-  livré: "bg-emerald-100 text-emerald-700",
+  livré: "bg-orange-100 text-orange-700",
   annulé: "bg-red-100 text-red-600",
+  terminé: "bg-emerald-100 text-emerald-700",
 }
 
 export default function DashboardPage() {
@@ -353,6 +373,13 @@ export default function DashboardPage() {
     setReviewRating(0)
     setReviewComment("")
     setReviewSubmitting(false)
+  }
+
+  async function handleClientStatusChange(orderId: string, newStatus: string) {
+    const supabase = createClient()
+    const { error } = await supabase.from("orders").update({ status: newStatus }).eq("id", orderId)
+    if (error) return
+    setSentOrders((prev) => prev.map((o) => (o.id === orderId ? { ...o, status: newStatus } : o)))
   }
 
   async function handleStatusChange(orderId: string, newStatus: string) {
@@ -683,6 +710,7 @@ export default function DashboardPage() {
                     role="client"
                     hasReview={reviewedOrderIds.has(order.id)}
                     onReview={() => openReviewDialog(order)}
+                    onStatusChange={handleClientStatusChange}
                     t={t}
                   />
                 ))}

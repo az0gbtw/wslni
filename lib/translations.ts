@@ -224,6 +224,7 @@ const fr = {
       en_cours: "En cours",
       livré: "Livré",
       annulé: "Annulé",
+      terminé: "Terminé",
     } as Record<string, string>,
     orderRow: {
       from: "De : ",
@@ -234,6 +235,8 @@ const fr = {
       accept: "Accepter",
       cancel: "Annuler",
       markDelivered: "Marquer comme livré",
+      awaitingConfirmation: "En attente de confirmation",
+      confirmDelivery: "Confirmer la réception",
     },
     ratingLabels: {
       1: "Très insatisfait",
@@ -691,6 +694,7 @@ const ar: typeof fr = {
       en_cours: "جارٍ",
       livré: "تم التسليم",
       annulé: "ملغى",
+      terminé: "مكتمل",
     } as Record<string, string>,
     orderRow: {
       from: "من: ",
@@ -701,6 +705,8 @@ const ar: typeof fr = {
       accept: "قبول",
       cancel: "إلغاء",
       markDelivered: "تعيين كمُسلَّم",
+      awaitingConfirmation: "في انتظار التأكيد",
+      confirmDelivery: "تأكيد الاستلام",
     },
     ratingLabels: {
       1: "غير راضٍ جداً",
