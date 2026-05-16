@@ -574,7 +574,7 @@ export default function DashboardPage() {
                       </div>
                       <div className="flex items-center gap-1">
                         <Button asChild size="sm" variant="ghost" className="h-7 px-2.5 text-xs gap-1 font-medium">
-                          <Link href={`/services/${service.id}/modifier`}>
+                          <Link href={`/dashboard/services/${service.id}/edit`}>
                             <Edit2 className="h-3 w-3" />
                             {t.services.edit}
                           </Link>
