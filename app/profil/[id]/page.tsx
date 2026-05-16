@@ -436,7 +436,7 @@ export default function PublicProfilePage({ params }: { params: Promise<{ id: st
                   </p>
                   {isOwner && (
                     <Button size="sm" className="bg-primary hover:bg-primary/90 text-primary-foreground" asChild>
-                      <Link href="/services/nouveau">
+                      <Link href="/dashboard/new-service">
                         <Plus className="h-3.5 w-3.5" />
                         {t.addService}
                       </Link>

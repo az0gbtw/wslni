@@ -165,7 +165,7 @@ function ServicesContent() {
               <p className="text-primary-foreground/80 text-lg max-w-xl">{t.headerSub}</p>
             </div>
             <Button asChild variant="secondary" className="shrink-0 font-semibold">
-              <Link href="/services/nouveau">
+              <Link href="/dashboard/new-service">
                 <Plus className="me-2 h-4 w-4" />
                 {t.offerBtn}
               </Link>

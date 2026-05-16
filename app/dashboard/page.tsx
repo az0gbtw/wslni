@@ -439,7 +439,7 @@ export default function DashboardPage() {
                 </Link>
               </Button>
               <Button asChild size="sm" className="gap-1.5 font-medium bg-primary hover:bg-primary/90 text-primary-foreground">
-                <Link href="/services/nouveau">
+                <Link href="/dashboard/new-service">
                   <Plus className="h-3.5 w-3.5" />
                   {t.newService}
                 </Link>
@@ -523,7 +523,7 @@ export default function DashboardPage() {
             <div className="flex items-center justify-between mb-4">
               <h2 className="text-lg font-black text-foreground">{t.services.title}</h2>
               <Button asChild size="sm" variant="ghost" className="gap-1.5 text-primary hover:text-primary font-medium text-xs">
-                <Link href="/services/nouveau">
+                <Link href="/dashboard/new-service">
                   <Plus className="h-3.5 w-3.5" />
                   {t.services.add}
                 </Link>
@@ -538,7 +538,7 @@ export default function DashboardPage() {
                 <p className="font-bold text-foreground mb-1">{t.services.empty}</p>
                 <p className="text-sm text-muted-foreground mb-5">{t.services.emptySub}</p>
                 <Button asChild className="gap-2 bg-primary hover:bg-primary/90 text-primary-foreground font-semibold">
-                  <Link href="/services/nouveau">
+                  <Link href="/dashboard/new-service">
                     <Plus className="h-4 w-4" />
                     {t.services.createBtn}
                   </Link>
