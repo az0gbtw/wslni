@@ -14,6 +14,7 @@ import {
 } from "@/lib/categories"
 import { translations } from "@/lib/translations"
 import { formatPrice } from "@/lib/utils"
+import { TierSelector } from "@/components/tier-selector"
 
 const GROUP_ICONS = [
   Palette, Code2, TrendingUp, Video, PenTool,
@@ -87,27 +88,6 @@ export default async function ServiceDetailPage({
   const ini = profile?.full_name
     ? profile.full_name.split(" ").map((n: string) => n[0]).slice(0, 2).join("").toUpperCase()
     : "?"
-
-  const tierConfig = {
-    basic: {
-      border: "border-slate-200",
-      badge: "bg-slate-100 text-slate-700 border-slate-200",
-      label: t.tierLabels.basic,
-      popular: false,
-    },
-    standard: {
-      border: "border-primary",
-      badge: "bg-primary/10 text-primary border-primary/30",
-      label: t.tierLabels.standard,
-      popular: true,
-    },
-    premium: {
-      border: "border-amber-300",
-      badge: "bg-amber-50 text-amber-700 border-amber-200",
-      label: t.tierLabels.premium,
-      popular: false,
-    },
-  }
 
   return (
     <>
@@ -229,65 +209,7 @@ export default async function ServiceDetailPage({
           <h2 className="text-lg font-bold text-foreground mb-4">{t.chooseOffer}</h2>
 
           {tiers ? (
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-              {(["basic", "standard", "premium"] as const).map((key) => {
-                const tier = tiers[key]
-                const cfg = tierConfig[key]
-                const days = Number(tier.delivery_days)
-                return (
-                  <div
-                    key={key}
-                    className={`relative rounded-2xl border-2 ${cfg.border} bg-card p-5 flex flex-col gap-3 ${
-                      cfg.popular ? "shadow-lg shadow-primary/10" : ""
-                    }`}
-                  >
-                    {cfg.popular && (
-                      <div className="absolute -top-3 start-1/2 -translate-x-1/2 rtl:translate-x-1/2">
-                        <span className="bg-primary text-primary-foreground text-[11px] font-bold px-3 py-0.5 rounded-full shadow-sm whitespace-nowrap">
-                          {t.popular}
-                        </span>
-                      </div>
-                    )}
-
-                    <div className="flex items-center justify-between gap-2">
-                      <span className={`px-2.5 py-0.5 rounded-full text-xs font-bold border ${cfg.badge}`}>
-                        {tier.name || cfg.label}
-                      </span>
-                      <div className="flex items-center gap-1 text-xs text-muted-foreground">
-                        <Clock className="h-3.5 w-3.5 shrink-0" />
-                        <span>{t.delivery(days)}</span>
-                      </div>
-                    </div>
-
-                    {tier.description && (
-                      <p className="text-sm text-muted-foreground leading-relaxed flex-1">
-                        {tier.description}
-                      </p>
-                    )}
-
-                    <div className="pt-2 border-t border-border">
-                      <p className="text-2xl font-black text-foreground mb-3">
-                        {formatPrice(Number(tier.price), lang)}{" "}
-                        <span className="text-sm font-semibold text-muted-foreground">MAD</span>
-                      </p>
-                      <Button
-                        asChild
-                        className={`w-full font-bold rounded-xl ${
-                          cfg.popular
-                            ? "bg-primary hover:bg-primary/90 text-primary-foreground"
-                            : "bg-muted hover:bg-muted/80 text-foreground border border-border"
-                        }`}
-                        variant={cfg.popular ? "default" : "outline"}
-                      >
-                        <Link href={`/commande/${service.id}`}>
-                          {t.order}
-                        </Link>
-                      </Button>
-                    </div>
-                  </div>
-                )
-              })}
-            </div>
+            <TierSelector tiers={tiers} serviceId={service.id} lang={lang} />
           ) : (
             /* Single price fallback */
             <div className="rounded-2xl border-2 border-primary bg-card p-6 shadow-lg shadow-primary/10 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">

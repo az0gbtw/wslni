@@ -1,7 +1,7 @@
 "use client"
 
 import { useState, useEffect } from "react"
-import { useRouter, useParams } from "next/navigation"
+import { useRouter, useParams, useSearchParams } from "next/navigation"
 import Link from "next/link"
 import {
   Loader2, Clock, ArrowLeft, ShieldCheck, FileText,
@@ -43,8 +43,15 @@ type PageStep = "loading" | "form" | "submitting" | "error"
 export default function CommandePage() {
   const router = useRouter()
   const params = useParams()
+  const searchParams = useSearchParams()
   const serviceId = params.serviceId as string
   const { lang } = useLanguage()
+
+  const tierKey = searchParams.get("tier") as "basic" | "standard" | "premium" | null
+  const tierPrice = searchParams.get("price")
+  const tierDeliveryDays = searchParams.get("delivery_days")
+
+  const TIER_LABELS: Record<string, string> = { basic: "Basique", standard: "Standard", premium: "Premium" }
 
   const [user, setUser] = useState<SupabaseUser | null>(null)
   const [service, setService] = useState<ServiceWithProfile | null>(null)
@@ -136,12 +143,14 @@ export default function CommandePage() {
 
     const supabase = createClient()
 
+    const effectivePrice = tierPrice ? Number(tierPrice) : service.price
+
     const baseOrder = {
       service_id: service.id,
       client_id: user.id,
       freelancer_id: service.user_id,
       service_title: service.title,
-      price: service.price,
+      price: effectivePrice,
       status: "en_attente",
     }
 
@@ -187,7 +196,7 @@ export default function CommandePage() {
         freelancerId: service.user_id,
         clientName,
         serviceTitle: service.title,
-        price: service.price,
+        price: effectivePrice,
       }),
     }).catch(() => {})
 
@@ -256,9 +265,16 @@ export default function CommandePage() {
 
           {/* Service summary card */}
           <div className="rounded-2xl border border-border bg-card p-6 shadow-sm mb-4">
-            <span className={`inline-block rounded-full px-2.5 py-0.5 text-xs font-medium mb-3 ${categoryColor}`}>
-              {categoryLabel}
-            </span>
+            <div className="flex items-center gap-2 flex-wrap mb-3">
+              <span className={`inline-block rounded-full px-2.5 py-0.5 text-xs font-medium ${categoryColor}`}>
+                {categoryLabel}
+              </span>
+              {tierKey && (
+                <span className="inline-block rounded-full px-2.5 py-0.5 text-xs font-semibold bg-primary/10 text-primary border border-primary/20">
+                  {TIER_LABELS[tierKey] ?? tierKey}
+                </span>
+              )}
+            </div>
 
             <h2 className="text-lg font-bold text-foreground mb-1 leading-snug">
               {service.title}
@@ -295,11 +311,13 @@ export default function CommandePage() {
             <div className="flex items-center justify-between pt-4 border-t border-border">
               <div className="flex items-center gap-1.5 text-sm text-muted-foreground">
                 <Clock className="h-4 w-4" />
-                <span>Délai — {service.delivery_days} jour(s)</span>
+                <span>
+                  Délai — {tierDeliveryDays ? Number(tierDeliveryDays) : service.delivery_days} jour(s)
+                </span>
               </div>
               <div className="text-end">
                 <span className="text-2xl font-black text-primary">
-                  {formatPrice(service.price, lang)}
+                  {formatPrice(tierPrice ? Number(tierPrice) : service.price, lang)}
                 </span>
                 <span className="text-sm font-semibold text-muted-foreground ms-1">MAD</span>
               </div>
@@ -376,7 +394,7 @@ export default function CommandePage() {
                 Traitement en cours...
               </>
             ) : (
-              <>Confirmer la commande — {formatPrice(service.price, lang)} MAD</>
+              <>Confirmer la commande — {formatPrice(tierPrice ? Number(tierPrice) : service.price, lang)} MAD</>
             )}
           </Button>
 
