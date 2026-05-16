@@ -10,7 +10,7 @@ import type { User as SupabaseUser } from "@supabase/supabase-js"
 import { createClient } from "@/lib/supabase/client"
 import { useLanguage } from "@/lib/language-context"
 import { translations } from "@/lib/translations"
-import { formatPrice, formatDate as fmtDate } from "@/lib/utils"
+import { formatDate as fmtDate } from "@/lib/utils"
 import { Navbar } from "@/components/navbar"
 import { Button } from "@/components/ui/button"
 import {
@@ -129,7 +129,7 @@ function OrderCard({
 
         <div className="flex flex-col items-end gap-1.5 shrink-0">
           <span className="text-sm font-black text-foreground">
-            {formatPrice(order.price, lang)} MAD
+            {order.price.toLocaleString()} MAD
           </span>
           <span className={`text-[10px] font-semibold px-2 py-0.5 rounded-full ${statusClasses[order.status] ?? "bg-muted text-muted-foreground"}`}>
             {td.statuses[order.status] ?? order.status}

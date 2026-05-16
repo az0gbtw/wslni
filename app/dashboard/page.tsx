@@ -21,7 +21,7 @@ import {
   AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle,
 } from "@/components/ui/alert-dialog"
 import { getCategoryLabel, CATEGORY_COLORS } from "@/lib/categories"
-import { formatPrice, formatDate as fmtDate } from "@/lib/utils"
+import { formatPrice } from "@/lib/utils"
 
 interface Profile {
   id: string
@@ -163,7 +163,7 @@ function OrderRow({
   const actions = role === "freelancer" ? (nextStatuses[order.status] ?? []) : []
 
   function formatDate(ts: string) {
-    return fmtDate(ts, lang)
+    return new Date(ts).toLocaleDateString('fr-MA')
   }
 
   return (
@@ -191,7 +191,7 @@ function OrderRow({
 
         <div className="flex flex-col items-end gap-1 shrink-0">
           <span className="text-sm font-black text-foreground">
-            {formatPrice(order.price, lang)} MAD
+            {order.price.toLocaleString()} MAD
           </span>
           <span className={`text-[10px] font-semibold px-2 py-0.5 rounded-full ${statusClasses[order.status] ?? "bg-muted text-muted-foreground"}`}>
             {t.statuses[order.status] ?? order.status}
