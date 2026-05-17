@@ -1,11 +1,12 @@
 "use client"
 
-import { useState, useEffect } from "react"
+import { useState, useEffect, useRef } from "react"
 import { useRouter } from "next/navigation"
 import Link from "next/link"
 import {
   Loader2, Plus, Edit2, Trash2, Briefcase, CheckCircle2, Clock,
   ArrowRight, User, Star, TrendingUp, ShoppingBag, Package,
+  Upload, Download, FileText,
 } from "lucide-react"
 import type { User as SupabaseUser } from "@supabase/supabase-js"
 import { createClient } from "@/lib/supabase/client"
@@ -55,11 +56,29 @@ interface Order {
   client_id: string
   freelancer_id: string
   created_at: string
+  deliverable_url?: string | null
+  deliverable_filename?: string | null
+  completion_note?: string | null
 }
 
 type ProfileSnap = { full_name: string | null; avatar_url: string | null }
 
 type ProfileFieldKey = "fullName" | "jobTitle" | "bio" | "skills" | "avatar" | "hourlyRate"
+
+const statusClasses: Record<string, string> = {
+  en_attente: "bg-amber-100 text-amber-700",
+  en_cours:   "bg-blue-100 text-blue-700",
+  livré:      "bg-orange-100 text-orange-700",
+  annulé:     "bg-red-100 text-red-600",
+  terminé:    "bg-emerald-100 text-emerald-700",
+}
+
+const freelancerNextStatuses: Record<string, Array<{ status: string; labelKey: "accept" | "cancel"; cls: string }>> = {
+  en_attente: [
+    { status: "en_cours", labelKey: "accept", cls: "text-blue-600 hover:bg-blue-50" },
+    { status: "annulé",   labelKey: "cancel", cls: "text-red-600 hover:bg-red-50" },
+  ],
+}
 
 function computeCompletion(profile: Profile | null): { pct: number; missing: ProfileFieldKey[] } {
   if (!profile) return { pct: 0, missing: [] }
@@ -132,43 +151,33 @@ function StarPicker({ value, onChange }: { value: number; onChange: (n: number) 
   )
 }
 
-function OrderRow({
-  order, otherParty, role, hasReview, onReview, onStatusChange, t,
+// ─── Freelancer order row ───────────────────────────────────────────────────
+
+function FreelancerOrderRow({
+  order, client, onStatusChange, onMarkDelivered, t,
 }: {
   order: Order
-  otherParty: ProfileSnap | undefined
-  role: "freelancer" | "client"
-  hasReview?: boolean
-  onReview?: () => void
-  onStatusChange?: (orderId: string, newStatus: string) => void
+  client: ProfileSnap | undefined
+  onStatusChange: (orderId: string, newStatus: string) => void
+  onMarkDelivered: (order: Order) => void
   t: typeof translations["fr"]["dashboard"]
 }) {
-  const ini = otherParty?.full_name
-    ? otherParty.full_name.split(" ").map((n) => n[0]).slice(0, 2).join("").toUpperCase()
+  const ini = client?.full_name
+    ? client.full_name.split(" ").map((n) => n[0]).slice(0, 2).join("").toUpperCase()
     : "?"
 
-  const nextStatuses: Record<string, Array<{ status: string; labelKey: "accept" | "cancel" | "markDelivered"; cls: string }>> = {
-    en_attente: [
-      { status: "en_cours", labelKey: "accept", cls: "text-blue-600 hover:bg-blue-50" },
-      { status: "annulé",   labelKey: "cancel", cls: "text-red-600 hover:bg-red-50" },
-    ],
-    en_cours: [
-      { status: "livré", labelKey: "markDelivered", cls: "text-emerald-600 hover:bg-emerald-50" },
-    ],
-  }
-
-  const actions = role === "freelancer" ? (nextStatuses[order.status] ?? []) : []
+  const actions = freelancerNextStatuses[order.status] ?? []
 
   function formatDate(ts: string) {
-    return new Date(ts).toLocaleDateString('fr-MA')
+    return new Date(ts).toLocaleDateString("fr-MA")
   }
 
   return (
     <div className="rounded-xl border border-border bg-card hover:shadow-sm transition-shadow overflow-hidden">
       <div className="flex items-center gap-3 p-4">
         <div className="shrink-0">
-          {otherParty?.avatar_url ? (
-            <img src={otherParty.avatar_url} alt={otherParty.full_name ?? ""} className="h-9 w-9 rounded-full object-cover" />
+          {client?.avatar_url ? (
+            <img src={client.avatar_url} alt={client.full_name ?? ""} className="h-9 w-9 rounded-full object-cover" />
           ) : (
             <div className="h-9 w-9 rounded-full bg-primary/10 flex items-center justify-center">
               <span className="text-[10px] font-bold text-primary">{ini}</span>
@@ -179,8 +188,108 @@ function OrderRow({
         <div className="flex-1 min-w-0">
           <p className="text-sm font-semibold text-foreground truncate">{order.service_title}</p>
           <p className="text-xs text-muted-foreground truncate">
-            {role === "freelancer" ? t.orderRow.from : t.orderRow.for}
-            {otherParty?.full_name ?? t.orderRow.user}
+            {t.orderRow.from}
+            {client?.full_name ?? t.orderRow.user}
+            {" · "}
+            {formatDate(order.created_at)}
+          </p>
+        </div>
+
+        <div className="flex flex-col items-end gap-1 shrink-0">
+          <span className="text-sm font-black text-foreground">
+            {order.price.toLocaleString()} MAD
+          </span>
+          <span className={`text-[10px] font-semibold px-2 py-0.5 rounded-full ${statusClasses[order.status] ?? "bg-muted text-muted-foreground"}`}>
+            {t.statuses[order.status] ?? order.status}
+          </span>
+        </div>
+      </div>
+
+      {order.status === "terminé" ? (
+        <div className="px-4 py-2.5 border-t border-border/60 bg-muted/20 flex items-center gap-1.5">
+          <CheckCircle2 className="h-3.5 w-3.5 text-emerald-600" />
+          <span className="text-xs font-semibold text-emerald-600">{t.statuses["terminé"]}</span>
+        </div>
+      ) : order.status === "livré" ? (
+        <div className="px-4 py-2.5 border-t border-border/60 bg-muted/20 flex items-center gap-2">
+          <Clock className="h-3.5 w-3.5 text-amber-500 shrink-0" />
+          <span className="text-xs text-amber-600 font-medium italic">{t.orderRow.awaitingConfirmation}</span>
+        </div>
+      ) : order.status === "en_cours" ? (
+        <div className="px-4 py-2.5 border-t border-border/60 bg-muted/20 flex items-center gap-2">
+          <Button
+            variant="ghost"
+            size="sm"
+            className="h-7 px-2.5 text-xs font-medium -ms-1.5 text-emerald-600 hover:bg-emerald-50"
+            onClick={() => onMarkDelivered(order)}
+          >
+            <Upload className="h-3.5 w-3.5" />
+            {t.orderRow.markDelivered}
+          </Button>
+        </div>
+      ) : actions.length > 0 ? (
+        <div className="px-4 py-2.5 border-t border-border/60 bg-muted/20 flex items-center gap-2">
+          {actions.map((a) => (
+            <Button
+              key={a.status}
+              variant="ghost"
+              size="sm"
+              className={`h-7 px-2.5 text-xs font-medium -ms-1.5 ${a.cls}`}
+              onClick={() => onStatusChange(order.id, a.status)}
+            >
+              {t.orderRow[a.labelKey]}
+            </Button>
+          ))}
+        </div>
+      ) : null}
+    </div>
+  )
+}
+
+// ─── Client order row ────────────────────────────────────────────────────────
+
+function ClientOrderRow({
+  order, freelancer, hasReview, onReview, onConfirmDelivery, t,
+}: {
+  order: Order
+  freelancer: ProfileSnap | undefined
+  hasReview: boolean
+  onReview: () => void
+  onConfirmDelivery: (orderId: string) => void
+  t: typeof translations["fr"]["dashboard"]
+}) {
+  const ini = freelancer?.full_name
+    ? freelancer.full_name.split(" ").map((n) => n[0]).slice(0, 2).join("").toUpperCase()
+    : "?"
+
+  function formatDate(ts: string) {
+    return new Date(ts).toLocaleDateString("fr-MA")
+  }
+
+  function handleDownload() {
+    if (order.deliverable_url) {
+      window.open(order.deliverable_url, "_blank", "noopener,noreferrer")
+    }
+  }
+
+  return (
+    <div className="rounded-xl border border-border bg-card hover:shadow-sm transition-shadow overflow-hidden">
+      <div className="flex items-center gap-3 p-4">
+        <div className="shrink-0">
+          {freelancer?.avatar_url ? (
+            <img src={freelancer.avatar_url} alt={freelancer.full_name ?? ""} className="h-9 w-9 rounded-full object-cover" />
+          ) : (
+            <div className="h-9 w-9 rounded-full bg-primary/10 flex items-center justify-center">
+              <span className="text-[10px] font-bold text-primary">{ini}</span>
+            </div>
+          )}
+        </div>
+
+        <div className="flex-1 min-w-0">
+          <p className="text-sm font-semibold text-foreground truncate">{order.service_title}</p>
+          <p className="text-xs text-muted-foreground truncate">
+            {t.orderRow.for}
+            {freelancer?.full_name ?? t.orderRow.user}
             {" · "}
             {formatDate(order.created_at)}
           </p>
@@ -202,74 +311,77 @@ function OrderRow({
             <CheckCircle2 className="h-3.5 w-3.5" />
             {t.statuses["terminé"]}
           </span>
-          {role === "client" && (
-            hasReview ? (
-              <div className="flex items-center gap-1.5 text-xs text-emerald-600 font-medium">
-                <CheckCircle2 className="h-3.5 w-3.5" />
-                {t.orderRow.reviewDone}
-              </div>
-            ) : (
-              <Button
-                variant="ghost"
-                size="sm"
-                className="h-7 px-2.5 text-xs gap-1.5 text-primary hover:text-primary hover:bg-primary/10 font-medium"
-                onClick={onReview}
-              >
-                <Star className="h-3.5 w-3.5" />
-                {t.orderRow.leaveReview}
-              </Button>
-            )
-          )}
-        </div>
-      ) : order.status === "livré" ? (
-        <div className="px-4 py-2.5 border-t border-border/60 bg-muted/20 flex items-center">
-          {role === "freelancer" ? (
-            <span className="text-xs text-amber-600 font-medium italic">
-              {t.orderRow.awaitingConfirmation}
-            </span>
+          {hasReview ? (
+            <div className="flex items-center gap-1.5 text-xs text-emerald-600 font-medium">
+              <CheckCircle2 className="h-3.5 w-3.5" />
+              {t.orderRow.reviewDone}
+            </div>
           ) : (
             <Button
               variant="ghost"
               size="sm"
+              className="h-7 px-2.5 text-xs gap-1.5 text-primary hover:text-primary hover:bg-primary/10 font-medium"
+              onClick={onReview}
+            >
+              <Star className="h-3.5 w-3.5" />
+              {t.orderRow.leaveReview}
+            </Button>
+          )}
+        </div>
+      ) : order.status === "livré" ? (
+        <div className="px-4 py-3 border-t border-border/60 bg-muted/20 flex flex-col gap-2">
+          {/* Deliverable file */}
+          {order.deliverable_url && order.deliverable_filename && (
+            <div className="flex items-center gap-2">
+              <FileText className="h-3.5 w-3.5 text-muted-foreground shrink-0" />
+              <span className="text-xs text-muted-foreground truncate flex-1">
+                {order.deliverable_filename}
+              </span>
+              <Button
+                variant="ghost"
+                size="sm"
+                className="h-6 px-2 text-xs gap-1 text-primary hover:bg-primary/10 font-medium shrink-0"
+                onClick={handleDownload}
+              >
+                <Download className="h-3 w-3" />
+                {t.orderRow.downloadBtn}
+              </Button>
+            </div>
+          )}
+          {/* Completion note */}
+          {order.completion_note && (
+            <div className="rounded-md bg-background border border-border/60 px-3 py-2">
+              <p className="text-[10px] font-semibold text-muted-foreground mb-0.5 uppercase tracking-wide">
+                {t.orderRow.completionNoteLabel}
+              </p>
+              <p className="text-xs text-foreground">{order.completion_note}</p>
+            </div>
+          )}
+          {/* Confirm reception */}
+          <div className="flex items-center">
+            <Button
+              variant="ghost"
+              size="sm"
               className="h-7 px-2.5 text-xs gap-1.5 font-medium -ms-1.5 text-emerald-600 hover:bg-emerald-50"
-              onClick={() => onStatusChange?.(order.id, "terminé")}
+              onClick={() => onConfirmDelivery(order.id)}
             >
               <CheckCircle2 className="h-3.5 w-3.5" />
               {t.orderRow.confirmDelivery}
             </Button>
-          )}
-        </div>
-      ) : actions.length > 0 ? (
-        <div className="px-4 py-2.5 border-t border-border/60 bg-muted/20 flex items-center gap-2">
-          {actions.map((a) => (
-            <Button
-              key={a.status}
-              variant="ghost"
-              size="sm"
-              className={`h-7 px-2.5 text-xs font-medium -ms-1.5 ${a.cls}`}
-              onClick={() => onStatusChange?.(order.id, a.status)}
-            >
-              {t.orderRow[a.labelKey]}
-            </Button>
-          ))}
+          </div>
         </div>
       ) : null}
     </div>
   )
 }
 
-const statusClasses: Record<string, string> = {
-  en_attente: "bg-amber-100 text-amber-700",
-  en_cours: "bg-blue-100 text-blue-700",
-  livré: "bg-orange-100 text-orange-700",
-  annulé: "bg-red-100 text-red-600",
-  terminé: "bg-emerald-100 text-emerald-700",
-}
+// ─── Page ────────────────────────────────────────────────────────────────────
 
 export default function DashboardPage() {
   const router = useRouter()
   const { lang } = useLanguage()
   const t = translations[lang].dashboard
+  const dm = t.deliveryModal
 
   const [user, setUser] = useState<SupabaseUser | null>(null)
   const [profile, setProfile] = useState<Profile | null>(null)
@@ -285,6 +397,15 @@ export default function DashboardPage() {
   const [loading, setLoading] = useState(true)
   const [deleteTarget, setDeleteTarget] = useState<Service | null>(null)
   const [deleting, setDeleting] = useState(false)
+
+  // Delivery modal
+  const [deliveryOrder, setDeliveryOrder] = useState<Order | null>(null)
+  const [deliveryMode, setDeliveryMode] = useState<"file" | "note">("file")
+  const [deliveryFile, setDeliveryFile] = useState<File | null>(null)
+  const [completionNote, setCompletionNote] = useState("")
+  const [deliverySubmitting, setDeliverySubmitting] = useState(false)
+  const [deliveryError, setDeliveryError] = useState("")
+  const fileInputRef = useRef<HTMLInputElement>(null)
 
   async function handleDeleteService() {
     if (!deleteTarget) return
@@ -320,9 +441,9 @@ export default function DashboardPage() {
           .eq("user_id", user.id)
           .order("created_at", { ascending: false }),
         supabase.from("orders").select("*").eq("freelancer_id", user.id)
-          .order("created_at", { ascending: false }).limit(10),
+          .order("created_at", { ascending: false }),
         supabase.from("orders").select("*").eq("client_id", user.id)
-          .order("created_at", { ascending: false }).limit(10),
+          .order("created_at", { ascending: false }),
         supabase.from("reviews").select("order_id").eq("client_id", user.id),
       ])
 
@@ -375,14 +496,15 @@ export default function DashboardPage() {
     setReviewSubmitting(false)
   }
 
-  async function handleClientStatusChange(orderId: string, newStatus: string) {
+  async function handleClientConfirmDelivery(orderId: string) {
     const supabase = createClient()
-    const { error } = await supabase.from("orders").update({ status: newStatus }).eq("id", orderId)
-    if (error) return
-    setSentOrders((prev) => prev.map((o) => (o.id === orderId ? { ...o, status: newStatus } : o)))
+    const { error } = await supabase.from("orders").update({ status: "terminé" }).eq("id", orderId)
+    if (!error) {
+      setSentOrders((prev) => prev.map((o) => (o.id === orderId ? { ...o, status: "terminé" } : o)))
+    }
   }
 
-  async function handleStatusChange(orderId: string, newStatus: string) {
+  async function handleFreelancerStatusChange(orderId: string, newStatus: string) {
     const supabase = createClient()
     const { error } = await supabase.from("orders").update({ status: newStatus }).eq("id", orderId)
     if (error) return
@@ -398,6 +520,90 @@ export default function DashboardPage() {
         body: JSON.stringify({ clientId: order.client_id, freelancerName: myName, serviceTitle: order.service_title, newStatus, price: order.price }),
       }).catch(() => {})
     }
+  }
+
+  function openDeliveryModal(order: Order) {
+    setDeliveryOrder(order)
+    setDeliveryMode("file")
+    setDeliveryFile(null)
+    setCompletionNote("")
+    setDeliveryError("")
+  }
+
+  function closeDeliveryModal() {
+    setDeliveryOrder(null)
+    setDeliveryFile(null)
+    setCompletionNote("")
+    setDeliveryError("")
+  }
+
+  async function handleDeliverySubmit() {
+    if (!deliveryOrder || !user) return
+    setDeliveryError("")
+    const MAX_SIZE = 50 * 1024 * 1024
+
+    if (deliveryMode === "file") {
+      if (!deliveryFile) { setDeliveryError(dm.fileError); return }
+      if (deliveryFile.size > MAX_SIZE) { setDeliveryError(dm.fileTooLarge); return }
+
+      setDeliverySubmitting(true)
+      const supabase = createClient()
+      const filePath = `orders/${deliveryOrder.id}/${deliveryFile.name}`
+
+      const { error: uploadError } = await supabase.storage
+        .from("order-deliverables")
+        .upload(filePath, deliveryFile, { upsert: true })
+
+      if (uploadError) {
+        setDeliveryError(dm.uploadError)
+        setDeliverySubmitting(false)
+        return
+      }
+
+      const { data: { publicUrl } } = supabase.storage.from("order-deliverables").getPublicUrl(filePath)
+
+      const { error } = await supabase.from("orders").update({
+        status: "livré",
+        deliverable_url: publicUrl,
+        deliverable_filename: deliveryFile.name,
+      }).eq("id", deliveryOrder.id)
+
+      if (error) { setDeliveryError(dm.saveError); setDeliverySubmitting(false); return }
+
+      setReceivedOrders((prev) => prev.map((o) =>
+        o.id === deliveryOrder.id
+          ? { ...o, status: "livré", deliverable_url: publicUrl, deliverable_filename: deliveryFile.name }
+          : o
+      ))
+    } else {
+      if (!completionNote.trim()) { setDeliveryError(dm.noteError); return }
+
+      setDeliverySubmitting(true)
+      const supabase = createClient()
+
+      const { error } = await supabase.from("orders").update({
+        status: "livré",
+        completion_note: completionNote.trim(),
+      }).eq("id", deliveryOrder.id)
+
+      if (error) { setDeliveryError(dm.saveError); setDeliverySubmitting(false); return }
+
+      setReceivedOrders((prev) => prev.map((o) =>
+        o.id === deliveryOrder.id
+          ? { ...o, status: "livré", completion_note: completionNote.trim() }
+          : o
+      ))
+    }
+
+    const myName = profile?.full_name ?? user?.email?.split("@")[0] ?? "Freelance"
+    fetch("/api/emails/order-status", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ clientId: deliveryOrder.client_id, freelancerName: myName, serviceTitle: deliveryOrder.service_title, newStatus: "livré", price: deliveryOrder.price }),
+    }).catch(() => {})
+
+    closeDeliveryModal()
+    setDeliverySubmitting(false)
   }
 
   function openReviewDialog(order: Order) { setReviewDialog(order); setReviewRating(0); setReviewComment("") }
@@ -418,9 +624,11 @@ export default function DashboardPage() {
   const { pct, missing } = computeCompletion(profile)
   const publishedServices = services.filter((s) => s.status === "published")
   const since = memberSince(profile.updated_at)
-
   const pctColor = pct >= 80 ? "bg-emerald-500" : pct >= 50 ? "bg-amber-500" : "bg-primary"
   const freelanceName = reviewDialog ? (profilesMap[reviewDialog.freelancer_id]?.full_name ?? t.orderRow.user) : ""
+
+  // Active (non-completed, non-cancelled) counts for stat card
+  const activeReceivedOrders = receivedOrders.filter((o) => o.status !== "annulé")
 
   return (
     <>
@@ -477,10 +685,10 @@ export default function DashboardPage() {
           {/* Stats */}
           <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mb-6">
             {[
-              { icon: Briefcase, value: publishedServices.length, label: t.stats.publishedServices },
-              { icon: Package,   value: receivedOrders.length,   label: t.stats.receivedOrders },
-              { icon: Star,      value: (profile.skills ?? []).length, label: t.stats.skills },
-              { icon: TrendingUp,value: `${pct}%`,               label: t.stats.profileCompletion },
+              { icon: Briefcase,   value: publishedServices.length,       label: t.stats.publishedServices },
+              { icon: Package,     value: activeReceivedOrders.length,    label: t.stats.receivedOrders },
+              { icon: Star,        value: (profile.skills ?? []).length,  label: t.stats.skills },
+              { icon: TrendingUp,  value: `${pct}%`,                     label: t.stats.profileCompletion },
             ].map(({ icon: Icon, value, label }, i) => (
               <div key={i} className="rounded-2xl border border-border bg-card p-3 sm:p-4 shadow-sm flex items-center gap-2.5 sm:gap-3">
                 <div className="w-8 h-8 sm:w-10 sm:h-10 rounded-xl bg-primary/10 flex items-center justify-center shrink-0">
@@ -545,8 +753,8 @@ export default function DashboardPage() {
             </div>
           )}
 
-          {/* My services */}
-          <div className="mb-8">
+          {/* ── My services ─────────────────────────────────────────────────── */}
+          <div id="services" className="mb-8">
             <div className="flex items-center justify-between mb-4">
               <h2 className="text-lg font-black text-foreground">{t.services.title}</h2>
               <Button asChild size="sm" variant="ghost" className="gap-1.5 text-primary hover:text-primary font-medium text-xs">
@@ -634,8 +842,8 @@ export default function DashboardPage() {
             )}
           </div>
 
-          {/* Received orders */}
-          <div className="mb-8">
+          {/* ── Section 1: Commandes à livrer (freelancer) ──────────────────── */}
+          <div id="commandes-a-livrer" className="mb-8">
             <div className="flex items-center justify-between mb-4">
               <h2 className="text-lg font-black text-foreground flex items-center gap-2">
                 <Package className="h-5 w-5 text-primary" />
@@ -659,12 +867,12 @@ export default function DashboardPage() {
             ) : (
               <div className="space-y-2">
                 {receivedOrders.map((order) => (
-                  <OrderRow
+                  <FreelancerOrderRow
                     key={order.id}
                     order={order}
-                    otherParty={profilesMap[order.client_id]}
-                    role="freelancer"
-                    onStatusChange={handleStatusChange}
+                    client={profilesMap[order.client_id]}
+                    onStatusChange={handleFreelancerStatusChange}
+                    onMarkDelivered={openDeliveryModal}
                     t={t}
                   />
                 ))}
@@ -672,7 +880,7 @@ export default function DashboardPage() {
             )}
           </div>
 
-          {/* Sent orders */}
+          {/* ── Section 2: Mes achats (client) ───────────────────────────────── */}
           <div className="mb-8">
             <div className="flex items-center justify-between mb-4">
               <h2 className="text-lg font-black text-foreground flex items-center gap-2">
@@ -703,14 +911,13 @@ export default function DashboardPage() {
             ) : (
               <div className="space-y-2">
                 {sentOrders.map((order) => (
-                  <OrderRow
+                  <ClientOrderRow
                     key={order.id}
                     order={order}
-                    otherParty={profilesMap[order.freelancer_id]}
-                    role="client"
+                    freelancer={profilesMap[order.freelancer_id]}
                     hasReview={reviewedOrderIds.has(order.id)}
                     onReview={() => openReviewDialog(order)}
-                    onStatusChange={handleClientStatusChange}
+                    onConfirmDelivery={handleClientConfirmDelivery}
                     t={t}
                   />
                 ))}
@@ -726,7 +933,7 @@ export default function DashboardPage() {
         </div>
       </main>
 
-      {/* Delete service confirmation */}
+      {/* ── Delete service confirmation ──────────────────────────────────── */}
       <AlertDialog open={deleteTarget !== null} onOpenChange={(open) => { if (!open) setDeleteTarget(null) }}>
         <AlertDialogContent>
           <AlertDialogHeader>
@@ -746,7 +953,114 @@ export default function DashboardPage() {
         </AlertDialogContent>
       </AlertDialog>
 
-      {/* Review dialog */}
+      {/* ── Delivery modal ──────────────────────────────────────────────── */}
+      <Dialog open={deliveryOrder !== null} onOpenChange={(open) => { if (!open) closeDeliveryModal() }}>
+        <DialogContent className="sm:max-w-lg">
+          <DialogHeader>
+            <DialogTitle>{dm.title}</DialogTitle>
+            <DialogDescription>{deliveryOrder?.service_title}</DialogDescription>
+          </DialogHeader>
+
+          <div className="space-y-3 py-1">
+            {/* Option 1 — File */}
+            <button
+              type="button"
+              onClick={() => setDeliveryMode("file")}
+              className={`w-full text-start rounded-xl border-2 p-4 transition-colors ${
+                deliveryMode === "file" ? "border-primary bg-primary/5" : "border-border hover:border-border/80 hover:bg-muted/30"
+              }`}
+            >
+              <div className="flex items-center gap-3 mb-1">
+                <div className={`h-4 w-4 rounded-full border-2 flex items-center justify-center shrink-0 ${
+                  deliveryMode === "file" ? "border-primary" : "border-muted-foreground/40"
+                }`}>
+                  {deliveryMode === "file" && <div className="h-2 w-2 rounded-full bg-primary" />}
+                </div>
+                <span className="text-sm font-semibold text-foreground">{dm.option1}</span>
+              </div>
+              <p className="text-xs text-muted-foreground ms-7">{dm.option1Desc}</p>
+            </button>
+
+            {deliveryMode === "file" && (
+              <div className="ms-4 space-y-2">
+                <p className="text-xs font-medium text-foreground">{dm.uploadLabel}</p>
+                <input
+                  ref={fileInputRef}
+                  type="file"
+                  accept=".mp3,.png,.jpg,.jpeg,.gif,.pdf,.zip,.rar,.svg,.psd,.ai,.wav,.mp4,.mov"
+                  className="hidden"
+                  onChange={(e) => { setDeliveryFile(e.target.files?.[0] ?? null); setDeliveryError("") }}
+                />
+                <button
+                  type="button"
+                  onClick={() => fileInputRef.current?.click()}
+                  className="w-full rounded-lg border-2 border-dashed border-border hover:border-primary/50 hover:bg-primary/5 transition-colors py-5 flex flex-col items-center gap-2 text-sm text-muted-foreground"
+                >
+                  <Upload className="h-5 w-5" />
+                  {deliveryFile
+                    ? <span className="text-foreground font-medium text-xs truncate max-w-[240px]">{deliveryFile.name}</span>
+                    : <span>Cliquer pour choisir un fichier</span>
+                  }
+                </button>
+              </div>
+            )}
+
+            {/* Option 2 — Note */}
+            <button
+              type="button"
+              onClick={() => setDeliveryMode("note")}
+              className={`w-full text-start rounded-xl border-2 p-4 transition-colors ${
+                deliveryMode === "note" ? "border-primary bg-primary/5" : "border-border hover:border-border/80 hover:bg-muted/30"
+              }`}
+            >
+              <div className="flex items-center gap-3 mb-1">
+                <div className={`h-4 w-4 rounded-full border-2 flex items-center justify-center shrink-0 ${
+                  deliveryMode === "note" ? "border-primary" : "border-muted-foreground/40"
+                }`}>
+                  {deliveryMode === "note" && <div className="h-2 w-2 rounded-full bg-primary" />}
+                </div>
+                <span className="text-sm font-semibold text-foreground">{dm.option2}</span>
+              </div>
+              <p className="text-xs text-muted-foreground ms-7">{dm.option2Desc}</p>
+            </button>
+
+            {deliveryMode === "note" && (
+              <div className="ms-4 space-y-2">
+                <p className="text-xs font-medium text-foreground">{dm.noteLabel}</p>
+                <textarea
+                  value={completionNote}
+                  onChange={(e) => { setCompletionNote(e.target.value); setDeliveryError("") }}
+                  placeholder={dm.notePlaceholder}
+                  maxLength={500}
+                  rows={4}
+                  className="w-full px-3 py-2 text-sm rounded-lg border border-border bg-background resize-none focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary transition-colors placeholder:text-muted-foreground/60"
+                />
+                <p className="text-xs text-muted-foreground text-end">{completionNote.length}/500</p>
+              </div>
+            )}
+
+            {deliveryError && (
+              <p className="text-xs text-red-600 font-medium">{deliveryError}</p>
+            )}
+          </div>
+
+          <div className="flex gap-2 justify-end pt-2">
+            <Button variant="outline" onClick={closeDeliveryModal} disabled={deliverySubmitting}>
+              Annuler
+            </Button>
+            <Button
+              disabled={deliverySubmitting}
+              onClick={handleDeliverySubmit}
+              className="bg-primary hover:bg-primary/90 text-primary-foreground gap-2"
+            >
+              {deliverySubmitting && <Loader2 className="h-4 w-4 animate-spin" />}
+              {deliveryMode === "file" ? dm.sendBtn : dm.doneBtn}
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* ── Review dialog ───────────────────────────────────────────────── */}
       <Dialog open={reviewDialog !== null} onOpenChange={(open) => { if (!open) closeReviewDialog() }}>
         <DialogContent className="sm:max-w-md">
           <DialogHeader>

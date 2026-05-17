@@ -20,6 +20,7 @@ export default function InscriptionPage() {
   const [email, setEmail] = useState("")
   const [password, setPassword] = useState("")
   const [confirmPassword, setConfirmPassword] = useState("")
+  const [nameError, setNameError] = useState<string | null>(null)
   const [error, setError] = useState<string | null>(null)
   const [success, setSuccess] = useState(false)
   const [loading, setLoading] = useState(false)
@@ -29,6 +30,13 @@ export default function InscriptionPage() {
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault()
     setError(null)
+    setNameError(null)
+
+    const trimmedName = fullName.trim()
+    if (trimmedName.length < 2) {
+      setNameError("Le nom complet est obligatoire")
+      return
+    }
 
     if (password !== confirmPassword) {
       setError(t.errors.passwordMismatch)
@@ -43,10 +51,10 @@ export default function InscriptionPage() {
     setLoading(true)
     const supabase = createClient()
 
-    const { error } = await supabase.auth.signUp({
+    const { data, error } = await supabase.auth.signUp({
       email,
       password,
-      options: { data: { full_name: fullName } },
+      options: { data: { full_name: trimmedName } },
     })
 
     if (error) {
@@ -55,10 +63,14 @@ export default function InscriptionPage() {
       return
     }
 
+    if (data.user) {
+      await supabase.from("profiles").upsert({ id: data.user.id, full_name: trimmedName })
+    }
+
     fetch("/api/emails/welcome", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ email, fullName }),
+      body: JSON.stringify({ email, fullName: trimmedName }),
     }).catch(() => {})
 
     setSuccess(true)
@@ -126,10 +138,14 @@ export default function InscriptionPage() {
                 type="text"
                 placeholder={t.fullNamePlaceholder}
                 value={fullName}
-                onChange={(e) => setFullName(e.target.value)}
-                required
+                onChange={(e) => { setFullName(e.target.value); if (nameError) setNameError(null) }}
                 autoComplete="name"
+                aria-invalid={!!nameError}
+                className={nameError ? "border-destructive focus-visible:ring-destructive/30" : ""}
               />
+              {nameError && (
+                <p className="text-xs text-destructive">{nameError}</p>
+              )}
             </div>
 
             <div className="space-y-1.5">

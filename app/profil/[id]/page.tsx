@@ -4,7 +4,7 @@ import { use, useState, useEffect } from "react"
 import Link from "next/link"
 import {
   ExternalLink, Edit2, MessageCircle, Loader2, ArrowLeft,
-  Tag, Calendar, CheckCircle2, Briefcase, Plus, Star,
+  Tag, Calendar, CheckCircle2, Briefcase, Plus, Star, Clock,
 } from "lucide-react"
 import type { User } from "@supabase/supabase-js"
 import { createClient } from "@/lib/supabase/client"
@@ -40,6 +40,16 @@ interface Review {
   created_at: string
   client_id: string
   client: { full_name: string | null; avatar_url: string | null } | null
+}
+
+interface Service {
+  id: string
+  title: string
+  description: string
+  price: number
+  delivery_days: number
+  category: string
+  images: string[] | null
 }
 
 function initials(name: string | null) {
@@ -104,6 +114,7 @@ export default function PublicProfilePage({ params }: { params: Promise<{ id: st
   const [profile, setProfile] = useState<Profile | null | undefined>(undefined)
   const [viewer, setViewer] = useState<User | null>(null)
   const [reviews, setReviews] = useState<Review[]>([])
+  const [services, setServices] = useState<Service[]>([])
   const [contactOpen, setContactOpen] = useState(false)
 
   useEffect(() => {
@@ -116,9 +127,16 @@ export default function PublicProfilePage({ params }: { params: Promise<{ id: st
         .select("id, rating, comment, created_at, client_id")
         .eq("freelancer_id", id)
         .order("created_at", { ascending: false }),
-    ]).then(async ([{ data: profileData }, { data: { user } }, { data: reviewsData }]) => {
+      supabase
+        .from("services")
+        .select("id, title, description, price, delivery_days, category, images")
+        .eq("user_id", id)
+        .eq("status", "published")
+        .order("created_at", { ascending: false }),
+    ]).then(async ([{ data: profileData }, { data: { user } }, { data: reviewsData }, { data: servicesData }]) => {
       setProfile(profileData ?? null)
       setViewer(user)
+      setServices(servicesData ?? [])
 
       if (reviewsData && reviewsData.length > 0) {
         const clientIds = [...new Set(reviewsData.map((r: { client_id: string }) => r.client_id))]
@@ -425,17 +443,10 @@ export default function PublicProfilePage({ params }: { params: Promise<{ id: st
 
               {/* Proposed services */}
               <section>
-                <h2 className="text-base font-semibold mb-3 text-foreground">{t.proposedServices}</h2>
-                <div className="rounded-2xl border border-dashed border-border bg-muted/20 p-8 text-center">
-                  <div className="w-12 h-12 rounded-full bg-primary/10 flex items-center justify-center mx-auto mb-3">
-                    <Briefcase className="h-5 w-5 text-primary" />
-                  </div>
-                  <p className="text-sm font-medium text-foreground mb-1">{t.noServicesTitle}</p>
-                  <p className="text-xs text-muted-foreground mb-4 max-w-xs mx-auto">
-                    {isOwner ? t.noServicesOwner : t.noServicesVisitor}
-                  </p>
+                <div className="flex items-center justify-between mb-4">
+                  <h2 className="text-base font-semibold text-foreground">{t.proposedServices}</h2>
                   {isOwner && (
-                    <Button size="sm" className="bg-primary hover:bg-primary/90 text-primary-foreground" asChild>
+                    <Button size="sm" variant="outline" asChild>
                       <Link href="/dashboard/new-service">
                         <Plus className="h-3.5 w-3.5" />
                         {t.addService}
@@ -443,6 +454,59 @@ export default function PublicProfilePage({ params }: { params: Promise<{ id: st
                     </Button>
                   )}
                 </div>
+
+                {services.length === 0 ? (
+                  <div className="rounded-2xl border border-dashed border-border bg-muted/20 p-8 text-center">
+                    <div className="w-12 h-12 rounded-full bg-primary/10 flex items-center justify-center mx-auto mb-3">
+                      <Briefcase className="h-5 w-5 text-primary" />
+                    </div>
+                    <p className="text-sm font-medium text-foreground mb-1">{t.noServicesTitle}</p>
+                    <p className="text-xs text-muted-foreground max-w-xs mx-auto">
+                      {isOwner ? t.noServicesOwner : t.noServicesVisitor}
+                    </p>
+                  </div>
+                ) : (
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    {services.map((svc) => (
+                      <Link
+                        key={svc.id}
+                        href={`/services/${svc.id}`}
+                        className="group rounded-xl border border-border bg-card overflow-hidden hover:border-primary/30 hover:shadow-md transition-all duration-200"
+                      >
+                        {/* Service image or placeholder */}
+                        <div className="aspect-video bg-muted overflow-hidden">
+                          {svc.images?.[0] ? (
+                            // eslint-disable-next-line @next/next/no-img-element
+                            <img
+                              src={svc.images[0]}
+                              alt={svc.title}
+                              className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+                            />
+                          ) : (
+                            <div className="w-full h-full flex items-center justify-center">
+                              <Briefcase className="h-8 w-8 text-muted-foreground/40" />
+                            </div>
+                          )}
+                        </div>
+                        <div className="p-3.5">
+                          <p className="text-sm font-semibold text-foreground line-clamp-2 mb-2 group-hover:text-primary transition-colors">
+                            {svc.title}
+                          </p>
+                          <div className="flex items-center justify-between">
+                            <div className="flex items-center gap-1 text-xs text-muted-foreground">
+                              <Clock className="h-3 w-3 shrink-0" />
+                              <span>{svc.delivery_days}j</span>
+                            </div>
+                            <p className="text-sm font-bold text-foreground">
+                              {formatPrice(svc.price, lang)}
+                              <span className="text-xs font-normal text-muted-foreground ms-1">MAD</span>
+                            </p>
+                          </div>
+                        </div>
+                      </Link>
+                    ))}
+                  </div>
+                )}
               </section>
             </div>
 

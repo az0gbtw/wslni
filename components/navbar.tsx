@@ -1,7 +1,7 @@
 "use client"
 
 import { useState, useEffect, useRef } from "react"
-import { Search, Menu, X, Globe, LogOut, LayoutDashboard, MessageSquare, ShoppingBag, ChevronDown, User as UserIcon } from "lucide-react"
+import { Search, Menu, X, Globe, LogOut, LayoutDashboard, MessageSquare, ShoppingBag, PackageCheck, ChevronDown, User as UserIcon, Settings, HelpCircle, Briefcase } from "lucide-react"
 import { NotificationBell } from "@/components/notification-bell"
 import Link from "next/link"
 import { useRouter } from "next/navigation"
@@ -207,6 +207,14 @@ export function Navbar() {
                   </Link>
                 </Button>
 
+                {/* To deliver */}
+                <Button variant="ghost" size="sm" className="text-sm font-medium" asChild>
+                  <Link href="/dashboard#commandes-a-livrer">
+                    <PackageCheck className="h-4 w-4" />
+                    {t.toDeliver}
+                  </Link>
+                </Button>
+
                 {/* User menu */}
                 <DropdownMenu>
                   <DropdownMenuTrigger asChild>
@@ -217,25 +225,75 @@ export function Navbar() {
                       <ChevronDown className="h-3.5 w-3.5 text-muted-foreground shrink-0" />
                     </button>
                   </DropdownMenuTrigger>
-                  <DropdownMenuContent align="end" className="w-52">
+                  <DropdownMenuContent align="end" className="w-64 p-1">
+                    {/* User header */}
+                    <div className="px-3 py-2.5 mb-1">
+                      <p className="text-sm font-semibold text-foreground truncate">
+                        {(user.user_metadata?.full_name as string) || user.email?.split("@")[0]}
+                      </p>
+                      <p className="text-xs text-muted-foreground truncate">{user.email}</p>
+                    </div>
+                    <DropdownMenuSeparator />
+
+                    {/* Section 1: Navigation */}
                     <DropdownMenuItem asChild>
-                      <Link href="/dashboard" className="flex items-center gap-2 cursor-pointer">
-                        <LayoutDashboard className="h-4 w-4" />
+                      <Link href={`/profil/${user.id}`} className="flex items-center gap-2.5 cursor-pointer">
+                        <UserIcon className="h-4 w-4 text-muted-foreground shrink-0" />
+                        {t.myProfile}
+                      </Link>
+                    </DropdownMenuItem>
+                    <DropdownMenuItem asChild>
+                      <Link href="/dashboard" className="flex items-center gap-2.5 cursor-pointer">
+                        <LayoutDashboard className="h-4 w-4 text-muted-foreground shrink-0" />
                         {t.dashboard}
                       </Link>
                     </DropdownMenuItem>
                     <DropdownMenuItem asChild>
-                      <Link href="/profil" className="flex items-center gap-2 cursor-pointer">
-                        <UserIcon className="h-4 w-4" />
-                        {t.myProfile}
+                      <Link href="/dashboard#services" className="flex items-center gap-2.5 cursor-pointer">
+                        <Briefcase className="h-4 w-4 text-muted-foreground shrink-0" />
+                        {t.myServices}
                       </Link>
                     </DropdownMenuItem>
                     <DropdownMenuSeparator />
+
+                    {/* Section 2: Settings + Language */}
+                    <DropdownMenuItem asChild>
+                      <Link href="/parametres" className="flex items-center gap-2.5 cursor-pointer">
+                        <Settings className="h-4 w-4 text-muted-foreground shrink-0" />
+                        {t.settings}
+                      </Link>
+                    </DropdownMenuItem>
+                    <div
+                      className="flex items-center justify-between gap-2 px-2 py-1.5 rounded-sm text-sm cursor-default hover:bg-accent"
+                      onClick={(e) => e.stopPropagation()}
+                    >
+                      <span className="flex items-center gap-2.5 text-foreground">
+                        <Globe className="h-4 w-4 text-muted-foreground shrink-0" />
+                        {t.languageCurrency}
+                      </span>
+                      <button
+                        onClick={toggleLang}
+                        className="flex items-center gap-1 text-xs font-semibold border border-border rounded-full px-2 py-0.5 bg-background hover:bg-muted transition-colors shrink-0"
+                      >
+                        <span className={lang === "fr" ? "text-foreground" : "text-muted-foreground"}>FR</span>
+                        <span className="text-muted-foreground/60">|</span>
+                        <span className={lang === "ar" ? "text-foreground" : "text-muted-foreground"}>AR</span>
+                      </button>
+                    </div>
+                    <DropdownMenuSeparator />
+
+                    {/* Section 3: Help + Logout */}
+                    <DropdownMenuItem asChild>
+                      <Link href="/aide" className="flex items-center gap-2.5 cursor-pointer">
+                        <HelpCircle className="h-4 w-4 text-muted-foreground shrink-0" />
+                        {t.helpSupport}
+                      </Link>
+                    </DropdownMenuItem>
                     <DropdownMenuItem
                       onClick={handleLogout}
-                      className="flex items-center gap-2 cursor-pointer text-destructive focus:text-destructive"
+                      className="flex items-center gap-2.5 cursor-pointer text-destructive focus:text-destructive focus:bg-destructive/10"
                     >
-                      <LogOut className="h-4 w-4" />
+                      <LogOut className="h-4 w-4 shrink-0" />
                       {t.logout}
                     </DropdownMenuItem>
                   </DropdownMenuContent>
@@ -328,15 +386,33 @@ export function Navbar() {
                 </span>
               </div>
               <Button variant="ghost" className="w-full justify-start text-sm font-medium" asChild>
+                <Link href={`/profil/${user.id}`}>
+                  <UserIcon className="h-4 w-4 me-2" />
+                  {t.myProfile}
+                </Link>
+              </Button>
+              <Button variant="ghost" className="w-full justify-start text-sm font-medium" asChild>
                 <Link href="/dashboard">
                   <LayoutDashboard className="h-4 w-4 me-2" />
                   {t.dashboard}
                 </Link>
               </Button>
               <Button variant="ghost" className="w-full justify-start text-sm font-medium" asChild>
-                <Link href="/profil">
-                  <UserIcon className="h-4 w-4 me-2" />
-                  {t.myProfile}
+                <Link href="/commandes">
+                  <ShoppingBag className="h-4 w-4 me-2" />
+                  {t.orders}
+                </Link>
+              </Button>
+              <Button variant="ghost" className="w-full justify-start text-sm font-medium" asChild>
+                <Link href="/dashboard#commandes-a-livrer">
+                  <PackageCheck className="h-4 w-4 me-2" />
+                  {t.toDeliver}
+                </Link>
+              </Button>
+              <Button variant="ghost" className="w-full justify-start text-sm font-medium" asChild>
+                <Link href="/dashboard#services">
+                  <Briefcase className="h-4 w-4 me-2" />
+                  {t.myServices}
                 </Link>
               </Button>
               <Button variant="ghost" className="w-full justify-start text-sm font-medium" asChild>
@@ -351,9 +427,15 @@ export function Navbar() {
                 </Link>
               </Button>
               <Button variant="ghost" className="w-full justify-start text-sm font-medium" asChild>
-                <Link href="/commandes">
-                  <ShoppingBag className="h-4 w-4 me-2" />
-                  {t.orders}
+                <Link href="/parametres">
+                  <Settings className="h-4 w-4 me-2" />
+                  {t.settings}
+                </Link>
+              </Button>
+              <Button variant="ghost" className="w-full justify-start text-sm font-medium" asChild>
+                <Link href="/aide">
+                  <HelpCircle className="h-4 w-4 me-2" />
+                  {t.helpSupport}
                 </Link>
               </Button>
               <Button

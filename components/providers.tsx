@@ -1,7 +1,13 @@
 "use client"
 
 import { LanguageProvider } from "@/lib/language-context"
+import { Toaster } from "@/components/ui/toaster"
 
 export function Providers({ children }: { children: React.ReactNode }) {
-  return <LanguageProvider>{children}</LanguageProvider>
+  return (
+    <LanguageProvider>
+      {children}
+      <Toaster />
+    </LanguageProvider>
+  )
 }
