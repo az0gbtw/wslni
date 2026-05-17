@@ -212,7 +212,10 @@ export default function PaiementPage() {
             <p className="text-sm text-muted-foreground mb-5 leading-relaxed">{service.description}</p>
 
             {/* Freelancer info */}
-            <div className="flex items-center gap-3 p-3 rounded-xl bg-muted/50 mb-5">
+            <Link
+              href={`/profil/${service.user_id}`}
+              className="flex items-center gap-3 p-3 rounded-xl bg-muted/50 mb-5 hover:bg-muted/80 transition-colors"
+            >
               {profile?.avatar_url ? (
                 // eslint-disable-next-line @next/next/no-img-element
                 <img
@@ -231,7 +234,7 @@ export default function PaiementPage() {
                   <p className="text-xs text-muted-foreground">{profile.job_title}</p>
                 )}
               </div>
-            </div>
+            </Link>
 
             {/* Price + delivery */}
             <div className="flex items-center justify-between pt-4 border-t border-border">

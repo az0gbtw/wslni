@@ -480,7 +480,11 @@ function ServiceCard({ service, t, lang }: { service: ServiceWithProfile; t: typ
           </div>
         )}
 
-        <div className="flex items-center gap-2 pt-1">
+        <Link
+          href={`/profil/${service.user_id}`}
+          onClick={(e) => e.stopPropagation()}
+          className="flex items-center gap-2 pt-1 hover:opacity-80 transition-opacity"
+        >
           {profile?.avatar_url ? (
             // eslint-disable-next-line @next/next/no-img-element
             <img
@@ -497,7 +501,7 @@ function ServiceCard({ service, t, lang }: { service: ServiceWithProfile; t: typ
             <p className="text-xs font-medium text-foreground truncate">{profile?.full_name ?? "Freelance"}</p>
             {profile?.job_title && <p className="text-xs text-muted-foreground truncate">{profile.job_title}</p>}
           </div>
-        </div>
+        </Link>
       </div>
 
       <div className="flex items-center justify-between border-t border-border px-5 py-3 bg-muted/30">

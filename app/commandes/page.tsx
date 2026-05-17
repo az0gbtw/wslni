@@ -92,7 +92,7 @@ function OrderCard({
   return (
     <div className="rounded-xl border border-border bg-card hover:shadow-sm transition-shadow overflow-hidden">
       <div className="flex items-center gap-3 p-4">
-        <div className="shrink-0">
+        <Link href={`/profil/${order.freelancer_id}`} className="shrink-0 hover:opacity-80 transition-opacity">
           {freelancer?.avatar_url ? (
             <img
               src={freelancer.avatar_url}
@@ -104,7 +104,7 @@ function OrderCard({
               <span className="text-xs font-bold text-primary">{ini}</span>
             </div>
           )}
-        </div>
+        </Link>
 
         <div className="flex-1 min-w-0">
           <p className="text-sm font-semibold text-foreground truncate">{order.service_title}</p>

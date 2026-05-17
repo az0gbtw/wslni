@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useRef, useMemo, useCallback } from "react"
 import { useRouter } from "next/navigation"
+import Link from "next/link"
 import { format, isToday, isYesterday } from "date-fns"
 import { ar as arLocale, fr as frLocale } from "date-fns/locale"
 import { Loader2, Send, Search, Plus, ArrowLeft, MessageSquare, X } from "lucide-react"
@@ -521,17 +522,22 @@ export default function MessagesPage() {
                 >
                   <ArrowLeft className={cn("h-4 w-4", lang === "ar" && "rotate-180")} />
                 </Button>
-                <UserAvatar profile={activeConv.otherParticipant} size="md" />
-                <div className="min-w-0">
-                  <p className="font-semibold text-sm text-foreground truncate">
-                    {activeConv.otherParticipant.full_name || tm.user}
-                  </p>
-                  {activeConv.otherParticipant.job_title && (
-                    <p className="text-xs text-muted-foreground truncate">
-                      {activeConv.otherParticipant.job_title}
+                <Link
+                  href={`/profil/${activeConv.otherParticipant.id}`}
+                  className="flex items-center gap-3 min-w-0 hover:opacity-80 transition-opacity"
+                >
+                  <UserAvatar profile={activeConv.otherParticipant} size="md" />
+                  <div className="min-w-0">
+                    <p className="font-semibold text-sm text-foreground truncate">
+                      {activeConv.otherParticipant.full_name || tm.user}
                     </p>
-                  )}
-                </div>
+                    {activeConv.otherParticipant.job_title && (
+                      <p className="text-xs text-muted-foreground truncate">
+                        {activeConv.otherParticipant.job_title}
+                      </p>
+                    )}
+                  </div>
+                </Link>
               </div>
 
               {/* Messages */}

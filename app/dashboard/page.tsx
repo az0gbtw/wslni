@@ -175,7 +175,7 @@ function FreelancerOrderRow({
   return (
     <div className="rounded-xl border border-border bg-card hover:shadow-sm transition-shadow overflow-hidden">
       <div className="flex items-center gap-3 p-4">
-        <div className="shrink-0">
+        <Link href={`/profil/${order.client_id}`} className="shrink-0 hover:opacity-80 transition-opacity">
           {client?.avatar_url ? (
             <img src={client.avatar_url} alt={client.full_name ?? ""} className="h-9 w-9 rounded-full object-cover" />
           ) : (
@@ -183,7 +183,7 @@ function FreelancerOrderRow({
               <span className="text-[10px] font-bold text-primary">{ini}</span>
             </div>
           )}
-        </div>
+        </Link>
 
         <div className="flex-1 min-w-0">
           <p className="text-sm font-semibold text-foreground truncate">{order.service_title}</p>

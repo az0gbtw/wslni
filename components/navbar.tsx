@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useRef } from "react"
 import { Search, Menu, X, Globe, LogOut, LayoutDashboard, MessageSquare, ShoppingBag, PackageCheck, ChevronDown, User as UserIcon, Settings, HelpCircle, Briefcase } from "lucide-react"
-import { NotificationBell } from "@/components/notification-bell"
+import { NotificationsBell } from "@/components/notifications-bell"
 import Link from "next/link"
 import { useRouter } from "next/navigation"
 import type { User } from "@supabase/supabase-js"
@@ -184,7 +184,7 @@ export function Navbar() {
             {user === undefined ? null : user ? (
               <>
                 {/* Bell */}
-                <NotificationBell user={user} />
+                <NotificationsBell user={user} />
 
                 {/* Messages */}
                 <Button variant="ghost" size="sm" className="text-sm font-medium relative" asChild>
@@ -314,7 +314,7 @@ export function Navbar() {
 
           {/* Bell (mobile only — desktop bell is inside the desktop nav) + mobile menu button */}
           <div className="flex items-center gap-2">
-            {user && <span className="lg:hidden"><NotificationBell user={user} /></span>}
+            {user && <span className="lg:hidden"><NotificationsBell user={user} /></span>}
             <Button
               variant="ghost"
               size="icon"
