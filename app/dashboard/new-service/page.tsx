@@ -15,6 +15,7 @@ import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Textarea } from "@/components/ui/textarea"
+import { toast } from "sonner"
 
 /* ─── Types ────────────────────────────────────────────────── */
 interface Tier {
@@ -89,14 +90,34 @@ export default function NewServicePage() {
 
   /* auth – middleware already protects /dashboard/:path* but we still need the user id */
   useEffect(() => {
-    supabase.auth.getUser().then(({ data }) => {
+    ;(async () => {
+      const { data } = await supabase.auth.getUser()
       if (!data.user) {
         router.replace("/inscription?redirect=/dashboard/new-service")
-      } else {
-        setUserId(data.user.id)
+        return
       }
+
+      const { data: profileData } = await supabase
+        .from("profiles")
+        .select("full_name, job_title, bio")
+        .eq("id", data.user.id)
+        .single()
+
+      const isComplete = !!(
+        profileData?.full_name?.trim() &&
+        profileData?.job_title?.trim() &&
+        profileData?.bio?.trim()
+      )
+
+      if (!isComplete) {
+        toast.error("Complete ton profil avant de publier un service.")
+        router.replace("/profil")
+        return
+      }
+
+      setUserId(data.user.id)
       setLoadingUser(false)
-    })
+    })()
   }, []) // eslint-disable-line react-hooks/exhaustive-deps
 
   /* restore draft from localStorage */

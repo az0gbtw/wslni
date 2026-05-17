@@ -96,7 +96,7 @@ function ServicesContent() {
 
       const userIds = [...new Set((servicesData ?? []).map((s: any) => s.user_id as string))]
       const { data: profilesData } = userIds.length > 0
-        ? await supabase.from("profiles").select("id, full_name, avatar_url, job_title").in("id", userIds)
+        ? await supabase.from("profiles").select("id, full_name, avatar_url, job_title, bio").in("id", userIds)
         : { data: [] }
 
       const profileMap = Object.fromEntries((profilesData ?? []).map((p: any) => [p.id, p]))
@@ -108,10 +108,15 @@ function ServicesContent() {
         ratingMap[freelancer_id].count += 1
       })
 
-      const enriched: ServiceWithProfile[] = (servicesData ?? []).map((s: any) => {
-        const r = ratingMap[s.user_id]
-        return { ...s, profiles: profileMap[s.user_id] ?? null, avgRating: r ? r.sum / r.count : null, reviewCount: r?.count ?? 0 }
-      })
+      const enriched: ServiceWithProfile[] = (servicesData ?? [])
+        .filter((s: any) => {
+          const p = profileMap[s.user_id]
+          return p?.full_name?.trim() && p?.job_title?.trim() && p?.bio?.trim()
+        })
+        .map((s: any) => {
+          const r = ratingMap[s.user_id]
+          return { ...s, profiles: profileMap[s.user_id] ?? null, avgRating: r ? r.sum / r.count : null, reviewCount: r?.count ?? 0 }
+        })
 
       setServices(enriched)
       setLoading(false)

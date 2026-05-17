@@ -6,7 +6,7 @@ import Link from "next/link"
 import {
   Loader2, Plus, Edit2, Trash2, Briefcase, CheckCircle2, Clock,
   ArrowRight, User, Star, TrendingUp, ShoppingBag, Package,
-  Upload, Download, FileText,
+  Upload, Download, FileText, AlertTriangle,
 } from "lucide-react"
 import type { User as SupabaseUser } from "@supabase/supabase-js"
 import { createClient } from "@/lib/supabase/client"
@@ -289,7 +289,13 @@ function ClientOrderRow({
           <p className="text-sm font-semibold text-foreground truncate">{order.service_title}</p>
           <p className="text-xs text-muted-foreground truncate">
             {t.orderRow.for}
-            {freelancer?.full_name ?? t.orderRow.user}
+            <Link
+              href={`/profil/${order.freelancer_id}`}
+              className="font-medium text-foreground hover:text-primary transition-colors"
+              onClick={(e) => e.stopPropagation()}
+            >
+              {freelancer?.full_name ?? t.orderRow.user}
+            </Link>
             {" · "}
             {formatDate(order.created_at)}
           </p>
@@ -460,19 +466,25 @@ export default function DashboardPage() {
       setSentOrders(sent)
       setReviewedOrderIds(new Set(reviewsData?.map((r: { order_id: string }) => r.order_id) ?? []))
 
-      const ids = new Set<string>()
-      received.forEach((o) => ids.add(o.client_id))
-      sent.forEach((o) => ids.add(o.freelancer_id))
+      const clientIds = received
+        .map((o) => o.client_id)
+        .filter((id): id is string => Boolean(id))
+      const freelancerIds = sent
+        .map((o) => o.freelancer_id)
+        .filter((id): id is string => Boolean(id))
+      const allProfileIds = [...new Set([...clientIds, ...freelancerIds])]
 
-      if (ids.size > 0) {
+      const map: Record<string, ProfileSnap> = {}
+      if (allProfileIds.length > 0) {
         const { data: profilesData } = await supabase
-          .from("profiles").select("id, full_name, avatar_url").in("id", Array.from(ids))
-        const map: Record<string, ProfileSnap> = {}
+          .from("profiles")
+          .select("id, full_name, avatar_url")
+          .in("id", allProfileIds)
         profilesData?.forEach((p: { id: string; full_name: string | null; avatar_url: string | null }) => {
           map[p.id] = { full_name: p.full_name, avatar_url: p.avatar_url }
         })
-        setProfilesMap(map)
       }
+      setProfilesMap(map)
 
       setLoading(false)
     })
@@ -625,6 +637,11 @@ export default function DashboardPage() {
   const publishedServices = services.filter((s) => s.status === "published")
   const since = memberSince(profile.updated_at)
   const pctColor = pct >= 80 ? "bg-emerald-500" : pct >= 50 ? "bg-amber-500" : "bg-primary"
+  const profileIncomplete = !(
+    profile.full_name?.trim() &&
+    profile.job_title?.trim() &&
+    profile.bio?.trim()
+  )
   const freelanceName = reviewDialog ? (profilesMap[reviewDialog.freelancer_id]?.full_name ?? t.orderRow.user) : ""
 
   // Active (non-completed, non-cancelled) counts for stat card
@@ -681,6 +698,21 @@ export default function DashboardPage() {
               </Button>
             </div>
           </div>
+
+          {/* Incomplete profile banner */}
+          {profileIncomplete && (
+            <div className="rounded-2xl border border-amber-200 bg-amber-50 p-4 mb-6 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+              <div className="flex items-center gap-3">
+                <AlertTriangle className="h-5 w-5 text-amber-600 shrink-0" />
+                <p className="text-sm font-medium text-amber-800">
+                  Ton profil est incomplet — les clients ne peuvent pas te trouver.
+                </p>
+              </div>
+              <Button asChild size="sm" variant="outline" className="shrink-0 border-amber-300 text-amber-800 hover:bg-amber-100">
+                <Link href="/profil">Compléter mon profil</Link>
+              </Button>
+            </div>
+          )}
 
           {/* Stats */}
           <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mb-6">
