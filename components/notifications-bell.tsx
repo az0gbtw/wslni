@@ -53,9 +53,16 @@ const TYPE_COLORS: Record<NotifType, string> = {
   new_review:      "text-yellow-500",
 }
 
+const NOTIF_FALLBACK = {
+  title: "Notifications",
+  markAllRead: "Tout marquer comme lu",
+  empty: "Aucune notification",
+  emptySub: "Vous êtes à jour !",
+}
+
 export function NotificationsBell({ user }: { user: User }) {
   const { lang } = useLanguage()
-  const t = translations[lang].notifications
+  const t = translations[lang]?.notifications ?? NOTIF_FALLBACK
   const [open, setOpen] = useState(false)
   const [notifications, setNotifications] = useState<Notification[]>([])
   const [unreadCount, setUnreadCount] = useState(0)

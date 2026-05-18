@@ -6,6 +6,7 @@ import Link from "next/link"
 import {
   Camera, Edit2, Plus, X, ExternalLink,
   Loader2, Save, Briefcase, Tag, Calendar, MessageSquare, CheckCircle2,
+  ShieldCheck, ShieldAlert, Shield, Upload,
 } from "lucide-react"
 import type { User } from "@supabase/supabase-js"
 import { createClient } from "@/lib/supabase/client"
@@ -21,6 +22,8 @@ import {
   Sheet, SheetContent, SheetHeader, SheetTitle,
 } from "@/components/ui/sheet"
 
+type CinStatus = "none" | "pending" | "verified" | "rejected"
+
 interface Profile {
   id: string
   full_name: string | null
@@ -31,6 +34,8 @@ interface Profile {
   portfolio_links: string[]
   avatar_url: string | null
   updated_at?: string | null
+  cin_status?: CinStatus
+  cin_uploaded_at?: string | null
 }
 
 function ZelligeCover() {
@@ -97,6 +102,10 @@ export default function ProfilPage() {
   const [uploading, setUploading] = useState(false)
   const fileRef = useRef<HTMLInputElement>(null)
 
+  const [cinUploading, setCinUploading] = useState(false)
+  const [cinError, setCinError] = useState<string | null>(null)
+  const cinRef = useRef<HTMLInputElement>(null)
+
   function memberSince(ts?: string | null) {
     if (!ts) return "—"
     return new Date(ts).toLocaleDateString(lang === "ar" ? "ar-MA-u-nu-arab" : "fr-FR", { month: "long", year: "numeric" })
@@ -141,6 +150,40 @@ export default function ProfilPage() {
     if (!s || form.skills.includes(s)) { setSkillInput(""); return }
     setForm((f) => ({ ...f, skills: [...f.skills, s] }))
     setSkillInput("")
+  }
+
+  async function handleCinUpload(e: React.ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0]
+    if (!file || !user) return
+    if (file.size > 5 * 1024 * 1024) {
+      setCinError("Le fichier dépasse 5 Mo.")
+      return
+    }
+    setCinError(null)
+    setCinUploading(true)
+    const supabase = createClient()
+    const { error: storageError } = await supabase.storage
+      .from("cin-uploads")
+      .upload(`${user.id}/cin.jpg`, file, { upsert: true, contentType: file.type })
+
+    if (storageError) {
+      setCinError("Erreur lors de l'envoi. Veuillez réessayer.")
+      setCinUploading(false)
+      if (cinRef.current) cinRef.current.value = ""
+      return
+    }
+
+    const res = await fetch("/api/cin", { method: "POST" })
+    if (!res.ok) {
+      setCinError("Erreur lors de la mise à jour du statut.")
+      setCinUploading(false)
+      if (cinRef.current) cinRef.current.value = ""
+      return
+    }
+
+    setProfile((p) => p ? { ...p, cin_status: "pending", cin_uploaded_at: new Date().toISOString() } : p)
+    setCinUploading(false)
+    if (cinRef.current) cinRef.current.value = ""
   }
 
   async function handleSave() {
@@ -385,6 +428,78 @@ export default function ProfilPage() {
                       {t.sheet.addLink}
                     </Button>
                   </div>
+                </div>
+
+                {/* CIN Verification */}
+                <div className="space-y-3 pt-2 border-t border-border">
+                  <div className="flex items-center gap-2">
+                    <Shield className="h-4 w-4 text-muted-foreground shrink-0" />
+                    <Label className="text-sm font-semibold">{t.cin.sectionTitle}</Label>
+                  </div>
+                  <p className="text-xs text-muted-foreground leading-relaxed">{t.cin.sectionDesc}</p>
+
+                  {/* Status badge */}
+                  {profile?.cin_status === "verified" && (
+                    <div className="flex items-center gap-2 px-3 py-2 rounded-lg bg-green-50 border border-green-200 text-green-700 text-sm font-medium">
+                      <ShieldCheck className="h-4 w-4 shrink-0" />
+                      {t.cin.statusVerified}
+                    </div>
+                  )}
+                  {profile?.cin_status === "pending" && (
+                    <div className="flex items-center gap-2 px-3 py-2 rounded-lg bg-amber-50 border border-amber-200 text-amber-700 text-sm font-medium">
+                      <Loader2 className="h-4 w-4 shrink-0 animate-spin" />
+                      {t.cin.statusPending}
+                    </div>
+                  )}
+                  {profile?.cin_status === "rejected" && (
+                    <div className="flex items-center gap-2 px-3 py-2 rounded-lg bg-red-50 border border-red-200 text-red-700 text-sm font-medium">
+                      <ShieldAlert className="h-4 w-4 shrink-0" />
+                      {t.cin.statusRejected}
+                    </div>
+                  )}
+                  {(!profile?.cin_status || profile.cin_status === "none") && (
+                    <div className="flex items-center gap-2 px-3 py-2 rounded-lg bg-muted border border-border text-muted-foreground text-sm">
+                      <Shield className="h-4 w-4 shrink-0" />
+                      {t.cin.statusNone}
+                    </div>
+                  )}
+
+                  {/* Upload button — blocked while pending or verified */}
+                  {profile?.cin_status !== "pending" && profile?.cin_status !== "verified" && (
+                    <>
+                      <Button
+                        type="button"
+                        variant="outline"
+                        size="sm"
+                        className="w-full"
+                        onClick={() => cinRef.current?.click()}
+                        disabled={cinUploading}
+                      >
+                        {cinUploading ? (
+                          <><Loader2 className="h-4 w-4 animate-spin" />{t.cin.uploading}</>
+                        ) : (
+                          <><Upload className="h-4 w-4" />{t.cin.uploadBtn}</>
+                        )}
+                      </Button>
+                      <p className="text-xs text-muted-foreground">{t.cin.hint}</p>
+                      <input
+                        ref={cinRef}
+                        type="file"
+                        accept="image/jpeg,image/png,image/jpg"
+                        className="hidden"
+                        onChange={handleCinUpload}
+                      />
+                    </>
+                  )}
+                  {profile?.cin_status === "pending" && (
+                    <p className="text-xs text-muted-foreground">{t.cin.blockedPending}</p>
+                  )}
+
+                  {cinError && (
+                    <p className="text-sm text-destructive bg-destructive/10 border border-destructive/20 rounded-lg px-3 py-2">
+                      {cinError}
+                    </p>
+                  )}
                 </div>
 
                 {saveError && (

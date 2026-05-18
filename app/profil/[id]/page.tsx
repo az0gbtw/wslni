@@ -4,7 +4,7 @@ import { use, useState, useEffect } from "react"
 import Link from "next/link"
 import {
   ExternalLink, Edit2, MessageCircle, Loader2, ArrowLeft,
-  Tag, Calendar, CheckCircle2, Briefcase, Plus, Star, Clock,
+  Tag, Calendar, CheckCircle2, Briefcase, Plus, Star, Clock, ShieldCheck,
 } from "lucide-react"
 import type { User } from "@supabase/supabase-js"
 import { createClient } from "@/lib/supabase/client"
@@ -31,6 +31,7 @@ interface Profile {
   portfolio_links: string[]
   avatar_url: string | null
   updated_at?: string | null
+  cin_status?: string | null
 }
 
 interface Review {
@@ -251,9 +252,17 @@ export default function PublicProfilePage({ params }: { params: Promise<{ id: st
                 </div>
               </div>
               <div className="sm:pt-16 min-w-0 flex-1 pb-2">
-                <h1 className="text-3xl sm:text-4xl font-black text-foreground leading-tight">
-                  {displayName}
-                </h1>
+                <div className="flex flex-wrap items-center gap-2">
+                  <h1 className="text-3xl sm:text-4xl font-black text-foreground leading-tight">
+                    {displayName}
+                  </h1>
+                  {profile.cin_status === "verified" && (
+                    <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full bg-green-100 text-green-700 text-xs font-semibold border border-green-200 shrink-0">
+                      <ShieldCheck className="h-3.5 w-3.5" />
+                      {t.verifiedBadge} ✓
+                    </span>
+                  )}
+                </div>
                 <div className="flex flex-wrap items-center gap-2 mt-2">
                   {profile.job_title && (
                     <span className="inline-flex items-center px-3 py-1 rounded-full bg-primary/10 text-primary text-xs font-semibold border border-primary/20">

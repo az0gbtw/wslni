@@ -287,7 +287,90 @@ export async function sendOrderStatusEmail(params: {
   })
 }
 
-// ─── 4. New Message Notification (recipient) ─────────────────────────────────
+// ─── 4. CIN Verification Result ───────────────────────────────────────────────
+
+export async function sendCinApprovedEmail(params: {
+  email: string
+  fullName: string
+}) {
+  const { email, fullName } = params
+  const firstName = fullName.trim().split(" ")[0]
+
+  const content = `
+    <h1 style="margin:0 0 10px;font-size:26px;font-weight:800;color:#111827;line-height:1.2;">
+      Identité vérifiée ✓
+    </h1>
+    <p style="margin:0 0 24px;font-size:15px;color:#4B5563;line-height:1.7;">
+      Bonjour <strong>${firstName}</strong>, excellente nouvelle ! Votre identité a été
+      <strong style="color:#059669;">vérifiée avec succès</strong> par notre équipe.
+    </p>
+
+    <div style="background-color:#ECFDF5;border:1px solid #A7F3D0;border-radius:10px;padding:20px 24px;margin:0 0 28px;text-align:center;">
+      <div style="font-size:40px;margin-bottom:8px;">✅</div>
+      <p style="margin:0;font-size:16px;font-weight:700;color:#065F46;">Badge « Vérifié » activé</p>
+      <p style="margin:8px 0 0;font-size:13px;color:#047857;line-height:1.5;">
+        Un badge vert apparaît désormais sur votre profil public, renforçant la confiance
+        des clients envers vos services.
+      </p>
+    </div>
+
+    <p style="margin:0 0 24px;font-size:14px;color:#6B7280;line-height:1.7;">
+      Ce badge témoigne de votre sérieux et augmente vos chances d'être contacté par des clients.
+    </p>
+
+    ${ctaButton(`${SITE_URL}/profil`, "Voir mon profil")}
+  `
+
+  return resend.emails.send({
+    from: FROM_EMAIL,
+    to: email,
+    subject: "Votre identité a été vérifiée sur Wslni.ma ✓",
+    html: emailLayout(content, `${firstName}, votre badge Vérifié est actif sur Wslni.ma !`),
+  })
+}
+
+export async function sendCinRejectedEmail(params: {
+  email: string
+  fullName: string
+}) {
+  const { email, fullName } = params
+  const firstName = fullName.trim().split(" ")[0]
+
+  const content = `
+    <h1 style="margin:0 0 10px;font-size:26px;font-weight:800;color:#111827;line-height:1.2;">
+      Vérification d'identité refusée
+    </h1>
+    <p style="margin:0 0 24px;font-size:15px;color:#4B5563;line-height:1.7;">
+      Bonjour <strong>${firstName}</strong>, malheureusement votre demande de vérification
+      d'identité n'a pas pu être acceptée en l'état.
+    </p>
+
+    <div style="background-color:#FEF2F2;border:1px solid #FECACA;border-radius:10px;padding:20px 24px;margin:0 0 28px;">
+      <p style="margin:0 0 8px;font-size:14px;font-weight:700;color:#991B1B;">Raisons possibles :</p>
+      <ul style="margin:0;padding-left:20px;font-size:13px;color:#7F1D1D;line-height:1.8;">
+        <li>Photo illisible ou floue</li>
+        <li>Document expiré ou invalide</li>
+        <li>CIN non visible en entier sur la photo</li>
+      </ul>
+    </div>
+
+    <p style="margin:0 0 24px;font-size:14px;color:#6B7280;line-height:1.7;">
+      Vous pouvez soumettre à nouveau une photo claire et lisible de votre CIN depuis
+      la section « Vérification d'identité » de votre profil.
+    </p>
+
+    ${ctaButton(`${SITE_URL}/profil`, "Soumettre à nouveau")}
+  `
+
+  return resend.emails.send({
+    from: FROM_EMAIL,
+    to: email,
+    subject: "Demande de vérification d'identité — Action requise",
+    html: emailLayout(content, `${firstName}, votre vérification CIN nécessite une nouvelle soumission.`),
+  })
+}
+
+// ─── 5. New Message Notification (recipient) ─────────────────────────────────
 
 export async function sendNewMessageEmail(params: {
   recipientEmail: string

@@ -1,7 +1,7 @@
 "use client"
 
 import { useState, useEffect, useRef } from "react"
-import { Search, Menu, X, Globe, LogOut, LayoutDashboard, MessageSquare, ShoppingBag, PackageCheck, ChevronDown, User as UserIcon, Settings, HelpCircle, Briefcase } from "lucide-react"
+import { Search, Menu, X, Globe, LogOut, LayoutDashboard, MessageSquare, ShoppingBag, PackageCheck, ChevronDown, User as UserIcon, Settings, HelpCircle, Briefcase, ShieldCheck } from "lucide-react"
 import { NotificationsBell } from "@/components/notifications-bell"
 import Link from "next/link"
 import { useRouter } from "next/navigation"
@@ -34,6 +34,7 @@ export function Navbar() {
   const [isHidden, setIsHidden] = useState(false)
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false)
   const [user, setUser] = useState<User | null | undefined>(undefined)
+  const [isAdmin, setIsAdmin] = useState(false)
   const [unreadCount, setUnreadCount] = useState(0)
   const lastScrollY = useRef(0)
 
@@ -66,6 +67,13 @@ export function Navbar() {
     })
     return () => subscription.unsubscribe()
   }, [])
+
+  useEffect(() => {
+    if (!user) { setIsAdmin(false); return }
+    const supabase = createClient()
+    supabase.from("profiles").select("role").eq("id", user.id).single()
+      .then(({ data }) => setIsAdmin(data?.role === "admin"))
+  }, [user])
 
   useEffect(() => {
     if (!user) {
@@ -164,6 +172,15 @@ export function Navbar() {
             <Button variant="ghost" size="sm" className="text-sm font-medium" asChild>
               <Link href="/services">{t.explore}</Link>
             </Button>
+
+            {isAdmin && (
+              <Button variant="ghost" size="sm" className="text-sm font-medium text-primary" asChild>
+                <Link href="/admin/verifications">
+                  <ShieldCheck className="h-4 w-4" />
+                  Admin
+                </Link>
+              </Button>
+            )}
 
             <div className="w-px h-6 bg-border" />
 
@@ -432,6 +449,14 @@ export function Navbar() {
                   {t.settings}
                 </Link>
               </Button>
+              {isAdmin && (
+                <Button variant="ghost" className="w-full justify-start text-sm font-medium text-primary" asChild>
+                  <Link href="/admin/verifications">
+                    <ShieldCheck className="h-4 w-4 me-2" />
+                    Admin
+                  </Link>
+                </Button>
+              )}
               <Button variant="ghost" className="w-full justify-start text-sm font-medium" asChild>
                 <Link href="/aide">
                   <HelpCircle className="h-4 w-4 me-2" />

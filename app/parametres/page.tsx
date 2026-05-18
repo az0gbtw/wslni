@@ -1,8 +1,8 @@
 "use client"
 
-import { useState, useEffect } from "react"
+import { useState, useEffect, useRef } from "react"
 import { useRouter } from "next/navigation"
-import { Eye, EyeOff, Loader2, Plus, X, Save } from "lucide-react"
+import { Eye, EyeOff, Loader2, Plus, X, Save, ShieldCheck, ShieldAlert, Shield, Upload } from "lucide-react"
 import type { User } from "@supabase/supabase-js"
 import { createClient } from "@/lib/supabase/client"
 import { useLanguage } from "@/lib/language-context"
@@ -14,6 +14,8 @@ import { Label } from "@/components/ui/label"
 import { Textarea } from "@/components/ui/textarea"
 import { useToast } from "@/hooks/use-toast"
 
+type CinStatus = "none" | "pending" | "verified" | "rejected"
+
 interface Profile {
   id: string
   full_name: string | null
@@ -21,6 +23,7 @@ interface Profile {
   bio: string | null
   skills: string[]
   hourly_rate: number | null
+  cin_status?: CinStatus
 }
 
 export default function ParametresPage() {
@@ -48,7 +51,12 @@ export default function ParametresPage() {
   const [langInput, setLangInput] = useState("")
   const [savingFreelance, setSavingFreelance] = useState(false)
 
-  // Section 3: Security
+  // Section 3: CIN verification
+  const [cinStatus, setCinStatus] = useState<CinStatus>("none")
+  const [cinUploading, setCinUploading] = useState(false)
+  const cinRef = useRef<HTMLInputElement>(null)
+
+  // Section 4: Security
   const [currentPassword, setCurrentPassword] = useState("")
   const [newPassword, setNewPassword] = useState("")
   const [confirmPassword, setConfirmPassword] = useState("")
@@ -71,7 +79,7 @@ export default function ParametresPage() {
       // Load profile
       const { data: profile } = await supabase
         .from("profiles")
-        .select("full_name, job_title, bio, skills, hourly_rate")
+        .select("full_name, job_title, bio, skills, hourly_rate, cin_status")
         .eq("id", user.id)
         .single()
 
@@ -81,6 +89,7 @@ export default function ParametresPage() {
         setBio(profile.bio ?? "")
         setSkills(profile.skills ?? [])
         setHourlyRate(profile.hourly_rate != null ? String(profile.hourly_rate) : "")
+        setCinStatus((profile.cin_status as CinStatus) ?? "none")
       } else {
         setFullName((user.user_metadata?.full_name as string) ?? "")
       }
@@ -193,6 +202,35 @@ export default function ParametresPage() {
       setNewPassword("")
       setConfirmPassword("")
     }
+  }
+
+  async function handleCinUpload(e: React.ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0]
+    if (!file || !user) return
+    if (cinRef.current) cinRef.current.value = ""
+
+    if (file.size > 5 * 1024 * 1024) {
+      toast({ title: "Le fichier dépasse 5 Mo.", variant: "destructive" })
+      return
+    }
+
+    setCinUploading(true)
+
+    const body = new FormData()
+    body.append("file", file)
+
+    const res = await fetch("/api/cin", { method: "POST", body })
+    setCinUploading(false)
+
+    if (!res.ok) {
+      const json = await res.json().catch(() => ({}))
+      console.error("[CIN upload] API error:", json)
+      toast({ title: "Erreur lors de l'envoi. Veuillez réessayer.", variant: "destructive" })
+      return
+    }
+
+    setCinStatus("pending")
+    toast({ title: "CIN envoyée — vérification en cours." })
   }
 
   if (loading) {
@@ -431,8 +469,89 @@ export default function ParametresPage() {
               </div>
             </section>
 
-            {/* Section 3: Security */}
+            {/* Section 3: CIN verification */}
             <section className="rounded-2xl border border-border bg-card p-6">
+              <div className="flex items-center gap-2 mb-1">
+                <Shield className="h-4 w-4 text-muted-foreground shrink-0" />
+                <h2 className="text-base font-semibold text-foreground">Vérification d'identité</h2>
+              </div>
+              <p className="text-sm text-muted-foreground mb-5">
+                Téléversez une photo de votre CIN (recto) pour obtenir le badge « Vérifié » sur votre profil public.
+              </p>
+
+              {cinStatus === "verified" && (
+                <div className="flex items-center gap-2.5 px-4 py-3 rounded-xl bg-green-50 border border-green-200 text-green-700 text-sm font-medium">
+                  <ShieldCheck className="h-5 w-5 shrink-0" />
+                  Identité vérifiée ✓
+                </div>
+              )}
+
+              {cinStatus === "pending" && (
+                <div className="flex items-center gap-2.5 px-4 py-3 rounded-xl bg-amber-50 border border-amber-200 text-amber-700 text-sm font-medium">
+                  <Loader2 className="h-4 w-4 shrink-0 animate-spin" />
+                  En attente de vérification — votre CIN est en cours d'examen.
+                </div>
+              )}
+
+              {(cinStatus === "none" || cinStatus === "rejected") && (
+                <div className="space-y-3">
+                  {cinStatus === "rejected" && (
+                    <div className="flex items-center gap-2.5 px-4 py-3 rounded-xl bg-red-50 border border-red-200 text-red-700 text-sm font-medium">
+                      <ShieldAlert className="h-5 w-5 shrink-0" />
+                      Refusé — veuillez soumettre une nouvelle photo lisible.
+                    </div>
+                  )}
+
+                  <div
+                    onClick={() => !cinUploading && cinRef.current?.click()}
+                    className={`relative flex flex-col items-center justify-center gap-2 rounded-xl border-2 border-dashed p-8 text-center transition-colors ${
+                      cinUploading
+                        ? "border-border bg-muted cursor-not-allowed"
+                        : "border-border bg-muted/30 hover:border-primary/50 hover:bg-primary/5 cursor-pointer"
+                    }`}
+                  >
+                    {cinUploading ? (
+                      <>
+                        <Loader2 className="h-8 w-8 text-muted-foreground animate-spin" />
+                        <p className="text-sm text-muted-foreground">Envoi en cours…</p>
+                      </>
+                    ) : (
+                      <>
+                        <Upload className="h-8 w-8 text-muted-foreground" />
+                        <div>
+                          <p className="text-sm font-medium text-foreground">Cliquez pour choisir votre CIN</p>
+                          <p className="text-xs text-muted-foreground mt-0.5">JPG, PNG ou PDF · Recto uniquement · Max 5 Mo</p>
+                        </div>
+                      </>
+                    )}
+                    <input
+                      ref={cinRef}
+                      type="file"
+                      accept="image/jpeg,image/png,image/jpg,application/pdf"
+                      className="hidden"
+                      onChange={handleCinUpload}
+                      disabled={cinUploading}
+                    />
+                  </div>
+
+                  <Button
+                    variant="outline"
+                    className="w-full"
+                    onClick={() => cinRef.current?.click()}
+                    disabled={cinUploading}
+                  >
+                    {cinUploading ? (
+                      <><Loader2 className="h-4 w-4 animate-spin" />Envoi en cours…</>
+                    ) : (
+                      <><Upload className="h-4 w-4" />Téléverser ma CIN</>
+                    )}
+                  </Button>
+                </div>
+              )}
+            </section>
+
+            {/* Section 4: Security */}
+            <section className="rounded-2xl border border-border bg-card p-6" id="securite">
               <h2 className="text-base font-semibold text-foreground mb-5">{t.security.title}</h2>
 
               <div className="space-y-4">
