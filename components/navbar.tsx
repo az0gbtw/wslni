@@ -226,7 +226,7 @@ export function Navbar() {
 
                 {/* To deliver */}
                 <Button variant="ghost" size="sm" className="text-sm font-medium" asChild>
-                  <Link href="/dashboard#commandes-a-livrer">
+                  <Link href="/a-livrer">
                     <PackageCheck className="h-4 w-4" />
                     {t.toDeliver}
                   </Link>
@@ -421,7 +421,7 @@ export function Navbar() {
                 </Link>
               </Button>
               <Button variant="ghost" className="w-full justify-start text-sm font-medium" asChild>
-                <Link href="/dashboard#commandes-a-livrer">
+                <Link href="/a-livrer">
                   <PackageCheck className="h-4 w-4 me-2" />
                   {t.toDeliver}
                 </Link>

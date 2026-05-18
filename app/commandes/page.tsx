@@ -125,6 +125,12 @@ function OrderCard({
           <span className={`text-[10px] font-semibold px-2 py-0.5 rounded-full ${statusClasses[order.status] ?? "bg-muted text-muted-foreground"}`}>
             {td.statuses[order.status] ?? order.status}
           </span>
+          <Link
+            href={`/commandes/${order.id}`}
+            className="text-[10px] font-medium text-primary hover:underline"
+          >
+            Voir les détails →
+          </Link>
         </div>
       </div>
 

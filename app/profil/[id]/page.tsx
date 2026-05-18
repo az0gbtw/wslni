@@ -215,25 +215,16 @@ export default function PublicProfilePage({ params }: { params: Promise<{ id: st
       <main className="min-h-screen bg-background">
         <div className="relative">
           <ZelligeCover />
-          <div className="absolute top-20 end-4 sm:end-8 z-10">
-            {isOwner ? (
+          {isOwner && (
+            <div className="absolute top-20 end-4 sm:end-8 z-10">
               <Button asChild variant="outline" size="sm" className="bg-white/90 hover:bg-white text-gray-800 border-white/40 shadow-md backdrop-blur-sm font-medium">
                 <Link href="/profil">
                   <Edit2 className="h-3.5 w-3.5" />
                   {t.editProfile}
                 </Link>
               </Button>
-            ) : (
-              <Button
-                size="sm"
-                className="bg-primary hover:bg-primary/90 text-primary-foreground shadow-md font-medium"
-                onClick={() => setContactOpen(true)}
-              >
-                <MessageCircle className="h-3.5 w-3.5" />
-                {t.contact}
-              </Button>
-            )}
-          </div>
+            </div>
+          )}
         </div>
 
         <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8">
@@ -542,14 +533,7 @@ export default function PublicProfilePage({ params }: { params: Promise<{ id: st
                   </div>
                 )}
 
-                {isOwner ? (
-                  <Button variant="outline" className="w-full" asChild>
-                    <Link href="/profil">
-                      <Edit2 className="h-4 w-4" />
-                      {t.editProfile}
-                    </Link>
-                  </Button>
-                ) : (
+                {!isOwner && (
                   <Button
                     className="w-full bg-primary hover:bg-primary/90 text-primary-foreground"
                     onClick={() => setContactOpen(true)}
