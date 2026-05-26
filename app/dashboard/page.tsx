@@ -986,16 +986,24 @@ export default function DashboardPage() {
             </div>
 
             {publishedServices.length === 0 ? (
-              <div className="rounded-2xl border-2 border-dashed border-border bg-card p-10 text-center">
-                <div className="w-14 h-14 rounded-2xl bg-primary/10 flex items-center justify-center mx-auto mb-4">
-                  <Briefcase className="h-7 w-7 text-primary" />
-                </div>
-                <p className="font-bold text-foreground mb-1">{t.services.empty}</p>
-                <p className="text-sm text-muted-foreground mb-5">{t.services.emptySub}</p>
-                <Button asChild className="gap-2 bg-primary hover:bg-primary/90 text-primary-foreground font-semibold">
+              <div className="flex flex-col items-center py-20 text-center">
+                <svg width="96" height="96" viewBox="0 0 96 96" fill="none" xmlns="http://www.w3.org/2000/svg" className="mb-6" aria-hidden="true">
+                  <rect x="12" y="36" width="72" height="48" rx="10" fill="#FEE2E2"/>
+                  <rect x="12" y="36" width="72" height="48" rx="10" stroke="#FCA5A5" strokeWidth="2"/>
+                  <path d="M34 36V28C34 24.686 36.686 22 40 22H56C59.314 22 62 24.686 62 28V36" stroke="#F87171" strokeWidth="2.5" strokeLinecap="round" fill="none"/>
+                  <line x1="48" y1="50" x2="48" y2="70" stroke="#EF4444" strokeWidth="3.5" strokeLinecap="round"/>
+                  <line x1="38" y1="60" x2="58" y2="60" stroke="#EF4444" strokeWidth="3.5" strokeLinecap="round"/>
+                  <circle cx="18" cy="22" r="4" fill="#FECACA"/>
+                  <circle cx="80" cy="18" r="3" fill="#FEE2E2" stroke="#FCA5A5" strokeWidth="1.5"/>
+                  <circle cx="8" cy="60" r="2.5" fill="#FCA5A5"/>
+                  <circle cx="88" cy="72" r="4" fill="#FEE2E2" stroke="#FCA5A5" strokeWidth="1.5"/>
+                </svg>
+                <h3 className="text-lg font-semibold text-gray-900 mb-2">Créez votre premier service</h3>
+                <p className="text-sm text-gray-500 mb-6 max-w-xs mx-auto">Publiez votre expertise et commencez à recevoir des commandes de clients partout au Maroc.</p>
+                <Button asChild className="bg-red-600 hover:bg-red-700 text-white rounded-xl px-6 py-3 h-auto font-semibold gap-2">
                   <Link href="/dashboard/new-service">
                     <Plus className="h-4 w-4" />
-                    {t.services.createBtn}
+                    Créer mon premier service
                   </Link>
                 </Button>
               </div>

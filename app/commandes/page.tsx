@@ -4,7 +4,7 @@ import { useState, useEffect } from "react"
 import { useRouter } from "next/navigation"
 import Link from "next/link"
 import {
-  Loader2, ShoppingBag, Star, CheckCircle2, ArrowRight,
+  Loader2, Star, CheckCircle2,
   Download, FileText,
 } from "lucide-react"
 import type { User as SupabaseUser } from "@supabase/supabase-js"
@@ -323,17 +323,20 @@ export default function CommandesPage() {
           </div>
 
           {orders.length === 0 ? (
-            <div className="rounded-2xl border-2 border-dashed border-border bg-card p-12 text-center">
-              <div className="w-14 h-14 rounded-2xl bg-primary/10 flex items-center justify-center mx-auto mb-4">
-                <ShoppingBag className="h-7 w-7 text-primary" />
-              </div>
-              <p className="font-bold text-foreground mb-1">{to.emptyClient}</p>
-              <p className="text-sm text-muted-foreground mb-5">{to.emptyClientSub}</p>
-              <Button asChild size="sm" className="bg-primary hover:bg-primary/90 text-primary-foreground gap-1.5">
-                <Link href="/services">
-                  {to.viewServices}
-                  <ArrowRight className="h-3.5 w-3.5 rtl:rotate-180" />
-                </Link>
+            <div className="flex flex-col items-center py-20 text-center">
+              <svg width="96" height="96" viewBox="0 0 96 96" fill="none" xmlns="http://www.w3.org/2000/svg" className="mb-6" aria-hidden="true">
+                <rect x="14" y="34" width="68" height="52" rx="10" fill="#FEE2E2"/>
+                <rect x="14" y="34" width="68" height="52" rx="10" stroke="#FCA5A5" strokeWidth="2"/>
+                <path d="M30 34V28C30 20.268 36.268 14 44 14H52C59.732 14 66 20.268 66 28V34" stroke="#F87171" strokeWidth="2.5" strokeLinecap="round" fill="none"/>
+                <path d="M48 70C48 70 34 61 34 52C34 47.582 37.582 44 42 44C44.12 44 46.052 44.988 47.416 46.546C47.712 46.9 48.288 46.9 48.584 46.546C49.948 44.988 51.88 44 54 44C58.418 44 62 47.582 62 52C62 61 48 70 48 70Z" fill="#EF4444"/>
+                <circle cx="82" cy="20" r="5" fill="#FEE2E2" stroke="#FCA5A5" strokeWidth="1.5"/>
+                <circle cx="10" cy="26" r="3.5" fill="#FECACA"/>
+                <circle cx="88" cy="62" r="4" fill="#FEE2E2" stroke="#FCA5A5" strokeWidth="1.5"/>
+              </svg>
+              <h3 className="text-lg font-semibold text-gray-900 mb-2">Aucune commande pour l'instant</h3>
+              <p className="text-sm text-gray-500 mb-6 max-w-xs mx-auto">Explorez les services de nos freelances et passez votre première commande en quelques clics.</p>
+              <Button asChild className="bg-red-600 hover:bg-red-700 text-white rounded-xl px-6 py-3 h-auto font-semibold">
+                <Link href="/services">Explorer les services</Link>
               </Button>
             </div>
           ) : (

@@ -679,12 +679,24 @@ function ServicesContent() {
                 {Array.from({ length: 6 }).map((_, i) => <ServiceCardSkeleton key={i} />)}
               </div>
             ) : filtered.length === 0 ? (
-              <div className="text-center py-24 animate-fadeIn">
-                <Search className="h-12 w-12 text-muted-foreground/30 mx-auto mb-4 animate-float" />
-                <p className="text-muted-foreground text-lg mb-2">{t.noResults}</p>
+              <div className="flex flex-col items-center py-20 text-center animate-fadeIn">
+                <svg width="96" height="96" viewBox="0 0 96 96" fill="none" xmlns="http://www.w3.org/2000/svg" className="mb-6" aria-hidden="true">
+                  <circle cx="38" cy="38" r="28" fill="#FEE2E2"/>
+                  <circle cx="38" cy="38" r="28" stroke="#FCA5A5" strokeWidth="2.5"/>
+                  <line x1="57" y1="57" x2="84" y2="84" stroke="#F87171" strokeWidth="5" strokeLinecap="round"/>
+                  <line x1="28" y1="28" x2="48" y2="48" stroke="#EF4444" strokeWidth="3" strokeLinecap="round"/>
+                  <line x1="48" y1="28" x2="28" y2="48" stroke="#EF4444" strokeWidth="3" strokeLinecap="round"/>
+                  <circle cx="84" cy="12" r="4" fill="#FECACA"/>
+                  <circle cx="8" cy="72" r="3" fill="#FEE2E2" stroke="#FCA5A5" strokeWidth="1.5"/>
+                </svg>
+                <h3 className="text-lg font-semibold text-gray-900 mb-2">Aucun résultat trouvé</h3>
+                <p className="text-sm text-gray-500 mb-6 max-w-xs mx-auto">Aucun service ne correspond à vos critères. Essayez de modifier vos filtres.</p>
                 {hasFilters && (
-                  <button onClick={resetFilters} className="text-sm text-primary hover:underline underline-offset-4">
-                    {t.clearFilters}
+                  <button
+                    onClick={resetFilters}
+                    className="bg-red-600 hover:bg-red-700 text-white rounded-xl px-6 py-3 font-semibold text-sm transition-colors"
+                  >
+                    Réinitialiser les filtres
                   </button>
                 )}
               </div>

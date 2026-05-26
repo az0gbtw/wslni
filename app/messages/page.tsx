@@ -474,23 +474,30 @@ export default function MessagesPage() {
 
           <div className="flex-1 overflow-y-auto divide-y divide-border/40">
             {filteredConvs.length === 0 ? (
-              <div className="flex flex-col items-center justify-center h-full p-8 text-center gap-3">
-                <MessageSquare className="h-10 w-10 text-muted-foreground/30" />
-                <p className="text-sm text-muted-foreground font-medium">
-                  {convSearch ? tm.noConvFound : tm.noConversations}
-                </p>
-                {!convSearch && (
-                  <Button
-                    size="sm"
-                    variant="outline"
-                    className="text-xs gap-1.5 mt-1"
-                    onClick={() => setShowNewConv(true)}
-                  >
-                    <Plus className="h-3.5 w-3.5" />
-                    {tm.newConversation}
+              convSearch ? (
+                <div className="flex flex-col items-center justify-center h-full p-8 text-center gap-2">
+                  <MessageSquare className="h-8 w-8 text-muted-foreground/30" />
+                  <p className="text-sm text-muted-foreground font-medium">{tm.noConvFound}</p>
+                </div>
+              ) : (
+                <div className="flex flex-col items-center justify-center h-full px-6 text-center">
+                  <svg width="80" height="80" viewBox="0 0 80 80" fill="none" xmlns="http://www.w3.org/2000/svg" className="mb-5" aria-hidden="true">
+                    <path d="M6 38 L6 48 L22 38 Z" fill="#FEE2E2"/>
+                    <rect x="6" y="8" width="50" height="32" rx="10" fill="#FEE2E2" stroke="#FCA5A5" strokeWidth="1.5"/>
+                    <path d="M74 60 L74 70 L60 60 Z" fill="#FECACA"/>
+                    <rect x="26" y="34" width="48" height="30" rx="9" fill="#FECACA" stroke="#F87171" strokeWidth="1.5"/>
+                    <line x1="16" y1="19" x2="46" y2="19" stroke="#F87171" strokeWidth="2" strokeLinecap="round"/>
+                    <line x1="16" y1="28" x2="36" y2="28" stroke="#FCA5A5" strokeWidth="1.5" strokeLinecap="round"/>
+                    <line x1="36" y1="45" x2="65" y2="45" stroke="#EF4444" strokeWidth="1.5" strokeLinecap="round" opacity="0.7"/>
+                    <line x1="36" y1="54" x2="55" y2="54" stroke="#EF4444" strokeWidth="1.5" strokeLinecap="round" opacity="0.5"/>
+                  </svg>
+                  <h3 className="text-lg font-semibold text-gray-900 mb-2">Aucune conversation</h3>
+                  <p className="text-sm text-gray-500 mb-5">Contactez un freelance pour démarrer votre première discussion.</p>
+                  <Button asChild className="bg-red-600 hover:bg-red-700 text-white rounded-xl px-6 py-3 h-auto font-semibold text-sm">
+                    <Link href="/services">Trouver un freelance</Link>
                   </Button>
-                )}
-              </div>
+                </div>
+              )
             ) : (
               filteredConvs.map((conv) => {
                 const unread = unreadCounts[conv.id] ?? 0
