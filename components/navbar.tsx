@@ -1,10 +1,10 @@
 "use client"
 
 import { useState, useEffect, useRef } from "react"
-import { Search, Menu, X, Globe, LogOut, LayoutDashboard, MessageSquare, ShoppingBag, PackageCheck, ChevronDown, User as UserIcon, Settings, HelpCircle, Briefcase, ShieldCheck } from "lucide-react"
+import { Search, Menu, X, Globe, LogOut, LayoutDashboard, MessageSquare, ShoppingBag, PackageCheck, ChevronDown, User as UserIcon, Settings, HelpCircle, Briefcase, ShieldCheck, Heart } from "lucide-react"
 import { NotificationsBell } from "@/components/notifications-bell"
 import Link from "next/link"
-import { useRouter } from "next/navigation"
+import { useRouter, usePathname } from "next/navigation"
 import type { User } from "@supabase/supabase-js"
 import { createClient } from "@/lib/supabase/client"
 import { useLanguage } from "@/lib/language-context"
@@ -28,6 +28,7 @@ function getInitials(user: User): string {
 
 export function Navbar() {
   const router = useRouter()
+  const pathname = usePathname()
   const { lang, toggleLang } = useLanguage()
   const t = translations[lang].nav
   const [isScrolled, setIsScrolled] = useState(false)
@@ -36,8 +37,10 @@ export function Navbar() {
   const [user, setUser] = useState<User | null | undefined>(undefined)
   const [isAdmin, setIsAdmin] = useState(false)
   const [unreadCount, setUnreadCount] = useState(0)
+  const [showSearch, setShowSearch] = useState(false)
   const lastScrollY = useRef(0)
 
+  const navRef = useRef<HTMLElement>(null)
   const desktopSearchRef = useRef<HTMLInputElement>(null)
   const mobileSearchRef = useRef<HTMLInputElement>(null)
 
@@ -56,6 +59,17 @@ export function Navbar() {
     window.addEventListener("scroll", handleScroll, { passive: true })
     return () => window.removeEventListener("scroll", handleScroll)
   }, [])
+
+  useEffect(() => {
+    if (!isMobileMenuOpen) return
+    function handleOutsideClick(e: MouseEvent) {
+      if (navRef.current && !navRef.current.contains(e.target as Node)) {
+        setIsMobileMenuOpen(false)
+      }
+    }
+    document.addEventListener("mousedown", handleOutsideClick)
+    return () => document.removeEventListener("mousedown", handleOutsideClick)
+  }, [isMobileMenuOpen])
 
   useEffect(() => {
     const supabase = createClient()
@@ -101,6 +115,15 @@ export function Navbar() {
     return () => { supabase.removeChannel(channel) }
   }, [user])
 
+  // Show search bar only on "/" when scrolled past 500px
+  useEffect(() => {
+    if (pathname !== "/") { setShowSearch(false); return }
+    const onScroll = () => setShowSearch(window.scrollY > 500)
+    onScroll()
+    window.addEventListener("scroll", onScroll, { passive: true })
+    return () => window.removeEventListener("scroll", onScroll)
+  }, [pathname])
+
   function handleSearch(query: string) {
     const q = query.trim()
     if (!q) return
@@ -125,9 +148,10 @@ export function Navbar() {
 
   return (
     <nav
-      className={`fixed top-0 left-0 right-0 z-50 transition-all duration-300 ease-out ${
+      ref={navRef}
+      className={`fixed top-0 left-0 right-0 z-50 transition-all duration-300 ease-out border-b border-border/30 shadow-sm ${
         isScrolled
-          ? "bg-background/95 backdrop-blur-md shadow-sm"
+          ? "bg-background/95 backdrop-blur-md"
           : "bg-white/90 backdrop-blur-md"
       } ${isHidden ? "-translate-y-full" : "translate-y-0"}`}
     >
@@ -136,7 +160,7 @@ export function Navbar() {
 
           {/* Logo */}
           <Link href="/">
-            <span style={{fontFamily: 'Cormorant Garamond, serif', fontSize: '32px', fontWeight: '700', letterSpacing: '-0.5px'}}>
+            <span style={{fontFamily: 'var(--font-syne), system-ui, sans-serif', fontSize: '28px', fontWeight: '800', letterSpacing: '-0.5px'}}>
               <span style={{color: '#DC2626'}}>W</span>
               <span style={{position: 'relative', display: 'inline-block'}}>
                 <span style={{position: 'absolute', top: '-14px', left: '50%', transform: 'translateX(-50%)', fontSize: '10px', color: '#DC2626', lineHeight: 1}}>ّ</span>
@@ -146,25 +170,29 @@ export function Navbar() {
             </span>
           </Link>
 
-          {/* Search bar (md+) */}
-          <div className="hidden md:flex flex-1 max-w-md mx-4">
-            <div className="relative w-full group">
-              <button
-                type="button"
-                aria-label={t.search}
-                onClick={() => handleSearch(desktopSearchRef.current?.value ?? "")}
-                className="absolute start-3 top-1/2 -translate-y-1/2 text-muted-foreground group-focus-within:text-primary transition-all duration-150 hover:text-primary hover:scale-110"
-              >
-                <Search className="h-4 w-4" />
-              </button>
+          {/* Scroll-reveal search bar — home page only, slides in past 500px */}
+          <div className={`hidden md:flex flex-1 justify-center overflow-hidden transition-all duration-300 ease-in-out ${
+            showSearch ? "max-w-sm opacity-100" : "max-w-0 opacity-0 pointer-events-none"
+          }`}>
+            <form
+              onSubmit={(e) => { e.preventDefault(); handleSearch(desktopSearchRef.current?.value ?? "") }}
+              className="flex items-stretch w-72 rounded-xl overflow-hidden shadow-sm shrink-0"
+            >
               <input
                 ref={desktopSearchRef}
                 type="text"
+                name="q"
                 placeholder={t.search}
-                onKeyDown={onDesktopSearchKey}
-                className="w-full h-10 ps-10 pe-4 rounded-full border border-border bg-card text-sm placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all"
+                className="flex-1 bg-gray-100 px-4 py-2 text-sm text-gray-800 placeholder:text-gray-400 outline-none min-w-0"
               />
-            </div>
+              <button
+                type="submit"
+                aria-label={t.search}
+                className="flex items-center gap-1.5 bg-red-600 hover:bg-red-700 text-white px-4 py-2 text-sm font-medium transition-colors shrink-0"
+              >
+                <Search className="h-4 w-4" aria-hidden="true" />
+              </button>
+            </form>
           </div>
 
           {/* Desktop nav (lg+) */}
@@ -202,6 +230,15 @@ export function Navbar() {
               <>
                 {/* Bell */}
                 <NotificationsBell user={user} />
+
+                {/* Favorites */}
+                <Link
+                  href="/favoris"
+                  aria-label={t.favorites}
+                  className="relative flex items-center justify-center w-9 h-9 rounded-full border border-border bg-card hover:bg-muted transition-all duration-150 hover:scale-[1.04] active:scale-[0.97] focus:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
+                >
+                  <Heart className="h-4 w-4 text-foreground" />
+                </Link>
 
                 {/* Messages */}
                 <Button variant="ghost" size="sm" className="text-sm font-medium relative" asChild>
@@ -329,9 +366,18 @@ export function Navbar() {
             )}
           </div>
 
-          {/* Bell (mobile only — desktop bell is inside the desktop nav) + mobile menu button */}
+          {/* Bell + Favorites (mobile only — desktop versions are inside the desktop nav) + mobile menu button */}
           <div className="flex items-center gap-2">
             {user && <span className="lg:hidden"><NotificationsBell user={user} /></span>}
+            {user && (
+              <Link
+                href="/favoris"
+                aria-label={t.favorites}
+                className="lg:hidden relative flex items-center justify-center w-9 h-9 rounded-full border border-border bg-card hover:bg-muted transition-all duration-150 focus:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
+              >
+                <Heart className="h-4 w-4 text-foreground" />
+              </Link>
+            )}
             <Button
               variant="ghost"
               size="icon"
@@ -346,144 +392,154 @@ export function Navbar() {
       </div>
 
       {/* Mobile menu */}
-      <div
-        className={`lg:hidden overflow-hidden transition-all duration-300 ${
-          isMobileMenuOpen ? "max-h-[calc(100dvh-4rem)]" : "max-h-0"
-        }`}
-        style={{ overflowY: isMobileMenuOpen ? "auto" : "hidden" }}
-      >
-        <div className="px-4 py-4 space-y-2 bg-background/95 backdrop-blur-md border-t border-border">
+      {isMobileMenuOpen && (
+        <div
+          className="lg:hidden border-t border-border bg-background/95 backdrop-blur-md shadow-lg overflow-y-auto"
+          style={{ maxHeight: "calc(100dvh - 4rem)" }}
+        >
+          <div className="px-4 py-4 space-y-2">
 
-          {/* Mobile search */}
-          <div className="relative">
+            {/* Mobile search */}
+            <div className="relative">
+              <button
+                type="button"
+                aria-label={t.search}
+                onClick={() => handleSearch(mobileSearchRef.current?.value ?? "")}
+                className="absolute start-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-primary transition-all duration-150 hover:scale-110"
+              >
+                <Search className="h-4 w-4" />
+              </button>
+              <input
+                ref={mobileSearchRef}
+                type="text"
+                placeholder={t.search}
+                onKeyDown={onMobileSearchKey}
+                className="w-full h-10 ps-10 pe-4 rounded-full border border-border bg-card text-sm placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all"
+              />
+            </div>
+
+            <Button variant="ghost" className="w-full justify-start text-sm font-medium h-11" asChild>
+              <Link href="/services" onClick={() => setIsMobileMenuOpen(false)}>{t.explore}</Link>
+            </Button>
+
+            <div className="h-px bg-border" />
+
+            {/* Language toggle mobile */}
             <button
-              type="button"
-              aria-label={t.search}
-              onClick={() => handleSearch(mobileSearchRef.current?.value ?? "")}
-              className="absolute start-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-primary transition-all duration-150 hover:scale-110"
+              onClick={toggleLang}
+              className="flex items-center justify-center gap-2 w-full px-3 py-2.5 rounded-lg border border-border bg-card hover:bg-muted text-sm font-medium transition-colors min-h-[44px]"
             >
-              <Search className="h-4 w-4" />
+              <Globe className="h-4 w-4 text-muted-foreground" />
+              <span className={lang === "fr" ? "text-foreground" : "text-muted-foreground"}>{t.french}</span>
+              <span className="text-muted-foreground">/</span>
+              <span className={lang === "ar" ? "text-foreground" : "text-muted-foreground"}>{t.arabic}</span>
             </button>
-            <input
-              ref={mobileSearchRef}
-              type="text"
-              placeholder={t.search}
-              onKeyDown={onMobileSearchKey}
-              className="w-full h-10 ps-10 pe-4 rounded-full border border-border bg-card text-sm placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all"
-            />
-          </div>
 
-          <Button variant="ghost" className="w-full justify-start text-sm font-medium" asChild>
-            <Link href="/services">{t.explore}</Link>
-          </Button>
+            <div className="h-px bg-border" />
 
-          <div className="h-px bg-border" />
-
-          {/* Language toggle mobile */}
-          <button
-            onClick={toggleLang}
-            className="flex items-center justify-center gap-2 w-full px-3 py-2 rounded-lg border border-border bg-card hover:bg-muted text-sm font-medium transition-colors"
-          >
-            <Globe className="h-4 w-4 text-muted-foreground" />
-            <span className={lang === "fr" ? "text-foreground" : "text-muted-foreground"}>{t.french}</span>
-            <span className="text-muted-foreground">/</span>
-            <span className={lang === "ar" ? "text-foreground" : "text-muted-foreground"}>{t.arabic}</span>
-          </button>
-
-          <div className="h-px bg-border" />
-
-          {user === undefined ? null : user ? (
-            <>
-              <div className="flex items-center gap-2 px-3 py-2 rounded-lg border border-border bg-card text-sm">
-                <div className="w-7 h-7 rounded-full bg-primary flex items-center justify-center text-xs font-bold text-primary-foreground shrink-0">
-                  {getInitials(user)}
+            {user === undefined ? null : user ? (
+              <>
+                <div className="flex items-center gap-3 px-3 py-2.5 rounded-lg border border-border bg-card">
+                  <div className="w-8 h-8 rounded-full bg-primary flex items-center justify-center text-xs font-bold text-primary-foreground shrink-0">
+                    {getInitials(user)}
+                  </div>
+                  <div className="min-w-0">
+                    <p className="text-sm font-semibold text-foreground truncate">
+                      {(user.user_metadata?.full_name as string) || user.email?.split("@")[0]}
+                    </p>
+                    <p className="text-xs text-muted-foreground truncate">{user.email}</p>
+                  </div>
                 </div>
-                <span className="text-foreground font-medium truncate">
-                  {(user.user_metadata?.full_name as string) || user.email}
-                </span>
-              </div>
-              <Button variant="ghost" className="w-full justify-start text-sm font-medium" asChild>
-                <Link href={`/profil/${user.id}`}>
-                  <UserIcon className="h-4 w-4 me-2" />
-                  {t.myProfile}
-                </Link>
-              </Button>
-              <Button variant="ghost" className="w-full justify-start text-sm font-medium" asChild>
-                <Link href="/dashboard">
-                  <LayoutDashboard className="h-4 w-4 me-2" />
-                  {t.dashboard}
-                </Link>
-              </Button>
-              <Button variant="ghost" className="w-full justify-start text-sm font-medium" asChild>
-                <Link href="/commandes">
-                  <ShoppingBag className="h-4 w-4 me-2" />
-                  {t.orders}
-                </Link>
-              </Button>
-              <Button variant="ghost" className="w-full justify-start text-sm font-medium" asChild>
-                <Link href="/a-livrer">
-                  <PackageCheck className="h-4 w-4 me-2" />
-                  {t.toDeliver}
-                </Link>
-              </Button>
-              <Button variant="ghost" className="w-full justify-start text-sm font-medium" asChild>
-                <Link href="/dashboard#services">
-                  <Briefcase className="h-4 w-4 me-2" />
-                  {t.myServices}
-                </Link>
-              </Button>
-              <Button variant="ghost" className="w-full justify-start text-sm font-medium" asChild>
-                <Link href="/messages" className="flex items-center gap-2">
-                  <MessageSquare className="h-4 w-4" />
-                  {t.messages}
-                  {unreadCount > 0 && (
-                    <span className="ms-auto flex h-5 w-5 items-center justify-center rounded-full bg-primary text-[10px] font-bold text-primary-foreground">
-                      {unreadCount > 99 ? "99+" : unreadCount}
-                    </span>
-                  )}
-                </Link>
-              </Button>
-              <Button variant="ghost" className="w-full justify-start text-sm font-medium" asChild>
-                <Link href="/parametres">
-                  <Settings className="h-4 w-4 me-2" />
-                  {t.settings}
-                </Link>
-              </Button>
-              {isAdmin && (
-                <Button variant="ghost" className="w-full justify-start text-sm font-medium text-primary" asChild>
-                  <Link href="/admin/verifications">
-                    <ShieldCheck className="h-4 w-4 me-2" />
-                    Admin
+                <Button variant="ghost" className="w-full justify-start text-sm font-medium h-11" asChild>
+                  <Link href={`/profil/${user.id}`} onClick={() => setIsMobileMenuOpen(false)}>
+                    <UserIcon className="h-4 w-4 me-2" />
+                    {t.myProfile}
                   </Link>
                 </Button>
-              )}
-              <Button variant="ghost" className="w-full justify-start text-sm font-medium" asChild>
-                <Link href="/aide">
-                  <HelpCircle className="h-4 w-4 me-2" />
-                  {t.helpSupport}
-                </Link>
-              </Button>
-              <Button
-                variant="ghost"
-                className="w-full justify-start text-sm font-medium text-destructive hover:text-destructive"
-                onClick={handleLogout}
-              >
-                <LogOut className="h-4 w-4 me-2" />
-                {t.logout}
-              </Button>
-            </>
-          ) : (
-            <>
-              <Button variant="ghost" className="w-full justify-start text-sm font-medium" asChild>
-                <Link href="/connexion">{t.login}</Link>
-              </Button>
-              <Button className="w-full text-sm font-medium bg-primary hover:bg-primary/90 text-primary-foreground" asChild>
-                <Link href="/inscription">{t.signup}</Link>
-              </Button>
-            </>
-          )}
+                <Button variant="ghost" className="w-full justify-start text-sm font-medium h-11" asChild>
+                  <Link href="/messages" onClick={() => setIsMobileMenuOpen(false)} className="flex items-center gap-2 w-full">
+                    <MessageSquare className="h-4 w-4" />
+                    <span className="me-2">{t.messages}</span>
+                    {unreadCount > 0 && (
+                      <span className="ms-auto flex h-5 w-5 items-center justify-center rounded-full bg-primary text-[10px] font-bold text-primary-foreground">
+                        {unreadCount > 99 ? "99+" : unreadCount}
+                      </span>
+                    )}
+                  </Link>
+                </Button>
+                <Button variant="ghost" className="w-full justify-start text-sm font-medium h-11" asChild>
+                  <Link href="/commandes" onClick={() => setIsMobileMenuOpen(false)}>
+                    <ShoppingBag className="h-4 w-4 me-2" />
+                    {t.orders}
+                  </Link>
+                </Button>
+                <Button variant="ghost" className="w-full justify-start text-sm font-medium h-11" asChild>
+                  <Link href="/a-livrer" onClick={() => setIsMobileMenuOpen(false)}>
+                    <PackageCheck className="h-4 w-4 me-2" />
+                    {t.toDeliver}
+                  </Link>
+                </Button>
+                <Button variant="ghost" className="w-full justify-start text-sm font-medium h-11" asChild>
+                  <Link href="/favoris" onClick={() => setIsMobileMenuOpen(false)}>
+                    <Heart className="h-4 w-4 me-2" />
+                    {t.favorites}
+                  </Link>
+                </Button>
+                <Button variant="ghost" className="w-full justify-start text-sm font-medium h-11" asChild>
+                  <Link href="/dashboard" onClick={() => setIsMobileMenuOpen(false)}>
+                    <LayoutDashboard className="h-4 w-4 me-2" />
+                    {t.dashboard}
+                  </Link>
+                </Button>
+                <Button variant="ghost" className="w-full justify-start text-sm font-medium h-11" asChild>
+                  <Link href="/dashboard#services" onClick={() => setIsMobileMenuOpen(false)}>
+                    <Briefcase className="h-4 w-4 me-2" />
+                    {t.myServices}
+                  </Link>
+                </Button>
+                {isAdmin && (
+                  <Button variant="ghost" className="w-full justify-start text-sm font-medium h-11 text-primary" asChild>
+                    <Link href="/admin/verifications" onClick={() => setIsMobileMenuOpen(false)}>
+                      <ShieldCheck className="h-4 w-4 me-2" />
+                      Admin
+                    </Link>
+                  </Button>
+                )}
+                <div className="h-px bg-border" />
+                <Button variant="ghost" className="w-full justify-start text-sm font-medium h-11" asChild>
+                  <Link href="/parametres" onClick={() => setIsMobileMenuOpen(false)}>
+                    <Settings className="h-4 w-4 me-2" />
+                    {t.settings}
+                  </Link>
+                </Button>
+                <Button variant="ghost" className="w-full justify-start text-sm font-medium h-11" asChild>
+                  <Link href="/aide" onClick={() => setIsMobileMenuOpen(false)}>
+                    <HelpCircle className="h-4 w-4 me-2" />
+                    {t.helpSupport}
+                  </Link>
+                </Button>
+                <Button
+                  variant="ghost"
+                  className="w-full justify-start text-sm font-medium h-11 text-destructive hover:text-destructive"
+                  onClick={handleLogout}
+                >
+                  <LogOut className="h-4 w-4 me-2" />
+                  {t.logout}
+                </Button>
+              </>
+            ) : (
+              <>
+                <Button variant="ghost" className="w-full justify-start text-sm font-medium h-11" asChild>
+                  <Link href="/connexion" onClick={() => setIsMobileMenuOpen(false)}>{t.login}</Link>
+                </Button>
+                <Button className="w-full text-sm font-medium h-11 bg-primary hover:bg-primary/90 text-primary-foreground" asChild>
+                  <Link href="/inscription" onClick={() => setIsMobileMenuOpen(false)}>{t.signup}</Link>
+                </Button>
+              </>
+            )}
+          </div>
         </div>
-      </div>
+      )}
     </nav>
   )
 }

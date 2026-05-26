@@ -1,12 +1,5 @@
-"use client"
-
-import { useState } from "react"
 import { Navbar } from "@/components/navbar"
 import { Footer } from "@/components/footer"
-import { Button } from "@/components/ui/button"
-import { Input } from "@/components/ui/input"
-import { Label } from "@/components/ui/label"
-import { Textarea } from "@/components/ui/textarea"
 import {
   Briefcase,
   Rocket,
@@ -16,7 +9,6 @@ import {
   Users,
   TrendingUp,
   CheckCircle,
-  Send,
   MapPin,
   Clock,
 } from "lucide-react"
@@ -62,69 +54,7 @@ const values = [
   "Itérer vite et apprendre",
 ]
 
-interface FormData {
-  name: string
-  email: string
-  role: string
-  linkedin: string
-  motivation: string
-}
-
-interface FormErrors {
-  name?: string
-  email?: string
-  role?: string
-  motivation?: string
-}
-
 export default function CarrieresPage() {
-  const [formData, setFormData] = useState<FormData>({
-    name: "",
-    email: "",
-    role: "",
-    linkedin: "",
-    motivation: "",
-  })
-  const [errors, setErrors] = useState<FormErrors>({})
-  const [loading, setLoading] = useState(false)
-  const [success, setSuccess] = useState(false)
-
-  function validate(): FormErrors {
-    const errs: FormErrors = {}
-    if (!formData.name.trim()) errs.name = "Le nom est requis."
-    if (!formData.email.trim()) {
-      errs.email = "L'e-mail est requis."
-    } else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(formData.email)) {
-      errs.email = "Adresse e-mail invalide."
-    }
-    if (!formData.role.trim()) errs.role = "Le poste souhaité est requis."
-    if (!formData.motivation.trim() || formData.motivation.trim().length < 50) {
-      errs.motivation = "La lettre de motivation doit comporter au moins 50 caractères."
-    }
-    return errs
-  }
-
-  async function handleSubmit(e: React.FormEvent) {
-    e.preventDefault()
-    const errs = validate()
-    if (Object.keys(errs).length > 0) {
-      setErrors(errs)
-      return
-    }
-    setErrors({})
-    setLoading(true)
-    await new Promise((r) => setTimeout(r, 1200))
-    setLoading(false)
-    setSuccess(true)
-  }
-
-  function handleChange(field: keyof FormData, value: string) {
-    setFormData((prev) => ({ ...prev, [field]: value }))
-    if (errors[field as keyof FormErrors]) {
-      setErrors((prev) => ({ ...prev, [field]: undefined }))
-    }
-  }
-
   return (
     <main className="min-h-screen">
       <Navbar />
@@ -245,120 +175,11 @@ export default function CarrieresPage() {
               </p>
             </div>
 
-            {success ? (
-              <div className="flex flex-col items-center justify-center py-14 text-center rounded-2xl bg-secondary/40 border border-border">
-                <div className="w-16 h-16 rounded-full bg-emerald-100 border-2 border-emerald-200 flex items-center justify-center mb-5">
-                  <CheckCircle className="w-8 h-8 text-emerald-600" />
-                </div>
-                <h3 className="text-xl font-bold text-foreground mb-3">Candidature reçue !</h3>
-                <p className="text-muted-foreground max-w-sm mb-7">
-                  Merci pour ton intérêt. Nous examinerons ton profil et te contacterons à <strong>{formData.email}</strong> si une opportunité correspond.
-                </p>
-                <Button
-                  onClick={() => { setSuccess(false); setFormData({ name: "", email: "", role: "", linkedin: "", motivation: "" }) }}
-                  variant="outline"
-                  className="border-2 hover:border-primary hover:text-primary transition-all"
-                >
-                  Envoyer une autre candidature
-                </Button>
-              </div>
-            ) : (
-              <div className="bg-card rounded-2xl border border-border p-6 sm:p-8">
-                <form onSubmit={handleSubmit} noValidate className="space-y-5">
-                  <div className="grid sm:grid-cols-2 gap-5">
-                    <div className="space-y-1.5">
-                      <Label htmlFor="c-name" className="text-sm font-medium">
-                        Nom complet <span className="text-primary">*</span>
-                      </Label>
-                      <Input
-                        id="c-name"
-                        value={formData.name}
-                        onChange={(e) => handleChange("name", e.target.value)}
-                        placeholder="Fatima Zahra El Idrissi"
-                        className={`h-11 rounded-xl ${errors.name ? "border-destructive" : ""}`}
-                      />
-                      {errors.name && <p className="text-xs text-destructive">{errors.name}</p>}
-                    </div>
-                    <div className="space-y-1.5">
-                      <Label htmlFor="c-email" className="text-sm font-medium">
-                        Adresse e-mail <span className="text-primary">*</span>
-                      </Label>
-                      <Input
-                        id="c-email"
-                        type="email"
-                        value={formData.email}
-                        onChange={(e) => handleChange("email", e.target.value)}
-                        placeholder="fatima@example.com"
-                        className={`h-11 rounded-xl ${errors.email ? "border-destructive" : ""}`}
-                      />
-                      {errors.email && <p className="text-xs text-destructive">{errors.email}</p>}
-                    </div>
-                  </div>
-
-                  <div className="grid sm:grid-cols-2 gap-5">
-                    <div className="space-y-1.5">
-                      <Label htmlFor="c-role" className="text-sm font-medium">
-                        Poste souhaité <span className="text-primary">*</span>
-                      </Label>
-                      <Input
-                        id="c-role"
-                        value={formData.role}
-                        onChange={(e) => handleChange("role", e.target.value)}
-                        placeholder="ex. Développeur Full-Stack"
-                        className={`h-11 rounded-xl ${errors.role ? "border-destructive" : ""}`}
-                      />
-                      {errors.role && <p className="text-xs text-destructive">{errors.role}</p>}
-                    </div>
-                    <div className="space-y-1.5">
-                      <Label htmlFor="c-linkedin" className="text-sm font-medium">
-                        LinkedIn ou Portfolio <span className="text-muted-foreground text-xs">(optionnel)</span>
-                      </Label>
-                      <Input
-                        id="c-linkedin"
-                        value={formData.linkedin}
-                        onChange={(e) => handleChange("linkedin", e.target.value)}
-                        placeholder="linkedin.com/in/fatima-zahra"
-                        className="h-11 rounded-xl"
-                      />
-                    </div>
-                  </div>
-
-                  <div className="space-y-1.5">
-                    <Label htmlFor="c-motivation" className="text-sm font-medium">
-                      Lettre de motivation <span className="text-primary">*</span>
-                    </Label>
-                    <Textarea
-                      id="c-motivation"
-                      value={formData.motivation}
-                      onChange={(e) => handleChange("motivation", e.target.value)}
-                      placeholder="Pourquoi veux-tu rejoindre Wslni.ma ? Quelles compétences apportes-tu ? Quel type de poste t'intéresse ?"
-                      rows={6}
-                      className={`rounded-xl resize-none ${errors.motivation ? "border-destructive" : ""}`}
-                    />
-                    {errors.motivation && <p className="text-xs text-destructive">{errors.motivation}</p>}
-                  </div>
-
-                  <Button
-                    type="submit"
-                    size="lg"
-                    disabled={loading}
-                    className="w-full bg-primary hover:bg-primary/90 text-primary-foreground shadow-lg shadow-primary/20 disabled:opacity-70"
-                  >
-                    {loading ? (
-                      <span className="flex items-center gap-2">
-                        <span className="w-4 h-4 border-2 border-primary-foreground/30 border-t-primary-foreground rounded-full animate-spin" />
-                        Envoi en cours...
-                      </span>
-                    ) : (
-                      <span className="flex items-center gap-2">
-                        <Send className="w-4 h-4" />
-                        Envoyer ma candidature
-                      </span>
-                    )}
-                  </Button>
-                </form>
-              </div>
-            )}
+            <div className="rounded-2xl border border-border bg-secondary/30 p-10 text-center">
+              <p className="text-muted-foreground">
+                Les candidatures sont temporairement fermées. Revenez bientôt.
+              </p>
+            </div>
           </div>
         </div>
       </section>

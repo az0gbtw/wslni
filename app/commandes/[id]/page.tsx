@@ -2,11 +2,12 @@
 
 import { use, useState, useEffect, useRef, useMemo } from "react"
 import Link from "next/link"
+import Image from "next/image"
 import { useRouter } from "next/navigation"
 import { format } from "date-fns"
 import { ar as arLocale, fr as frLocale } from "date-fns/locale"
 import {
-  Loader2, ArrowLeft, Send, MessageSquare, Calendar,
+  Loader2, ArrowLeft, Send, MessageSquare, Calendar, Lock, X,
 } from "lucide-react"
 import type { User as SupabaseUser } from "@supabase/supabase-js"
 import { createClient } from "@/lib/supabase/client"
@@ -15,6 +16,7 @@ import { Button } from "@/components/ui/button"
 import { useLanguage } from "@/lib/language-context"
 import { translations } from "@/lib/translations"
 import { cn } from "@/lib/utils"
+import { useToast } from "@/hooks/use-toast"
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -34,11 +36,12 @@ interface Profile {
   avatar_url: string | null
 }
 
-interface OrderMessage {
+interface Message {
   id: string
-  order_id: string
+  conversation_id: string
   sender_id: string
   content: string
+  is_read: boolean
   created_at: string
 }
 
@@ -54,13 +57,12 @@ function Avatar({ profile, size = "sm" }: { profile: Profile; size?: "sm" | "md"
   return (
     <div
       className={cn(
-        "rounded-full bg-primary overflow-hidden flex items-center justify-center shrink-0 font-semibold text-white select-none",
+        "relative rounded-full bg-primary overflow-hidden flex items-center justify-center shrink-0 font-semibold text-white select-none",
         cls
       )}
     >
       {profile.avatar_url ? (
-        // eslint-disable-next-line @next/next/no-img-element
-        <img src={profile.avatar_url} alt={profile.full_name || ""} className="w-full h-full object-cover" />
+        <Image src={profile.avatar_url} alt={profile.full_name || ""} fill sizes="36px" className="object-cover" />
       ) : (
         getInitials(profile.full_name)
       )}
@@ -78,31 +80,41 @@ const statusClasses: Record<string, string> = {
 
 // ─── Page ─────────────────────────────────────────────────────────────────────
 
+const BANNER_KEY = "wslni_protect_banner_dismissed"
+
 export default function OrderDetailPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = use(params)
   const router = useRouter()
   const { lang } = useLanguage()
   const t = translations[lang].orderDetail
+  const tm = translations[lang].messages
   const locale = lang === "ar" ? arLocale : frLocale
   const supabase = useMemo(() => createClient(), [])
+  const { toast } = useToast()
 
   const [user, setUser] = useState<SupabaseUser | null>(null)
+  const [bannerDismissed, setBannerDismissed] = useState(true)
   const [order, setOrder] = useState<Order | null | undefined>(undefined)
   const [clientProfile, setClientProfile] = useState<Profile | null>(null)
   const [freelancerProfile, setFreelancerProfile] = useState<Profile | null>(null)
-  const [messages, setMessages] = useState<OrderMessage[]>([])
+  const [conversationId, setConversationId] = useState<string | null>(null)
+  const [messages, setMessages] = useState<Message[]>([])
   const [newMessage, setNewMessage] = useState("")
   const [sending, setSending] = useState(false)
   const [loadingMsgs, setLoadingMsgs] = useState(true)
 
   const messagesEndRef = useRef<HTMLDivElement>(null)
 
+  useEffect(() => {
+    setBannerDismissed(localStorage.getItem(BANNER_KEY) === "1")
+  }, [])
+
   // Auto-scroll on new messages
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" })
   }, [messages])
 
-  // ── Auth + order + profiles ──────────────────────────────────────────────────
+  // ── Auth + order + profiles + conversation ───────────────────────────────────
   useEffect(() => {
     supabase.auth.getUser().then(async ({ data: { user: u } }) => {
       if (!u) { router.replace("/connexion"); return }
@@ -130,39 +142,64 @@ export default function OrderDetailPage({ params }: { params: Promise<{ id: stri
       ])
       setClientProfile(cp as Profile)
       setFreelancerProfile(fp as Profile)
+
+      // Get or create the shared conversation between client and freelancer
+      const otherPartyId = orderData.client_id === u.id
+        ? orderData.freelancer_id
+        : orderData.client_id
+
+      const res = await fetch("/api/conversations/find-or-create", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ freelancerId: otherPartyId }),
+      })
+      if (res.ok) {
+        const { conversationId: convId } = await res.json()
+        setConversationId(convId)
+      } else {
+        setLoadingMsgs(false)
+      }
     })
   }, [id, supabase, router])
 
   // ── Load messages ────────────────────────────────────────────────────────────
   useEffect(() => {
-    if (!order) return
+    if (!conversationId || !user) return
     setLoadingMsgs(true)
     supabase
-      .from("order_messages")
+      .from("messages")
       .select("*")
-      .eq("order_id", id)
+      .eq("conversation_id", conversationId)
       .order("created_at", { ascending: true })
       .then(({ data }) => {
-        setMessages((data as OrderMessage[]) ?? [])
+        const msgs = (data as Message[]) ?? []
+        setMessages(msgs)
         setLoadingMsgs(false)
+
+        const unreadIds = msgs
+          .filter((m) => !m.is_read && m.sender_id !== user.id)
+          .map((m) => m.id)
+        if (unreadIds.length > 0) {
+          supabase.from("messages").update({ is_read: true }).in("id", unreadIds).then(() => {})
+        }
       })
-  }, [id, order, supabase])
+  }, [conversationId, user, supabase])
 
   // ── Realtime subscription ────────────────────────────────────────────────────
   useEffect(() => {
-    if (!order) return
+    if (!conversationId) return
     const channel = supabase
-      .channel(`order-msgs-${id}`)
+      .channel(`order-conv-${conversationId}`)
       .on(
         "postgres_changes",
         {
           event: "INSERT",
           schema: "public",
-          table: "order_messages",
-          filter: `order_id=eq.${id}`,
+          table: "messages",
+          filter: `conversation_id=eq.${conversationId}`,
         },
         (payload) => {
-          const msg = payload.new as OrderMessage
+          const msg = payload.new as Message
           setMessages((prev) =>
             prev.some((m) => m.id === msg.id) ? prev : [...prev, msg]
           )
@@ -171,43 +208,61 @@ export default function OrderDetailPage({ params }: { params: Promise<{ id: stri
       .subscribe()
 
     return () => { supabase.removeChannel(channel) }
-  }, [id, order, supabase])
+  }, [conversationId, supabase])
+
+  function dismissBanner() {
+    localStorage.setItem(BANNER_KEY, "1")
+    setBannerDismissed(true)
+  }
 
   // ── Send message ─────────────────────────────────────────────────────────────
   async function sendMessage() {
-    if (!newMessage.trim() || !user || !order || sending) return
+    if (!newMessage.trim() || !user || !order || !conversationId || sending) return
     const content = newMessage.trim()
     setNewMessage("")
     setSending(true)
 
-    const { data } = await supabase
-      .from("order_messages")
-      .insert({ order_id: id, sender_id: user.id, content })
-      .select()
-      .single()
+    const res = await fetch("/api/order-messages", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ conversation_id: conversationId, content, order_id: order.id }),
+    })
 
-    if (data) {
-      setMessages((prev) =>
-        prev.some((m) => m.id === data.id) ? prev : [...prev, data as OrderMessage]
-      )
+    if (res.ok) {
+      const { message: data, wasFiltered, crossMessageDetected, maskedMessageIds } = await res.json()
 
-      const recipientId =
-        order.client_id === user.id ? order.freelancer_id : order.client_id
-      const senderName =
-        (user.user_metadata?.full_name as string | undefined) ??
-        user.email?.split("@")[0] ??
-        "Utilisateur"
+      if (crossMessageDetected) {
+        toast({ title: tm.crossDetectedTitle, duration: 5000 })
+        if (maskedMessageIds?.length > 0) {
+          setMessages((prev) =>
+            prev.map((m) => maskedMessageIds.includes(m.id) ? { ...m, content: `[${tm.maskedContact}]` } : m)
+          )
+        }
+      } else if (wasFiltered) {
+        toast({
+          title: tm.maskedContact,
+          description: tm.maskedContactDesc,
+          duration: 5000,
+        })
+      }
 
-      fetch("/api/order-messages/notify", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          recipientId,
-          senderName,
-          orderId: id,
-          messagePreview: content,
-        }),
-      }).catch(() => {})
+      if (data) {
+        setMessages((prev) =>
+          prev.some((m) => m.id === data.id) ? prev : [...prev, data as Message]
+        )
+
+        const recipientId = order.client_id === user.id ? order.freelancer_id : order.client_id
+        const senderName =
+          (user.user_metadata?.full_name as string | undefined) ??
+          user.email?.split("@")[0] ??
+          "Utilisateur"
+
+        fetch("/api/emails/new-message", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ recipientId, senderName, messagePreview: data.content }),
+        }).catch(() => {})
+      }
     }
 
     setSending(false)
@@ -267,31 +322,33 @@ export default function OrderDetailPage({ params }: { params: Promise<{ id: stri
           </Button>
 
           {/* Order info card */}
-          <div className="rounded-2xl border border-border bg-card p-5 space-y-4">
-            <div className="flex items-start justify-between gap-4 flex-wrap">
-              <div className="min-w-0 flex-1">
-                <h1 className="text-lg font-black text-foreground leading-snug">
-                  {order.service_title}
-                </h1>
-                <div className="flex items-center gap-1.5 mt-1.5 text-xs text-muted-foreground">
-                  <Calendar className="h-3 w-3 shrink-0" />
-                  <span>
-                    {format(new Date(order.created_at), "d MMMM yyyy", { locale })}
+          <div className="rounded-2xl border border-border/40 bg-card p-5 space-y-4 shadow-sm">
+            <div className="flex flex-col gap-3">
+              <div className="flex items-start justify-between gap-3 flex-wrap">
+                <div className="min-w-0 flex-1">
+                  <h1 className="text-base sm:text-lg font-black text-foreground leading-snug">
+                    {order.service_title}
+                  </h1>
+                  <div className="flex items-center gap-1.5 mt-1.5 text-xs text-muted-foreground">
+                    <Calendar className="h-3 w-3 shrink-0" />
+                    <span>
+                      {format(new Date(order.created_at), "d MMMM yyyy", { locale })}
+                    </span>
+                  </div>
+                </div>
+                <div className="flex flex-col items-end gap-1.5 shrink-0">
+                  <span
+                    className={cn(
+                      "text-xs font-semibold px-2.5 py-1 rounded-full",
+                      statusClasses[order.status] ?? "bg-muted text-muted-foreground"
+                    )}
+                  >
+                    {t.statuses[order.status] ?? order.status}
+                  </span>
+                  <span className="text-base sm:text-lg font-black text-foreground">
+                    {order.price.toLocaleString()} MAD
                   </span>
                 </div>
-              </div>
-              <div className="flex items-center gap-3 shrink-0">
-                <span
-                  className={cn(
-                    "text-xs font-semibold px-2.5 py-1 rounded-full",
-                    statusClasses[order.status] ?? "bg-muted text-muted-foreground"
-                  )}
-                >
-                  {t.statuses[order.status] ?? order.status}
-                </span>
-                <span className="text-lg font-black text-foreground">
-                  {order.price.toLocaleString()} MAD
-                </span>
               </div>
             </div>
 
@@ -336,14 +393,29 @@ export default function OrderDetailPage({ params }: { params: Promise<{ id: stri
           </div>
 
           {/* Discussion section */}
-          <div className="rounded-2xl border border-border bg-card overflow-hidden">
+          <div className="rounded-2xl border border-border/40 bg-card overflow-hidden shadow-sm">
             <div className="px-5 py-4 border-b border-border flex items-center gap-2">
               <MessageSquare className="h-4 w-4 text-primary" />
               <h2 className="font-bold text-foreground">{t.discussion}</h2>
             </div>
 
+            {/* Trust banner */}
+            {!bannerDismissed && (
+              <div className="flex items-start gap-2 px-4 py-2.5 bg-muted/60 border-b border-border text-xs text-muted-foreground">
+                <Lock className="h-3.5 w-3.5 mt-0.5 shrink-0 text-primary/70" />
+                <span className="flex-1 leading-relaxed">{tm.trustBanner}</span>
+                <button
+                  onClick={dismissBanner}
+                  className="shrink-0 rounded hover:text-foreground transition-colors p-0.5"
+                  aria-label={tm.trustBannerClose}
+                >
+                  <X className="h-3.5 w-3.5" />
+                </button>
+              </div>
+            )}
+
             {/* Messages thread */}
-            <div className="h-[420px] overflow-y-auto p-4 space-y-0.5 bg-muted/10">
+            <div className="h-[280px] sm:h-[420px] overflow-y-auto p-4 space-y-0.5 bg-muted/10">
               {loadingMsgs ? (
                 <div className="flex items-center justify-center h-full">
                   <Loader2 className="h-5 w-5 animate-spin text-muted-foreground" />
@@ -465,7 +537,7 @@ export default function OrderDetailPage({ params }: { params: Promise<{ id: stri
                 <Button
                   type="submit"
                   size="icon"
-                  disabled={!newMessage.trim() || sending}
+                  disabled={!newMessage.trim() || sending || !conversationId}
                   className="h-[42px] w-[42px] rounded-xl bg-primary hover:bg-primary/90 shrink-0"
                 >
                   {sending ? (

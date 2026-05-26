@@ -233,7 +233,7 @@ export default function BlogPage() {
               </p>
               <Button size="lg" className="bg-primary text-primary-foreground hover:bg-primary/90 shadow-lg shadow-primary/20">
                 M'avertir à la sortie
-                <ArrowRight className="ms-2 w-4 h-4" />
+                <ArrowRight className="ms-2 w-4 h-4 rtl:rotate-180" />
               </Button>
             </div>
           </div>

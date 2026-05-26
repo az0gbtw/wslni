@@ -8,11 +8,13 @@ import {
 import Link from "next/link"
 import { formatDistanceToNow } from "date-fns"
 import { fr as frLocale, ar as arLocale } from "date-fns/locale"
-import type { User, RealtimeChannel } from "@supabase/supabase-js"
+import type { User } from "@supabase/supabase-js"
 import { createClient } from "@/lib/supabase/client"
 import { useLanguage } from "@/lib/language-context"
 import { translations } from "@/lib/translations"
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover"
+
+const supabase = createClient()
 
 type NotifType =
   | "new_order"
@@ -66,11 +68,11 @@ export function NotificationsBell({ user }: { user: User }) {
   const [open, setOpen] = useState(false)
   const [notifications, setNotifications] = useState<Notification[]>([])
   const [unreadCount, setUnreadCount] = useState(0)
-  const supabaseRef = useRef(createClient())
-  const channelRef = useRef<RealtimeChannel | null>(null)
+  const prevUnreadRef = useRef<number | null>(null)
+  const [bellRinging, setBellRinging] = useState(false)
 
   const fetchNotifications = useCallback(async () => {
-    const { data } = await supabaseRef.current
+    const { data } = await supabase
       .from("notifications")
       .select("id, type, title, body, link, is_read, created_at")
       .eq("user_id", user.id)
@@ -85,52 +87,23 @@ export function NotificationsBell({ user }: { user: User }) {
   useEffect(() => {
     if (!user?.id) return
 
-    let cancelled = false
+    fetchNotifications()
 
-    async function setup() {
-      // Await removal of any previous channel before creating a new one —
-      // guarantees only one channel instance exists at a time across remounts
-      if (channelRef.current) {
-        await supabaseRef.current.removeChannel(channelRef.current)
-        channelRef.current = null
-      }
+    const interval = setInterval(fetchNotifications, 10000)
 
-      if (cancelled) return
+    return () => clearInterval(interval)
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [user?.id])
 
-      await fetchNotifications()
-
-      if (cancelled) return
-
-      const channel = supabaseRef.current
-        .channel(`user-notifications:${user.id}`)
-        .on(
-          "postgres_changes",
-          {
-            event: "INSERT",
-            schema: "public",
-            table: "notifications",
-            filter: `user_id=eq.${user.id}`,
-          },
-          fetchNotifications
-        )
-        .subscribe()
-
-      channelRef.current = channel
+  useEffect(() => {
+    if (prevUnreadRef.current !== null && unreadCount > prevUnreadRef.current) {
+      setBellRinging(true)
     }
-
-    setup()
-
-    return () => {
-      cancelled = true
-      if (channelRef.current) {
-        supabaseRef.current.removeChannel(channelRef.current)
-        channelRef.current = null
-      }
-    }
-  }, [user.id, fetchNotifications])
+    prevUnreadRef.current = unreadCount
+  }, [unreadCount])
 
   async function markAllRead() {
-    await supabaseRef.current
+    await supabase
       .from("notifications")
       .update({ is_read: true })
       .eq("user_id", user.id)
@@ -140,7 +113,7 @@ export function NotificationsBell({ user }: { user: User }) {
   }
 
   async function markRead(id: string) {
-    await supabaseRef.current.from("notifications").update({ is_read: true }).eq("id", id)
+    await supabase.from("notifications").update({ is_read: true }).eq("id", id)
     setNotifications((prev) =>
       prev.map((n) => (n.id === id ? { ...n, is_read: true } : n))
     )
@@ -156,7 +129,10 @@ export function NotificationsBell({ user }: { user: User }) {
           aria-label={t.title}
           className="relative flex items-center justify-center w-9 h-9 rounded-full border border-border bg-card hover:bg-muted transition-all duration-150 hover:scale-[1.04] active:scale-[0.97] focus:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
         >
-          <Bell className="h-4 w-4 text-foreground" />
+          <Bell
+            className={`h-4 w-4 text-foreground${bellRinging ? " animate-bellRing" : ""}`}
+            onAnimationEnd={() => setBellRinging(false)}
+          />
           {unreadCount > 0 && (
             <span className="absolute -top-1 -end-1 flex h-4 w-4 items-center justify-center rounded-full bg-destructive text-[9px] font-bold text-destructive-foreground leading-none">
               {unreadCount > 99 ? "99+" : unreadCount}
@@ -165,7 +141,7 @@ export function NotificationsBell({ user }: { user: User }) {
         </button>
       </PopoverTrigger>
 
-      <PopoverContent align="end" sideOffset={8} className="w-80 p-0 overflow-hidden">
+      <PopoverContent align="end" sideOffset={8} className="w-80 p-0 overflow-hidden animate-slideDown">
         {/* Header */}
         <div className="flex items-center justify-between px-4 py-3 border-b">
           <span className="font-semibold text-sm">{t.title}</span>

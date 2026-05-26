@@ -256,7 +256,7 @@ export default function ParametresPage() {
           <div className="space-y-6">
 
             {/* Section 1: Personal info */}
-            <section className="rounded-2xl border border-border bg-card p-6">
+            <section className="rounded-2xl border border-border/40 bg-card p-6 shadow-sm">
               <h2 className="text-base font-semibold text-foreground mb-5">{t.personal.title}</h2>
 
               <div className="space-y-4">
@@ -307,6 +307,7 @@ export default function ParametresPage() {
                 <Button
                   onClick={handleSavePersonal}
                   disabled={savingPersonal}
+                  size="lg"
                   className="bg-primary hover:bg-primary/90 text-primary-foreground"
                 >
                   {savingPersonal ? (
@@ -319,7 +320,7 @@ export default function ParametresPage() {
             </section>
 
             {/* Section 2: Freelance profile */}
-            <section className="rounded-2xl border border-border bg-card p-6">
+            <section className="rounded-2xl border border-border/40 bg-card p-6 shadow-sm">
               <h2 className="text-base font-semibold text-foreground mb-5">{t.freelance.title}</h2>
 
               <div className="space-y-4">
@@ -458,6 +459,7 @@ export default function ParametresPage() {
                 <Button
                   onClick={handleSaveFreelance}
                   disabled={savingFreelance}
+                  size="lg"
                   className="bg-primary hover:bg-primary/90 text-primary-foreground"
                 >
                   {savingFreelance ? (
@@ -470,7 +472,7 @@ export default function ParametresPage() {
             </section>
 
             {/* Section 3: CIN verification */}
-            <section className="rounded-2xl border border-border bg-card p-6">
+            <section className="rounded-2xl border border-border/40 bg-card p-6 shadow-sm">
               <div className="flex items-center gap-2 mb-1">
                 <Shield className="h-4 w-4 text-muted-foreground shrink-0" />
                 <h2 className="text-base font-semibold text-foreground">Vérification d'identité</h2>
@@ -623,6 +625,7 @@ export default function ParametresPage() {
                 <Button
                   onClick={handleSavePassword}
                   disabled={savingPassword || !currentPassword || !newPassword || !confirmPassword}
+                  size="lg"
                   className="bg-primary hover:bg-primary/90 text-primary-foreground"
                 >
                   {savingPassword ? (

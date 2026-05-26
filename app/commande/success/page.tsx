@@ -30,7 +30,7 @@ export default function CommandeSuccessPage() {
           <div className="flex flex-col sm:flex-row gap-3 justify-center">
             <Button asChild variant="outline" className="rounded-xl font-semibold">
               <Link href="/services">
-                <ArrowLeft className="h-4 w-4 me-2" />
+                <ArrowLeft className="h-4 w-4 me-2 rtl:rotate-180" />
                 Retour aux services
               </Link>
             </Button>

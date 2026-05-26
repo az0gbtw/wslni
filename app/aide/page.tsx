@@ -140,7 +140,7 @@ const categories = [
       },
       {
         q: "Comment signaler un comportement suspect ?",
-        a: "Clique sur le bouton « Signaler » visible sur chaque profil ou message. Tu peux aussi nous contacter directement à security@wslni.ma. Tous les signalements sont traités de manière confidentielle.",
+        a: "Clique sur le bouton « Signaler » visible sur chaque profil ou message. Tu peux aussi nous contacter directement à support@wslni.ma. Tous les signalements sont traités de manière confidentielle.",
       },
       {
         q: "Comment activer la double authentification ?",
@@ -301,7 +301,7 @@ export default function AidePage() {
               >
                 <Link href="/contact">
                   Contacter le support
-                  <ArrowRight className="ms-2 w-4 h-4" />
+                  <ArrowRight className="ms-2 w-4 h-4 rtl:rotate-180" />
                 </Link>
               </Button>
             </div>

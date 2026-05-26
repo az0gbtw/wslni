@@ -1,11 +1,11 @@
 "use client"
 
 import { useState, useEffect, useRef, useMemo, useCallback } from "react"
-import { useRouter } from "next/navigation"
+import { useRouter, useSearchParams } from "next/navigation"
 import Link from "next/link"
 import { format, isToday, isYesterday } from "date-fns"
 import { ar as arLocale, fr as frLocale } from "date-fns/locale"
-import { Loader2, Send, Search, Plus, ArrowLeft, MessageSquare, X } from "lucide-react"
+import { Loader2, Send, Search, Plus, ArrowLeft, MessageSquare, X, Lock } from "lucide-react"
 import type { User as SupabaseUser } from "@supabase/supabase-js"
 import { createClient } from "@/lib/supabase/client"
 import { useLanguage } from "@/lib/language-context"
@@ -14,6 +14,7 @@ import { Navbar } from "@/components/navbar"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { cn } from "@/lib/utils"
+import { useToast } from "@/hooks/use-toast"
 
 // ─── Types ───────────────────────────────────────────────────────────────────
 
@@ -97,14 +98,19 @@ function formatConvTime(dateStr: string, yesterday: string): string {
 
 // ─── Page ────────────────────────────────────────────────────────────────────
 
+const BANNER_KEY = "wslni_protect_banner_dismissed"
+
 export default function MessagesPage() {
   const router = useRouter()
+  const searchParams = useSearchParams()
   const { lang } = useLanguage()
   const tm = translations[lang].messages
   const supabase = useMemo(() => createClient(), [])
   const locale = lang === "ar" ? arLocale : frLocale
+  const { toast } = useToast()
 
   const [user, setUser] = useState<SupabaseUser | null>(null)
+  const [bannerDismissed, setBannerDismissed] = useState(true)
   const [conversations, setConversations] = useState<Conversation[]>([])
   const [activeConvId, setActiveConvId] = useState<string | null>(null)
   const [messages, setMessages] = useState<Message[]>([])
@@ -127,6 +133,9 @@ export default function MessagesPage() {
   useEffect(() => { activeConvIdRef.current = activeConvId }, [activeConvId])
   useEffect(() => { userIdRef.current = user?.id ?? null }, [user])
   useEffect(() => { messagesEndRef.current?.scrollIntoView({ behavior: "smooth" }) }, [messages])
+  useEffect(() => {
+    setBannerDismissed(localStorage.getItem(BANNER_KEY) === "1")
+  }, [])
 
   // ── Fetch conversations ─────────────────────────────────────────────────────
   const loadConversations = useCallback(
@@ -202,6 +211,15 @@ export default function MessagesPage() {
       setLoading(false)
     })
   }, [router, supabase, loadConversations])
+
+  // ── Auto-open conversation from URL param ───────────────────────────────────
+  useEffect(() => {
+    if (loading) return
+    const targetId = searchParams.get("conversation")
+    if (!targetId) return
+    setActiveConvId(targetId)
+    setMobileView("chat")
+  }, [loading, searchParams])
 
   // ── Realtime ────────────────────────────────────────────────────────────────
   useEffect(() => {
@@ -283,35 +301,55 @@ export default function MessagesPage() {
     setNewMessage("")
     setSending(true)
 
-    const { data } = await supabase
-      .from("messages")
-      .insert({ conversation_id: activeConvId, sender_id: user.id, content })
-      .select()
-      .single()
+    const res = await fetch("/api/messages", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ conversation_id: activeConvId, content }),
+    })
 
-    if (data) {
-      setMessages((prev) =>
-        prev.some((m) => m.id === data.id) ? prev : [...prev, data as Message]
-      )
+    if (res.ok) {
+      const { message: data, wasFiltered, crossMessageDetected, maskedMessageIds } = await res.json()
 
-      const conv = conversations.find((c) => c.id === activeConvId)
-      if (conv) {
-        const recipientId =
-          conv.participant1_id === user.id ? conv.participant2_id : conv.participant1_id
-        fetch("/api/emails/new-message", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            recipientId,
-            senderName:
-              (user.user_metadata?.full_name as string | undefined) ??
-              user.email?.split("@")[0] ??
-              tm.user,
-            messagePreview: content,
-          }),
-        }).catch(() => {})
+      if (crossMessageDetected) {
+        toast({ title: tm.crossDetectedTitle, duration: 5000 })
+        if (maskedMessageIds?.length > 0) {
+          setMessages((prev) =>
+            prev.map((m) => maskedMessageIds.includes(m.id) ? { ...m, content: `[${tm.maskedContact}]` } : m)
+          )
+        }
+      } else if (wasFiltered) {
+        toast({
+          title: tm.maskedContact,
+          description: tm.maskedContactDesc,
+          duration: 5000,
+        })
+      }
+
+      if (data) {
+        setMessages((prev) =>
+          prev.some((m) => m.id === data.id) ? prev : [...prev, data as Message]
+        )
+
+        const conv = conversations.find((c) => c.id === activeConvId)
+        if (conv) {
+          const recipientId =
+            conv.participant1_id === user.id ? conv.participant2_id : conv.participant1_id
+          fetch("/api/emails/new-message", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              recipientId,
+              senderName:
+                (user.user_metadata?.full_name as string | undefined) ??
+                user.email?.split("@")[0] ??
+                tm.user,
+              messagePreview: data.content,
+            }),
+          }).catch(() => {})
+        }
       }
     }
+
     setSending(false)
   }
 
@@ -376,6 +414,11 @@ export default function MessagesPage() {
     setUserResults([])
   }
 
+  function dismissBanner() {
+    localStorage.setItem(BANNER_KEY, "1")
+    setBannerDismissed(true)
+  }
+
   const activeConv = conversations.find((c) => c.id === activeConvId)
 
   const filteredConvs = convSearch
@@ -401,7 +444,7 @@ export default function MessagesPage() {
         {/* ── Conversation list ── */}
         <aside
           className={cn(
-            "w-full md:w-80 lg:w-96 border-e border-border flex flex-col shrink-0 bg-background",
+            "w-full md:w-80 lg:w-96 border-e border-border/50 flex flex-col shrink-0 bg-background shadow-sm",
             mobileView === "chat" && "hidden md:flex"
           )}
         >
@@ -540,6 +583,21 @@ export default function MessagesPage() {
                 </Link>
               </div>
 
+              {/* Trust banner */}
+              {!bannerDismissed && (
+                <div className="flex items-start gap-2 px-4 py-2.5 bg-muted/60 border-b border-border text-xs text-muted-foreground shrink-0">
+                  <Lock className="h-3.5 w-3.5 mt-0.5 shrink-0 text-primary/70" />
+                  <span className="flex-1 leading-relaxed">{tm.trustBanner}</span>
+                  <button
+                    onClick={dismissBanner}
+                    className="shrink-0 rounded hover:text-foreground transition-colors p-0.5"
+                    aria-label={tm.trustBannerClose}
+                  >
+                    <X className="h-3.5 w-3.5" />
+                  </button>
+                </div>
+              )}
+
               {/* Messages */}
               <div className="flex-1 overflow-y-auto p-4 space-y-0.5 bg-muted/10">
                 {loadingMsgs ? (
@@ -676,10 +734,10 @@ export default function MessagesPage() {
       {/* ── New conversation dialog ── */}
       {showNewConv && (
         <div
-          className="fixed inset-0 bg-black/50 backdrop-blur-sm z-[60] flex items-center justify-center p-4"
+          className="fixed inset-0 bg-black/50 backdrop-blur-sm z-[60] flex items-end sm:items-center justify-center p-0 sm:p-4"
           onClick={(e) => { if (e.target === e.currentTarget) closeNewConvDialog() }}
         >
-          <div className="bg-background rounded-2xl shadow-2xl w-full max-w-md border border-border overflow-hidden animate-in fade-in zoom-in-95 duration-200">
+          <div className="bg-background sm:rounded-2xl rounded-t-2xl shadow-2xl w-full sm:max-w-md border border-border overflow-hidden animate-in fade-in zoom-in-95 duration-200">
             <div className="flex items-center justify-between px-5 py-4 border-b border-border">
               <h2 className="font-black text-foreground">{tm.newConversation}</h2>
               <Button

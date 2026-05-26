@@ -90,7 +90,7 @@ function OrderCard({
     : "?"
 
   return (
-    <div className="rounded-xl border border-border bg-card hover:shadow-sm transition-shadow overflow-hidden">
+    <div className="rounded-2xl border border-border/40 bg-card shadow-sm hover:shadow-md transition-shadow overflow-hidden">
       <div className="flex items-center gap-3 p-4">
         <Link href={`/profil/${order.freelancer_id}`} className="shrink-0 hover:opacity-80 transition-opacity">
           {freelancer?.avatar_url ? (
@@ -332,7 +332,7 @@ export default function CommandesPage() {
               <Button asChild size="sm" className="bg-primary hover:bg-primary/90 text-primary-foreground gap-1.5">
                 <Link href="/services">
                   {to.viewServices}
-                  <ArrowRight className="h-3.5 w-3.5" />
+                  <ArrowRight className="h-3.5 w-3.5 rtl:rotate-180" />
                 </Link>
               </Button>
             </div>

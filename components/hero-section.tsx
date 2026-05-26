@@ -1,191 +1,194 @@
 "use client"
 
-import { useRef, useEffect } from "react"
-import { Button } from "@/components/ui/button"
-import { ArrowRight, Sparkles } from "lucide-react"
-import { useRouter } from "next/navigation"
+import { Fragment, useEffect, useRef, useState } from "react"
+import Link from "next/link"
+import { Sparkles, Search } from "lucide-react"
 import { useLanguage } from "@/lib/language-context"
 import { translations } from "@/lib/translations"
-import { createClient } from "@/lib/supabase/client"
-import { CountUp } from "@/components/count-up"
 
 interface HeroSectionProps {
   freelancerCount: number
   serviceCount: number
 }
 
+const CHIPS = [
+  { fr: "Développement web",  ar: "تطوير الويب",    href: "/services?group=programmation-tech"  },
+  { fr: "Design graphique",   ar: "الجرافيك",        href: "/services?group=graphics-design"     },
+  { fr: "Marketing digital",  ar: "التسويق الرقمي",  href: "/services?group=marketing-digital"   },
+  { fr: "Montage vidéo",      ar: "مونتاج الفيديو",  href: "/services?group=video-animation"     },
+  { fr: "Rédaction",          ar: "الكتابة",         href: "/services?group=redaction-traduction" },
+]
+
+function useCountUp(target: number, duration = 1500) {
+  const [count, setCount] = useState(0)
+  const containerRef = useRef<HTMLDivElement>(null)
+  const started = useRef(false)
+
+  useEffect(() => {
+    if (target === 0) return
+    const reduced = window.matchMedia("(prefers-reduced-motion: reduce)").matches
+    if (reduced) { setCount(target); return }
+
+    const el = containerRef.current
+    if (!el) return
+
+    const observer = new IntersectionObserver(
+      ([entry]) => {
+        if (entry.isIntersecting && !started.current) {
+          started.current = true
+          observer.disconnect()
+          const t0 = performance.now()
+          const tick = (now: number) => {
+            const progress = Math.min((now - t0) / duration, 1)
+            const eased = 1 - Math.pow(1 - progress, 3)
+            setCount(Math.round(eased * target))
+            if (progress < 1) requestAnimationFrame(tick)
+          }
+          requestAnimationFrame(tick)
+        }
+      },
+      { threshold: 0.5 }
+    )
+    observer.observe(el)
+    return () => observer.disconnect()
+  }, [target, duration])
+
+  return { count, containerRef }
+}
+
+function StatNumber({ value, label }: { value: number; label: string }) {
+  const { count, containerRef } = useCountUp(value)
+  return (
+    <div ref={containerRef} className="text-center">
+      <div className="text-2xl font-black text-white tabular-nums leading-none">
+        {count.toLocaleString()}
+      </div>
+      <div className="text-sm text-white/70 mt-1">{label}</div>
+    </div>
+  )
+}
+
 export function HeroSection({ freelancerCount, serviceCount }: HeroSectionProps) {
   const { lang } = useLanguage()
   const t = translations[lang].hero
-  const router = useRouter()
-  const parallaxRef = useRef<HTMLDivElement>(null)
-
-  useEffect(() => {
-    const mq = window.matchMedia("(prefers-reduced-motion: reduce)")
-    if (mq.matches) return
-    function onScroll() {
-      if (parallaxRef.current) {
-        parallaxRef.current.style.transform = `translateY(${window.scrollY * 0.22}px)`
-      }
-    }
-    window.addEventListener("scroll", onScroll, { passive: true })
-    return () => window.removeEventListener("scroll", onScroll)
-  }, [])
-
-  async function handleOfferServices() {
-    const supabase = createClient()
-    const { data: { session } } = await supabase.auth.getSession()
-    if (session) {
-      router.push("/dashboard")
-    } else {
-      router.push("/inscription?redirect=/dashboard")
-    }
-  }
+  const headline1Words = t.headline1.split(" ")
 
   return (
-    <section className="relative min-h-[92vh] flex items-center justify-center bg-background overflow-hidden pt-16">
+    <section className="hero-gradient-animate relative flex flex-col items-center justify-center min-h-[85vh] pt-20 pb-20 overflow-hidden">
 
-      {/* Zellige background pattern — parallax layer */}
-      <div
-        ref={parallaxRef}
-        className="parallax-hero absolute pointer-events-none"
+      {/* ── Zellige pattern ── */}
+      <svg
+        className="absolute inset-0 w-full h-full pointer-events-none select-none"
+        xmlns="http://www.w3.org/2000/svg"
         aria-hidden="true"
-        style={{ top: "-20%", bottom: "-20%", left: 0, right: 0 }}
+        style={{ opacity: 0.05 }}
       >
-        <svg width="100%" height="100%" xmlns="http://www.w3.org/2000/svg" className="absolute inset-0">
-          <defs>
-            <pattern id="zellige-hero" x="0" y="0" width="64" height="64" patternUnits="userSpaceOnUse">
-              {/* Outer diamond */}
-              <path d="M32 2 L62 32 L32 62 L2 32 Z" fill="none" stroke="#1A1A1A" strokeWidth="0.75" />
-              {/* Inner rotated square */}
-              <rect x="16" y="16" width="32" height="32" fill="none" stroke="#1A1A1A" strokeWidth="0.4" transform="rotate(45 32 32)" />
-              {/* Center jewel */}
-              <circle cx="32" cy="32" r="2" fill="#1A1A1A" />
-              {/* Corner connectors */}
-              <circle cx="0" cy="0" r="1.2" fill="#1A1A1A" />
-              <circle cx="64" cy="0" r="1.2" fill="#1A1A1A" />
-              <circle cx="0" cy="64" r="1.2" fill="#1A1A1A" />
-              <circle cx="64" cy="64" r="1.2" fill="#1A1A1A" />
-            </pattern>
-          </defs>
-          <rect width="100%" height="100%" fill="url(#zellige-hero)" opacity="0.026" />
-        </svg>
-        {/* Atmospheric glow — top-end crimson */}
-        <div className="absolute -top-32 -end-32 w-[600px] h-[600px] rounded-full bg-primary/6 blur-3xl" />
-        {/* Atmospheric glow — bottom-start warm */}
-        <div className="absolute -bottom-32 -start-32 w-[500px] h-[500px] rounded-full bg-amber-400/5 blur-3xl" />
-      </div>
+        <defs>
+          <pattern id="zellige-hero" x="0" y="0" width="56" height="56" patternUnits="userSpaceOnUse">
+            <path
+              d="M28,10 L30.9,21.1 L40.7,15.3 L34.9,25.1 L46,28 L34.9,30.9 L40.7,40.7 L30.9,34.9 L28,46 L25.1,34.9 L15.3,40.7 L21.1,30.9 L10,28 L21.1,25.1 L15.3,15.3 L25.1,21.1 Z"
+              fill="none" stroke="white" strokeWidth="0.7"
+            />
+            <circle cx="28" cy="28" r="1.2" fill="white" />
+          </pattern>
+        </defs>
+        <rect width="100%" height="100%" fill="url(#zellige-hero)" />
+      </svg>
 
-      <div className="relative z-10 mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 py-12 md:py-28">
-        <div className="text-center max-w-4xl mx-auto">
+      {/* ── Content — strict vertical flow ── */}
+      <div className="relative z-10 w-full max-w-3xl mx-auto px-4 sm:px-6 flex flex-col items-center text-center">
 
-          {/* Badge */}
-          <div
-            className="inline-flex items-center gap-2 px-5 py-2.5 rounded-full bg-primary/8 border border-primary/15 mb-10 animate-fade-in-up"
-            style={{ animationDelay: "0ms" }}
-          >
-            <Sparkles className="w-4 h-4 text-primary" />
-            <span className="text-xs font-bold tracking-widest text-primary uppercase">
-              {t.badge}
-            </span>
-          </div>
-
-          {/* Main Headline — Playfair Display */}
-          <h1
-            className="font-display font-black text-[2.6rem] sm:text-[3.8rem] md:text-[5rem] lg:text-[5.8rem] leading-[1.06] tracking-tight text-foreground mb-7 text-balance animate-fade-in-up"
-            style={{ animationDelay: "60ms", userSelect: "none", WebkitUserSelect: "none" }}
-          >
-            {t.headline1}{" "}
-            <span className="text-primary relative inline-block">
-              {t.headline2}
-              <svg
-                className="absolute -bottom-2 start-0 w-full h-3 text-primary/30"
-                viewBox="0 0 200 12"
-                fill="none"
-                preserveAspectRatio="none"
-              >
-                <path
-                  d="M2 10C50 2 150 2 198 10"
-                  stroke="currentColor"
-                  strokeWidth="4"
-                  strokeLinecap="round"
-                />
-              </svg>
-            </span>
-            <br />
-            <span className="text-foreground/35 text-[1.8rem] sm:text-[2.6rem] md:text-[3.2rem] lg:text-[3.8rem] font-bold tracking-wide">
-              {t.headline3}
-            </span>
-          </h1>
-
-          {/* Subtext */}
-          <p
-            className="text-base sm:text-xl text-muted-foreground max-w-2xl mx-auto mb-11 sm:mb-14 text-pretty leading-relaxed animate-fade-in-up"
-            style={{ animationDelay: "120ms" }}
-          >
-            {t.subtext}
-          </p>
-
-          {/* CTA Buttons */}
-          <div
-            className="flex flex-col sm:flex-row items-center justify-center gap-4 animate-fade-in-up"
-            style={{ animationDelay: "180ms" }}
-          >
-            <Button
-              size="lg"
-              className="w-full sm:w-auto text-base px-9 h-14 bg-primary hover:bg-primary/90 text-primary-foreground shadow-lg shadow-primary/25 hover:shadow-xl hover:shadow-primary/35 hover-spring group font-semibold rounded-full"
-              onClick={() => router.push("/services")}
-            >
-              {t.ctaFind}
-              <ArrowRight className="ms-2 h-5 w-5 group-hover:translate-x-1 rtl:group-hover:-translate-x-1 transition-transform" />
-            </Button>
-            <Button
-              size="lg"
-              variant="outline"
-              className="w-full sm:w-auto text-base px-9 h-14 border-2 border-foreground/15 hover:border-primary hover:text-primary hover:bg-primary/4 hover-spring font-semibold rounded-full"
-              onClick={handleOfferServices}
-            >
-              {t.ctaOffer}
-            </Button>
-          </div>
-
-          {/* Stats row */}
-          <div
-            className="mt-14 sm:mt-20 flex flex-wrap items-center justify-center gap-6 sm:gap-12 animate-fade-in-up"
-            style={{ animationDelay: "240ms" }}
-          >
-            <div className="flex items-center gap-3">
-              <div className="flex -space-x-2.5 rtl:space-x-reverse">
-                {[1, 2, 3, 4].map((i) => (
-                  <div
-                    key={i}
-                    className="w-9 h-9 rounded-full bg-gradient-to-br from-primary/70 to-primary border-2 border-background flex items-center justify-center text-xs font-bold text-primary-foreground shadow-sm"
-                  >
-                    {String.fromCharCode(64 + i)}
-                  </div>
-                ))}
-              </div>
-              <div className="text-start rtl:text-end">
-                <div className="text-sm font-bold text-foreground">
-                  <CountUp to={freelancerCount} duration={1200} />
-                </div>
-                <div className="text-xs text-muted-foreground">{t.freelancesLabel}</div>
-              </div>
-            </div>
-
-            <div className="hidden sm:block w-px h-10 bg-border" />
-
-            <div className="flex items-center gap-3">
-              <div className="text-start rtl:text-end">
-                <div className="text-sm font-bold text-foreground">
-                  <CountUp to={serviceCount} duration={1200} />
-                </div>
-                <div className="text-xs text-muted-foreground">{t.servicesLabel}</div>
-              </div>
-            </div>
-          </div>
-
+        {/* 1. Badge */}
+        <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-white/20 border border-white/25 backdrop-blur-sm">
+          <Sparkles className="w-3.5 h-3.5 text-white shrink-0" aria-hidden="true" />
+          <span className="text-[11px] font-bold tracking-widest text-white uppercase">{t.badge}</span>
         </div>
+
+        {/* 2. H1 — word-by-word slide-up */}
+        <h1 className="text-5xl sm:text-7xl font-black text-white leading-tight tracking-tight mt-6">
+          {headline1Words.map((word, i) => (
+            <Fragment key={i}>
+              <span className="hero-word" style={{ animationDelay: `${i * 150}ms` }}>
+                {word}
+              </span>
+              {i < headline1Words.length - 1 && " "}
+            </Fragment>
+          ))}
+          {" "}
+          <span
+            className="hero-word relative inline-block"
+            style={{ animationDelay: `${headline1Words.length * 150}ms` }}
+          >
+            {t.headline2}
+            <svg
+              className="absolute -bottom-1.5 start-0 w-full h-3 text-white/35"
+              viewBox="0 0 200 12"
+              fill="none"
+              preserveAspectRatio="none"
+              aria-hidden="true"
+            >
+              <path d="M2 10C50 2 150 2 198 10" stroke="currentColor" strokeWidth="4" strokeLinecap="round" />
+            </svg>
+          </span>
+        </h1>
+
+        {/* 3. Subtitle */}
+        <p className="text-base sm:text-lg text-white/80 mt-4 max-w-xl leading-relaxed">
+          {t.subtext}
+        </p>
+
+        {/* 4. Search bar */}
+        <form action="/services" method="get" className="mt-8 w-full max-w-2xl">
+          <div className="hero-search-wrapper flex bg-white rounded-2xl shadow-xl overflow-hidden">
+            <input
+              type="text"
+              name="q"
+              placeholder={lang === "ar" ? "ابحث عن خدمة أو مهارة..." : "Rechercher un service, une compétence..."}
+              className="flex-1 px-6 py-4 text-base text-gray-800 placeholder:text-gray-400 outline-none bg-transparent min-w-0"
+            />
+            <button
+              type="submit"
+              aria-label={lang === "ar" ? "بحث" : "Rechercher"}
+              className="flex items-center gap-2 bg-red-700 hover:bg-red-800 text-white font-bold px-8 transition-colors shrink-0"
+            >
+              <Search className="h-4 w-4 shrink-0" aria-hidden="true" />
+              <span className="hidden sm:inline">{lang === "ar" ? "بحث" : "Rechercher"}</span>
+            </button>
+          </div>
+        </form>
+
+        {/* Sentinel for navbar IntersectionObserver */}
+        <div id="hero-search-sentinel" aria-hidden="true" />
+
+        {/* 5. Stats — viewport-triggered count-up */}
+        {(freelancerCount > 0 || serviceCount > 0) && (
+          <div className="mt-8 flex items-center gap-8 justify-center">
+            {freelancerCount > 0 && (
+              <StatNumber value={freelancerCount} label={t.freelancesLabel} />
+            )}
+            {freelancerCount > 0 && serviceCount > 0 && (
+              <div className="w-px h-8 bg-white/20" aria-hidden="true" />
+            )}
+            {serviceCount > 0 && (
+              <StatNumber value={serviceCount} label={t.servicesLabel} />
+            )}
+          </div>
+        )}
+
+        {/* 6. Category pills — staggered fade-in-up */}
+        <div className="mt-6 flex flex-wrap gap-2 justify-center">
+          {CHIPS.map((chip, i) => (
+            <Link
+              key={chip.href}
+              href={chip.href}
+              className="hero-pill bg-white/15 hover:bg-white/25 text-white border border-white/20 rounded-full px-4 py-2 text-sm font-medium transition-colors"
+              style={{ animationDelay: `${i * 75}ms` }}
+            >
+              {lang === "ar" ? chip.ar : chip.fr}
+            </Link>
+          ))}
+        </div>
+
       </div>
     </section>
   )

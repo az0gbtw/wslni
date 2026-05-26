@@ -240,7 +240,7 @@ export default function CommentCaMarchePage() {
                     >
                       <Link href="/services">
                         Parcourir les services
-                        <ArrowRight className="ms-2 w-4 h-4" />
+                        <ArrowRight className="ms-2 w-4 h-4 rtl:rotate-180" />
                       </Link>
                     </Button>
                     <Button
@@ -327,7 +327,7 @@ export default function CommentCaMarchePage() {
                     >
                       <Link href="/inscription">
                         Créer mon profil gratuitement
-                        <ArrowRight className="ms-2 w-4 h-4" />
+                        <ArrowRight className="ms-2 w-4 h-4 rtl:rotate-180" />
                       </Link>
                     </Button>
                     <Button

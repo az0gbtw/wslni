@@ -31,7 +31,7 @@ export function PlaceholderPage({ title }: PlaceholderPageProps) {
             className="border-2 border-foreground/20 hover:border-primary hover:text-primary transition-all duration-300"
           >
             <Link href="/">
-              <ArrowLeft className="me-2 h-5 w-5" />
+              <ArrowLeft className="me-2 h-5 w-5 rtl:rotate-180" />
               Retour à l&apos;accueil
             </Link>
           </Button>

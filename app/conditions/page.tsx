@@ -263,7 +263,7 @@ export default function ConditionsPage() {
 
               <div className="mt-12 p-5 rounded-2xl bg-secondary/40 border border-border">
                 <p className="text-sm text-muted-foreground">
-                  Pour toute question relative aux présentes CGU, contacte-nous à <strong className="text-foreground">legal@wslni.ma</strong>.
+                  Pour toute question relative aux présentes CGU, contacte-nous à <strong className="text-foreground">support@wslni.ma</strong>.
                 </p>
               </div>
             </div>

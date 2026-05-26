@@ -54,12 +54,6 @@ const contactCards = [
     value: "Moins de 24h",
     detail: "Du lundi au vendredi, 9h–18h",
   },
-  {
-    icon: MapPin,
-    label: "Localisation",
-    value: "Casablanca, Maroc",
-    detail: "Entreprise 100 % marocaine",
-  },
 ]
 
 const socials = [
@@ -195,7 +189,7 @@ export default function ContactPage() {
                           id="name"
                           value={formData.name}
                           onChange={(e) => handleChange("name", e.target.value)}
-                          placeholder="Youssef Benali"
+                          placeholder="Votre nom"
                           className={`h-11 rounded-xl ${errors.name ? "border-destructive focus:border-destructive" : ""}`}
                         />
                         {errors.name && <p className="text-xs text-destructive">{errors.name}</p>}
@@ -209,7 +203,7 @@ export default function ContactPage() {
                           type="email"
                           value={formData.email}
                           onChange={(e) => handleChange("email", e.target.value)}
-                          placeholder="youssef@example.com"
+                          placeholder="votre@email.com"
                           className={`h-11 rounded-xl ${errors.email ? "border-destructive focus:border-destructive" : ""}`}
                         />
                         {errors.email && <p className="text-xs text-destructive">{errors.email}</p>}

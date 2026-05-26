@@ -6,8 +6,22 @@ import Link from "next/link"
 import {
   ArrowLeft, ArrowRight, Check, Clock,
   DollarSign, Eye, FileText, ImageIcon, Loader2,
-  Plus, Save, Settings, Upload, X,
+  Music, Plus, Save, Settings, Upload, X,
 } from "lucide-react"
+
+/* ─── Portfolio types ───────────────────────────────────────── */
+interface PortfolioItem {
+  url: string
+  title?: string
+  type: "image" | "pdf" | "video" | "audio"
+}
+
+interface PortfolioItemDraft {
+  file: File
+  preview: string | null
+  title: string
+  type: "image" | "pdf" | "video" | "audio"
+}
 import { createClient } from "@/lib/supabase/client"
 import { CATEGORY_GROUPS, getCategoryLabel } from "@/lib/categories"
 import { Navbar } from "@/components/navbar"
@@ -33,14 +47,16 @@ interface Draft {
   existingImageUrls: string[]
   newImageDataUrls: string[]
   requirements: string[]
+  existingPortfolioItems: PortfolioItem[]
 }
 
 type Errs = Record<string, string>
 
 /* ─── Constants ─────────────────────────────────────────────── */
-const MAX_TITLE = 80
-const MAX_DESC  = 1200
-const MAX_IMGS  = 5
+const MAX_TITLE     = 80
+const MAX_DESC      = 1200
+const MAX_IMGS      = 5
+const MAX_PORTFOLIO = 6
 
 const BLANK_TIERS = {
   basic:    { name: "Basique",  description: "", price: "", delivery_days: "" },
@@ -85,12 +101,16 @@ export default function EditServicePage({
     existingImageUrls: [],
     newImageDataUrls: [],
     requirements: [""],
+    existingPortfolioItems: [],
   })
-  const [errors,    setErrors]    = useState<Errs>({})
-  const [dragging,  setDragging]  = useState(false)
-  const [saving,    setSaving]    = useState(false)
-  const [saveError, setSaveError] = useState("")
-  const fileRef = useRef<HTMLInputElement>(null)
+  const [errors,            setErrors]            = useState<Errs>({})
+  const [dragging,          setDragging]          = useState(false)
+  const [newPortfolioDrafts,setNewPortfolioDrafts]= useState<PortfolioItemDraft[]>([])
+  const [portfolioDragOver, setPortfolioDragOver] = useState(false)
+  const [saving,            setSaving]            = useState(false)
+  const [saveError,         setSaveError]         = useState("")
+  const fileRef          = useRef<HTMLInputElement>(null)
+  const portfolioFileRef = useRef<HTMLInputElement>(null)
 
   const totalImages = draft.existingImageUrls.length + draft.newImageDataUrls.length
 
@@ -106,7 +126,7 @@ export default function EditServicePage({
       const { data: svc, error } = await supabase
         .from("services")
         .select(
-          "id, user_id, title, description, category, category_group, pricing_tiers, images, requirements, price, delivery_days"
+          "id, user_id, title, description, category, category_group, pricing_tiers, images, requirements, price, delivery_days, portfolio_items"
         )
         .eq("id", serviceId)
         .single()
@@ -141,14 +161,17 @@ export default function EditServicePage({
       const reqs = (svc.requirements as string[] | null) ?? []
 
       setDraft({
-        title:             svc.title ?? "",
-        categoryGroup:     svc.category_group ?? "",
-        subcategory:       svc.category ?? "",
-        description:       svc.description ?? "",
+        title:                  svc.title ?? "",
+        categoryGroup:          svc.category_group ?? "",
+        subcategory:            svc.category ?? "",
+        description:            svc.description ?? "",
         tiers,
-        existingImageUrls: (svc.images as string[] | null) ?? [],
-        newImageDataUrls:  [],
-        requirements:      reqs.length > 0 ? reqs : [""],
+        existingImageUrls:      (svc.images as string[] | null) ?? [],
+        newImageDataUrls:       [],
+        requirements:           reqs.length > 0 ? reqs : [""],
+        existingPortfolioItems: Array.isArray(svc.portfolio_items)
+          ? (svc.portfolio_items as PortfolioItem[])
+          : [],
       })
 
       setLoading(false)
@@ -230,6 +253,42 @@ export default function EditServicePage({
     patch({ newImageDataUrls: draft.newImageDataUrls.filter((_, j) => j !== i) })
   }
 
+  /* ── Portfolio ── */
+  const totalPortfolio = draft.existingPortfolioItems.length + newPortfolioDrafts.length
+
+  function ingestPortfolio(files: FileList | null) {
+    if (!files) return
+    const slots = MAX_PORTFOLIO - totalPortfolio
+    Array.from(files).slice(0, slots).forEach(f => {
+      const isImage = f.type.startsWith("image/")
+      const isPdf   = f.type === "application/pdf"
+      const isVideo = f.type.startsWith("video/")
+      const isAudio = f.type.startsWith("audio/")
+      const maxSize = (isVideo || isAudio) ? 50 * 1024 * 1024 : 5 * 1024 * 1024
+      if (!isImage && !isPdf && !isVideo && !isAudio) return
+      if (f.size > maxSize) return
+      if (isPdf) {
+        setNewPortfolioDrafts(prev =>
+          [...prev, { file: f, preview: null, title: f.name.replace(/\.pdf$/i, ""), type: "pdf" as const }].slice(0, MAX_PORTFOLIO - draft.existingPortfolioItems.length)
+        )
+      } else if (isVideo || isAudio) {
+        const preview = URL.createObjectURL(f)
+        setNewPortfolioDrafts(prev =>
+          [...prev, { file: f, preview, title: "", type: (isVideo ? "video" : "audio") as "video" | "audio" }].slice(0, MAX_PORTFOLIO - draft.existingPortfolioItems.length)
+        )
+      } else {
+        const reader = new FileReader()
+        reader.onload = ev => {
+          const url = ev.target?.result as string
+          setNewPortfolioDrafts(prev =>
+            [...prev, { file: f, preview: url, title: "", type: "image" as const }].slice(0, MAX_PORTFOLIO - draft.existingPortfolioItems.length)
+          )
+        }
+        reader.readAsDataURL(f)
+      }
+    })
+  }
+
   /* ── Requirements ── */
   function addReq()                        { patch({ requirements: [...draft.requirements, ""] }) }
   function removeReq(i: number)            { patch({ requirements: draft.requirements.filter((_, j) => j !== i) }) }
@@ -260,18 +319,41 @@ export default function EditServicePage({
 
     const allImages = [...draft.existingImageUrls, ...uploadedUrls]
 
+    // Upload new portfolio files
+    const newPortfolioItems: PortfolioItem[] = []
+    for (const item of newPortfolioDrafts) {
+      try {
+        const ext  = item.file.name.split(".").pop() || "bin"
+        const path = `${serviceId}/${Date.now()}-${Math.random().toString(36).slice(2)}.${ext}`
+        const { data: up, error: upErr } = await supabase.storage
+          .from("service-portfolios")
+          .upload(path, item.file, { contentType: item.file.type })
+        if (!upErr && up) {
+          const { data: pub } = supabase.storage.from("service-portfolios").getPublicUrl(up.path)
+          newPortfolioItems.push({
+            url:  pub.publicUrl,
+            type: item.type,
+            ...(item.title.trim() ? { title: item.title.trim() } : {}),
+          })
+        }
+      } catch {}
+    }
+
+    const allPortfolioItems = [...draft.existingPortfolioItems, ...newPortfolioItems]
+
     const { data: updated, error } = await supabase
       .from("services")
       .update({
-        title:          draft.title.trim(),
-        description:    draft.description.trim(),
-        category:       draft.subcategory,
-        category_group: draft.categoryGroup,
-        price:          parseFloat(draft.tiers.basic.price) || 0,
-        delivery_days:  parseInt(draft.tiers.basic.delivery_days, 10) || 1,
-        pricing_tiers:  draft.tiers,
-        images:         allImages,
-        requirements:   draft.requirements.filter(r => r.trim()),
+        title:           draft.title.trim(),
+        description:     draft.description.trim(),
+        category:        draft.subcategory,
+        category_group:  draft.categoryGroup,
+        price:           parseFloat(draft.tiers.basic.price) || 0,
+        delivery_days:   parseInt(draft.tiers.basic.delivery_days, 10) || 1,
+        pricing_tiers:   draft.tiers,
+        images:          allImages,
+        requirements:    draft.requirements.filter(r => r.trim()),
+        portfolio_items: allPortfolioItems,
       })
       .eq("id", serviceId)
       .eq("user_id", userId)
@@ -314,7 +396,7 @@ export default function EditServicePage({
             href="/dashboard"
             className="inline-flex items-center gap-2 text-sm text-gray-500 hover:text-gray-900 mb-6 transition-colors animate-fade-in-up"
           >
-            <ArrowLeft className="h-4 w-4" />
+            <ArrowLeft className="h-4 w-4 rtl:rotate-180" />
             Tableau de bord
           </Link>
 
@@ -631,6 +713,134 @@ export default function EditServicePage({
                     <li>Privilégiez des images lumineuses, nettes et professionnelles</li>
                   </ul>
                 </div>
+
+                {/* ── Portfolio section ── */}
+                <Card
+                  title="Portfolio (optionnel)"
+                  sub={`Gérez vos réalisations passées (images ou PDF). Maximum ${MAX_PORTFOLIO} fichiers, 5 Mo chacun.`}
+                >
+                  <div
+                    onDragOver={e => { e.preventDefault(); setPortfolioDragOver(true) }}
+                    onDragLeave={() => setPortfolioDragOver(false)}
+                    onDrop={e => { e.preventDefault(); setPortfolioDragOver(false); ingestPortfolio(e.dataTransfer.files) }}
+                    onClick={() => totalPortfolio < MAX_PORTFOLIO && portfolioFileRef.current?.click()}
+                    className={`rounded-xl border-2 border-dashed p-8 flex flex-col items-center gap-3 transition-all duration-200 ${
+                      portfolioDragOver
+                        ? "border-red-400 bg-red-50 cursor-copy"
+                        : totalPortfolio >= MAX_PORTFOLIO
+                        ? "border-gray-200 bg-gray-50 opacity-60 cursor-not-allowed"
+                        : "border-gray-300 bg-white hover:border-red-400 hover:bg-red-50/20 cursor-pointer"
+                    }`}
+                  >
+                    <div className={`h-12 w-12 rounded-full flex items-center justify-center transition-colors ${portfolioDragOver ? "bg-red-100" : "bg-gray-100"}`}>
+                      <Plus className={`h-5 w-5 transition-colors ${portfolioDragOver ? "text-red-600" : "text-gray-400"}`} />
+                    </div>
+                    <div className="text-center">
+                      <p className="font-medium text-gray-700 text-sm">
+                        {totalPortfolio >= MAX_PORTFOLIO
+                          ? "Limite atteinte"
+                          : portfolioDragOver
+                          ? "Relâchez pour ajouter"
+                          : "Glissez images ou PDF ici, ou cliquez"}
+                      </p>
+                      <p className="text-xs text-gray-400 mt-1">
+                        JPG, PNG, WEBP, GIF, PDF · {totalPortfolio}/{MAX_PORTFOLIO}
+                      </p>
+                    </div>
+                    <input
+                      ref={portfolioFileRef}
+                      type="file"
+                      accept="image/*,application/pdf,video/*,audio/*"
+                      multiple
+                      className="hidden"
+                      onChange={e => ingestPortfolio(e.target.files)}
+                    />
+                  </div>
+
+                  {totalPortfolio > 0 && (
+                    <div className="grid grid-cols-2 sm:grid-cols-3 gap-3 mt-1">
+                      {draft.existingPortfolioItems.map((item, i) => (
+                        <div key={`ex-${i}`} className="relative rounded-xl border border-gray-200 overflow-hidden bg-gray-50">
+                          {item.type === "pdf" ? (
+                            <div className="aspect-square flex flex-col items-center justify-center gap-2 p-4 bg-red-50">
+                              <FileText className="h-8 w-8 text-red-500" />
+                              <span className="text-[10px] font-bold text-red-600 uppercase">PDF</span>
+                            </div>
+                          ) : item.type === "video" ? (
+                            <div className="aspect-square bg-black flex items-center justify-center">
+                              <video src={item.url} controls className="w-full h-full" />
+                            </div>
+                          ) : item.type === "audio" ? (
+                            <div className="aspect-square flex flex-col items-center justify-center gap-2 p-4 bg-purple-50">
+                              <Music className="h-8 w-8 text-purple-500" />
+                              <audio src={item.url} controls className="w-full" />
+                            </div>
+                          ) : (
+                            <div className="aspect-square">
+                              {/* eslint-disable-next-line @next/next/no-img-element */}
+                              <img src={item.url} alt={item.title || ""} className="w-full h-full object-cover" />
+                            </div>
+                          )}
+                          <div className="p-2">
+                            <p className="text-xs text-gray-500 truncate">{item.title || (item.type === "pdf" ? "Document PDF" : "Image")}</p>
+                          </div>
+                          <button
+                            type="button"
+                            onClick={() => patch({ existingPortfolioItems: draft.existingPortfolioItems.filter((_, j) => j !== i) })}
+                            className="absolute top-1.5 right-1.5 h-6 w-6 rounded-full bg-white/90 shadow flex items-center justify-center text-red-600 hover:bg-white transition-colors"
+                            aria-label="Supprimer"
+                          >
+                            <X className="h-3.5 w-3.5" />
+                          </button>
+                        </div>
+                      ))}
+                      {newPortfolioDrafts.map((item, i) => (
+                        <div key={`nw-${i}`} className="relative rounded-xl border border-blue-200 overflow-hidden bg-gray-50">
+                          {item.type === "pdf" ? (
+                            <div className="aspect-square flex flex-col items-center justify-center gap-2 p-4 bg-blue-50">
+                              <FileText className="h-8 w-8 text-blue-500" />
+                              <span className="text-[10px] font-bold text-blue-600 uppercase">PDF</span>
+                            </div>
+                          ) : item.type === "video" ? (
+                            <div className="aspect-square bg-black flex items-center justify-center">
+                              <video src={item.preview!} controls className="w-full h-full" />
+                            </div>
+                          ) : item.type === "audio" ? (
+                            <div className="aspect-square flex flex-col items-center justify-center gap-2 p-4 bg-purple-50">
+                              <Music className="h-8 w-8 text-purple-500" />
+                              <audio src={item.preview!} controls className="w-full" />
+                            </div>
+                          ) : (
+                            <div className="aspect-square">
+                              {/* eslint-disable-next-line @next/next/no-img-element */}
+                              <img src={item.preview!} alt="" className="w-full h-full object-cover" />
+                            </div>
+                          )}
+                          <div className="p-2">
+                            <input
+                              type="text"
+                              value={item.title}
+                              onChange={e => setNewPortfolioDrafts(prev => prev.map((p, j) => j === i ? { ...p, title: e.target.value } : p))}
+                              placeholder={item.type === "pdf" ? "Titre du document" : "Titre (optionnel)"}
+                              className="w-full text-xs border border-gray-200 rounded px-2 py-1 focus:outline-none focus:border-red-400"
+                            />
+                          </div>
+                          <button
+                            type="button"
+                            onClick={() => setNewPortfolioDrafts(prev => prev.filter((_, j) => j !== i))}
+                            className="absolute top-1.5 right-1.5 h-6 w-6 rounded-full bg-white/90 shadow flex items-center justify-center text-red-600 hover:bg-white transition-colors"
+                            aria-label="Supprimer"
+                          >
+                            <X className="h-3.5 w-3.5" />
+                          </button>
+                          <span className="absolute bottom-1.5 left-1.5 px-1.5 py-0.5 rounded text-[10px] font-bold bg-blue-600 text-white leading-none">
+                            Nouveau
+                          </span>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </Card>
               </div>
             )}
 
@@ -829,7 +1039,7 @@ export default function EditServicePage({
               onClick={goBack}
               className={step <= 1 ? "invisible pointer-events-none" : ""}
             >
-              <ArrowLeft className="mr-2 h-4 w-4" />
+              <ArrowLeft className="me-2 h-4 w-4 rtl:rotate-180" />
               Précédent
             </Button>
 
@@ -839,7 +1049,7 @@ export default function EditServicePage({
                 className="bg-red-600 hover:bg-red-700 text-white active:scale-[0.97] transition-transform"
               >
                 Suivant
-                <ArrowRight className="ml-2 h-4 w-4" />
+                <ArrowRight className="ms-2 h-4 w-4 rtl:rotate-180" />
               </Button>
             ) : (
               <Button

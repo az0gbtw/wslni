@@ -6,6 +6,7 @@ import { HowItWorksSection } from "@/components/how-it-works-section"
 import { FeaturedFreelancersSection } from "@/components/featured-freelancers-section"
 import { TrustBannerSection } from "@/components/trust-banner-section"
 import { Footer } from "@/components/footer"
+import { SectionErrorBoundary } from "@/components/section-error-boundary"
 import { createClient } from "@/lib/supabase/server"
 
 export default async function HomePage() {
@@ -17,11 +18,11 @@ export default async function HomePage() {
     { data: rawProfiles },
     { data: rawServiceCategories },
   ] = await Promise.all([
-    supabase.from("profiles").select("*", { count: "exact", head: true }),
-    supabase.from("services").select("*", { count: "exact", head: true }),
+    supabase.from("profiles").select("*", { count: "exact", head: true }).neq("role", "admin"),
+    supabase.from("services").select("*", { count: "exact", head: true }).eq("status", "published"),
     supabase
       .from("profiles")
-      .select("id, full_name, job_title, avatar_url")
+      .select("id, full_name, job_title, avatar_url, cin_status")
       .not("full_name", "is", null)
       .not("job_title", "is", null)
       .limit(20),
@@ -48,15 +49,17 @@ export default async function HomePage() {
     .slice(0, 5)
     .map(([category, { count, group }]) => ({ category, group, count }))
 
-  // Fetch reviews for candidate profiles to compute avg rating
+  // Fetch reviews and min prices for candidate profiles
   const profileIds = rawProfiles?.map((p) => p.id) ?? []
   let reviews: { freelancer_id: string; rating: number }[] = []
+  let servicePrices: { user_id: string; price: string }[] = []
   if (profileIds.length > 0) {
-    const { data } = await supabase
-      .from("reviews")
-      .select("freelancer_id, rating")
-      .in("freelancer_id", profileIds)
-    reviews = data ?? []
+    const [{ data: reviewData }, { data: priceData }] = await Promise.all([
+      supabase.from("reviews").select("freelancer_id, rating").in("freelancer_id", profileIds),
+      supabase.from("services").select("user_id, price").in("user_id", profileIds).eq("status", "published"),
+    ])
+    reviews = reviewData ?? []
+    servicePrices = priceData ?? []
   }
 
   // Compute avg rating and review count per profile
@@ -67,14 +70,25 @@ export default async function HomePage() {
     ratingMap[r.freelancer_id].count += 1
   }
 
+  // Compute min price per profile
+  const minPriceMap: Record<string, number> = {}
+  for (const s of servicePrices) {
+    const p = parseFloat(String(s.price))
+    if (!isNaN(p) && (minPriceMap[s.user_id] == null || p < minPriceMap[s.user_id])) {
+      minPriceMap[s.user_id] = p
+    }
+  }
+
   const featuredProfiles = (rawProfiles ?? [])
     .map((p) => ({
-      id: p.id as string,
-      full_name: p.full_name as string,
-      job_title: p.job_title as string,
-      avatar_url: (p.avatar_url as string | null) ?? null,
-      rating: ratingMap[p.id] ? ratingMap[p.id].sum / ratingMap[p.id].count : null,
+      id:           p.id as string,
+      full_name:    p.full_name as string,
+      job_title:    p.job_title as string,
+      avatar_url:   (p.avatar_url as string | null) ?? null,
+      cin_status:   (p.cin_status as string | null) ?? null,
+      rating:       ratingMap[p.id] ? ratingMap[p.id].sum / ratingMap[p.id].count : null,
       review_count: ratingMap[p.id]?.count ?? 0,
+      min_price:    minPriceMap[p.id] ?? null,
     }))
     .sort((a, b) => {
       if (a.rating == null && b.rating == null) return 0
@@ -87,12 +101,25 @@ export default async function HomePage() {
   return (
     <main className="min-h-screen">
       <Navbar />
-      <HeroSection freelancerCount={freelancerCount ?? 0} serviceCount={serviceCount ?? 0} />
-      <CategoriesSection />
-      <TrendingCategoriesSection categories={trendingCategories} />
-      <HowItWorksSection />
-      <FeaturedFreelancersSection profiles={featuredProfiles} />
-      <TrustBannerSection freelancerCount={freelancerCount ?? 0} serviceCount={serviceCount ?? 0} />
+      <HeroSection
+        freelancerCount={freelancerCount ?? 0}
+        serviceCount={serviceCount ?? 0}
+      />
+      <SectionErrorBoundary name="categories">
+        <CategoriesSection />
+      </SectionErrorBoundary>
+      <SectionErrorBoundary name="trending">
+        <TrendingCategoriesSection categories={trendingCategories} />
+      </SectionErrorBoundary>
+      <SectionErrorBoundary name="how-it-works">
+        <HowItWorksSection />
+      </SectionErrorBoundary>
+      <SectionErrorBoundary name="featured-freelancers">
+        <FeaturedFreelancersSection profiles={featuredProfiles} />
+      </SectionErrorBoundary>
+      <SectionErrorBoundary name="trust-banner">
+        <TrustBannerSection freelancerCount={freelancerCount ?? 0} serviceCount={serviceCount ?? 0} />
+      </SectionErrorBoundary>
       <Footer />
     </main>
   )

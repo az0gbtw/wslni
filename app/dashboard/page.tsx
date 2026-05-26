@@ -3,10 +3,11 @@
 import { useState, useEffect, useRef } from "react"
 import { useRouter } from "next/navigation"
 import Link from "next/link"
+import Image from "next/image"
 import {
   Loader2, Plus, Edit2, Trash2, Briefcase, CheckCircle2, Clock,
   ArrowRight, User, Star, TrendingUp, ShoppingBag, Package,
-  Upload, Download, FileText, AlertTriangle,
+  Upload, Download, FileText, AlertTriangle, Eye, ArrowUp, ArrowDown,
 } from "lucide-react"
 import type { User as SupabaseUser } from "@supabase/supabase-js"
 import { createClient } from "@/lib/supabase/client"
@@ -78,6 +79,24 @@ const freelancerNextStatuses: Record<string, Array<{ status: string; labelKey: "
     { status: "en_cours", labelKey: "accept", cls: "text-blue-600 hover:bg-blue-50" },
     { status: "annulé",   labelKey: "cancel", cls: "text-red-600 hover:bg-red-50" },
   ],
+}
+
+function CountUp({ value, duration = 800 }: { value: number; duration?: number }) {
+  const [displayed, setDisplayed] = useState(0)
+  const rafRef = useRef<number>(0)
+  useEffect(() => {
+    if (value === 0) { setDisplayed(0); return }
+    const start = performance.now()
+    function step(now: number) {
+      const progress = Math.min((now - start) / duration, 1)
+      const eased = 1 - Math.pow(1 - progress, 3)
+      setDisplayed(Math.round(eased * value))
+      if (progress < 1) rafRef.current = requestAnimationFrame(step)
+    }
+    rafRef.current = requestAnimationFrame(step)
+    return () => cancelAnimationFrame(rafRef.current)
+  }, [value, duration])
+  return <>{displayed}</>
 }
 
 function computeCompletion(profile: Profile | null): { pct: number; missing: ProfileFieldKey[] } {
@@ -173,11 +192,11 @@ function FreelancerOrderRow({
   }
 
   return (
-    <div className="rounded-xl border border-border bg-card hover:shadow-sm transition-shadow overflow-hidden">
+    <div className="rounded-2xl border border-border/40 bg-card shadow-sm hover:shadow-md transition-shadow overflow-hidden">
       <div className="flex items-center gap-3 p-4">
         <Link href={`/profil/${order.client_id}`} className="shrink-0 hover:opacity-80 transition-opacity">
           {client?.avatar_url ? (
-            <img src={client.avatar_url} alt={client.full_name ?? ""} className="h-9 w-9 rounded-full object-cover" />
+            <Image src={client.avatar_url} alt={client.full_name ?? ""} width={36} height={36} className="h-9 w-9 rounded-full object-cover" />
           ) : (
             <div className="h-9 w-9 rounded-full bg-primary/10 flex items-center justify-center">
               <span className="text-[10px] font-bold text-primary">{ini}</span>
@@ -279,11 +298,11 @@ function ClientOrderRow({
   }
 
   return (
-    <div className="rounded-xl border border-border bg-card hover:shadow-sm transition-shadow overflow-hidden">
+    <div className="rounded-2xl border border-border/40 bg-card shadow-sm hover:shadow-md transition-shadow overflow-hidden">
       <div className="flex items-center gap-3 p-4">
         <div className="shrink-0">
           {freelancer?.avatar_url ? (
-            <img src={freelancer.avatar_url} alt={freelancer.full_name ?? ""} className="h-9 w-9 rounded-full object-cover" />
+            <Image src={freelancer.avatar_url} alt={freelancer.full_name ?? ""} width={36} height={36} className="h-9 w-9 rounded-full object-cover" />
           ) : (
             <div className="h-9 w-9 rounded-full bg-primary/10 flex items-center justify-center">
               <span className="text-[10px] font-bold text-primary">{ini}</span>
@@ -415,6 +434,10 @@ export default function DashboardPage() {
   const [loading, setLoading] = useState(true)
   const [deleteTarget, setDeleteTarget] = useState<Service | null>(null)
   const [deleting, setDeleting] = useState(false)
+  const [monthRevenue, setMonthRevenue] = useState(0)
+  const [lastMonthRevenue, setLastMonthRevenue] = useState<number | null>(null)
+  const [profileViews, setProfileViews] = useState(0)
+  const [myAvgRating, setMyAvgRating] = useState<number | null>(null)
 
   // Delivery modal
   const [deliveryOrder, setDeliveryOrder] = useState<Order | null>(null)
@@ -446,12 +469,20 @@ export default function DashboardPage() {
       if (!user) { router.replace("/connexion"); return }
       setUser(user)
 
+      const now = new Date()
+      const monthStart = new Date(now.getFullYear(), now.getMonth(), 1).toISOString()
+      const lastMonthStart = new Date(now.getFullYear(), now.getMonth() - 1, 1).toISOString()
+
       const [
         { data: profileData },
         { data: servicesData },
         { data: receivedData },
         { data: sentData },
         { data: reviewsData },
+        { data: myReviewsData },
+        { data: thisMonthRevData },
+        { data: lastMonthRevData },
+        viewsResult,
       ] = await Promise.all([
         supabase.from("profiles").select("*").eq("id", user.id).single(),
         supabase.from("services")
@@ -463,6 +494,10 @@ export default function DashboardPage() {
         supabase.from("orders").select("*").eq("client_id", user.id)
           .order("created_at", { ascending: false }),
         supabase.from("reviews").select("order_id").eq("client_id", user.id),
+        supabase.from("reviews").select("rating").eq("freelancer_id", user.id),
+        supabase.from("orders").select("price").eq("freelancer_id", user.id).eq("status", "terminé").gte("created_at", monthStart),
+        supabase.from("orders").select("price").eq("freelancer_id", user.id).eq("status", "terminé").gte("created_at", lastMonthStart).lt("created_at", monthStart),
+        supabase.from("profile_views").select("*", { count: "exact", head: true }).eq("profile_id", user.id).gte("viewed_at", monthStart),
       ])
 
       setProfile(profileData ?? {
@@ -497,6 +532,16 @@ export default function DashboardPage() {
         })
       }
       setProfilesMap(map)
+
+      const thisRev = (thisMonthRevData ?? []).reduce((sum: number, o: { price: number }) => sum + (o.price ?? 0), 0)
+      const lastRev = (lastMonthRevData ?? []).reduce((sum: number, o: { price: number }) => sum + (o.price ?? 0), 0)
+      setMonthRevenue(thisRev)
+      setLastMonthRevenue((lastMonthRevData ?? []).length > 0 ? lastRev : null)
+
+      const ratings = (myReviewsData ?? []).map((r: { rating: number }) => r.rating)
+      setMyAvgRating(ratings.length > 0 ? ratings.reduce((a: number, b: number) => a + b, 0) / ratings.length : null)
+
+      setProfileViews(viewsResult.count ?? 0)
 
       setLoading(false)
     })
@@ -635,9 +680,49 @@ export default function DashboardPage() {
 
   if (loading) {
     return (
-      <div className="min-h-screen flex items-center justify-center">
-        <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
-      </div>
+      <>
+        <Navbar />
+        <main className="min-h-screen bg-background">
+          <div className="h-52 bg-gray-200 animate-pulse" />
+          <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 pb-16">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pt-6 pb-6 border-b border-border mb-6">
+              <div className="flex items-center gap-4">
+                <div className="w-16 h-16 rounded-full bg-gray-200 animate-pulse shrink-0" />
+                <div className="space-y-2">
+                  <div className="h-5 w-36 bg-gray-200 animate-pulse rounded" />
+                  <div className="h-3 w-24 bg-gray-200 animate-pulse rounded" />
+                </div>
+              </div>
+              <div className="flex gap-2">
+                <div className="h-8 w-28 bg-gray-200 animate-pulse rounded-lg" />
+                <div className="h-8 w-28 bg-gray-200 animate-pulse rounded-lg" />
+              </div>
+            </div>
+            <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mb-6">
+              {[0, 1, 2, 3].map((i) => (
+                <div key={i} className="rounded-2xl border border-border/40 bg-card p-4 sm:p-5 flex items-center gap-3">
+                  <div className="w-8 h-8 sm:w-10 sm:h-10 rounded-xl bg-gray-200 animate-pulse shrink-0" />
+                  <div className="space-y-1.5 flex-1">
+                    <div className="h-5 w-8 bg-gray-200 animate-pulse rounded" />
+                    <div className="h-3 w-16 bg-gray-200 animate-pulse rounded" />
+                  </div>
+                </div>
+              ))}
+            </div>
+            <div className="space-y-3">
+              {[0, 1, 2].map((i) => (
+                <div key={i} className="flex items-center gap-4 p-4 rounded-xl border border-border/40 bg-card">
+                  <div className="w-10 h-10 rounded-lg bg-gray-200 animate-pulse shrink-0" />
+                  <div className="flex-1 space-y-2">
+                    <div className="h-4 w-1/3 bg-gray-200 animate-pulse rounded" />
+                    <div className="h-3 w-1/4 bg-gray-200 animate-pulse rounded" />
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        </main>
+      </>
     )
   }
 
@@ -659,8 +744,16 @@ export default function DashboardPage() {
   // Active (non-completed, non-cancelled) counts for stat card
   const activeReceivedOrders = receivedOrders.filter((o) => o.status !== "annulé")
 
+  // Freelancer analytics
+  const activeOrdersCount = receivedOrders.filter((o) => o.status === "en_cours" || o.status === "accepté").length
+  const completedOrdersCount = receivedOrders.filter((o) => o.status === "terminé").length
+  const completionRate = receivedOrders.length > 0
+    ? Math.round((completedOrdersCount / receivedOrders.length) * 100)
+    : null
+  const showFreelancerStats = publishedServices.length > 0 || receivedOrders.length > 0
+
   return (
-    <>
+    <div className="page-enter">
       <Navbar />
 
       <main className="min-h-screen bg-background">
@@ -678,13 +771,13 @@ export default function DashboardPage() {
           </div>
         </div>
 
-        <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 pb-16">
+        <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 pb-16 animate-fadeIn">
           {/* Avatar + quick actions */}
           <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pt-6 pb-6 border-b border-border mb-6">
             <div className="flex items-center gap-4">
-              <div className="w-16 h-16 rounded-full bg-primary overflow-hidden flex items-center justify-center shrink-0 shadow-md">
+              <div className="relative w-16 h-16 rounded-full bg-primary overflow-hidden flex items-center justify-center shrink-0 shadow-md">
                 {profile.avatar_url ? (
-                  <img src={profile.avatar_url} alt={displayName} className="w-full h-full object-cover" />
+                  <Image src={profile.avatar_url} alt={displayName} fill sizes="64px" className="object-cover" />
                 ) : (
                   <span className="text-xl font-bold text-white select-none">{ini}</span>
                 )}
@@ -732,23 +825,106 @@ export default function DashboardPage() {
               { icon: Briefcase,   value: publishedServices.length,       label: t.stats.publishedServices },
               { icon: Package,     value: activeReceivedOrders.length,    label: t.stats.receivedOrders },
               { icon: Star,        value: (profile.skills ?? []).length,  label: t.stats.skills },
-              { icon: TrendingUp,  value: `${pct}%`,                     label: t.stats.profileCompletion },
-            ].map(({ icon: Icon, value, label }, i) => (
-              <div key={i} className="rounded-2xl border border-border bg-card p-3 sm:p-4 shadow-sm flex items-center gap-2.5 sm:gap-3">
+              { icon: TrendingUp,  value: pct,                            label: t.stats.profileCompletion, suffix: "%" },
+            ].map(({ icon: Icon, value, label, suffix }, i) => (
+              <div key={i} className="rounded-2xl border border-border/40 bg-card p-4 sm:p-5 shadow-sm hover:shadow-md transition-shadow flex items-center gap-2.5 sm:gap-3">
                 <div className="w-8 h-8 sm:w-10 sm:h-10 rounded-xl bg-primary/10 flex items-center justify-center shrink-0">
                   <Icon className="h-4 w-4 sm:h-5 sm:w-5 text-primary" />
                 </div>
                 <div className="min-w-0">
-                  <p className="text-xl sm:text-2xl font-black text-foreground leading-none">{value}</p>
+                  <p className="text-xl sm:text-2xl font-black text-foreground leading-none">
+                    <CountUp value={value} />{suffix}
+                  </p>
                   <p className="text-[11px] sm:text-xs text-muted-foreground mt-0.5 leading-tight">{label}</p>
                 </div>
               </div>
             ))}
           </div>
 
+          {/* ── Freelancer analytics ────────────────────────────────────── */}
+          {showFreelancerStats && (
+            <div className="mb-6">
+              <h2 className="text-base font-black text-foreground mb-3">{t.freelancerStats.title}</h2>
+              <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3">
+
+                {/* Revenus du mois */}
+                <div className="rounded-2xl border border-border/40 bg-card p-4 sm:p-5 shadow-sm hover:shadow-md transition-shadow flex items-center gap-2.5 sm:gap-3">
+                  <div className="w-8 h-8 sm:w-10 sm:h-10 rounded-xl bg-emerald-100 flex items-center justify-center shrink-0">
+                    <TrendingUp className="h-4 w-4 sm:h-5 sm:w-5 text-emerald-600" />
+                  </div>
+                  <div className="min-w-0 flex-1">
+                    <div className="flex items-baseline gap-1 flex-wrap">
+                      <p className="text-xl sm:text-2xl font-black text-foreground leading-none tabular-nums">
+                        <CountUp value={monthRevenue} />
+                      </p>
+                      <span className="text-[10px] font-semibold text-muted-foreground">MAD</span>
+                      {lastMonthRevenue !== null && (
+                        monthRevenue > lastMonthRevenue
+                          ? <ArrowUp className="h-3 w-3 text-emerald-500 shrink-0" />
+                          : monthRevenue < lastMonthRevenue
+                          ? <ArrowDown className="h-3 w-3 text-red-500 shrink-0" />
+                          : <span className="text-[10px] text-muted-foreground">—</span>
+                      )}
+                    </div>
+                    <p className="text-[11px] sm:text-xs text-muted-foreground mt-0.5 leading-tight">{t.freelancerStats.monthRevenue}</p>
+                  </div>
+                </div>
+
+                {/* Commandes en cours */}
+                <div className="rounded-2xl border border-border/40 bg-card p-4 sm:p-5 shadow-sm hover:shadow-md transition-shadow flex items-center gap-2.5 sm:gap-3">
+                  <div className="w-8 h-8 sm:w-10 sm:h-10 rounded-xl bg-blue-100 flex items-center justify-center shrink-0">
+                    <Clock className="h-4 w-4 sm:h-5 sm:w-5 text-blue-600" />
+                  </div>
+                  <div className="min-w-0">
+                    <p className="text-xl sm:text-2xl font-black text-foreground leading-none"><CountUp value={activeOrdersCount} /></p>
+                    <p className="text-[11px] sm:text-xs text-muted-foreground mt-0.5 leading-tight">{t.freelancerStats.activeOrders}</p>
+                  </div>
+                </div>
+
+                {/* Taux de complétion */}
+                <div className="rounded-2xl border border-border/40 bg-card p-4 sm:p-5 shadow-sm hover:shadow-md transition-shadow flex items-center gap-2.5 sm:gap-3">
+                  <div className="w-8 h-8 sm:w-10 sm:h-10 rounded-xl bg-primary/10 flex items-center justify-center shrink-0">
+                    <CheckCircle2 className="h-4 w-4 sm:h-5 sm:w-5 text-primary" />
+                  </div>
+                  <div className="min-w-0">
+                    <p className="text-xl sm:text-2xl font-black text-foreground leading-none">
+                      {completionRate !== null ? <><CountUp value={completionRate} />%</> : "—"}
+                    </p>
+                    <p className="text-[11px] sm:text-xs text-muted-foreground mt-0.5 leading-tight">{t.freelancerStats.completionRate}</p>
+                  </div>
+                </div>
+
+                {/* Note moyenne */}
+                <div className="rounded-2xl border border-border/40 bg-card p-4 sm:p-5 shadow-sm hover:shadow-md transition-shadow flex items-center gap-2.5 sm:gap-3">
+                  <div className="w-8 h-8 sm:w-10 sm:h-10 rounded-xl bg-amber-100 flex items-center justify-center shrink-0">
+                    <Star className="h-4 w-4 sm:h-5 sm:w-5 text-amber-500" />
+                  </div>
+                  <div className="min-w-0">
+                    <p className="text-xl sm:text-2xl font-black text-foreground leading-none">
+                      {myAvgRating !== null ? `${myAvgRating.toFixed(1)}/5` : "—"}
+                    </p>
+                    <p className="text-[11px] sm:text-xs text-muted-foreground mt-0.5 leading-tight">{t.freelancerStats.avgRating}</p>
+                  </div>
+                </div>
+
+                {/* Vues du profil */}
+                <div className="rounded-2xl border border-border/40 bg-card p-4 sm:p-5 shadow-sm hover:shadow-md transition-shadow flex items-center gap-2.5 sm:gap-3">
+                  <div className="w-8 h-8 sm:w-10 sm:h-10 rounded-xl bg-violet-100 flex items-center justify-center shrink-0">
+                    <Eye className="h-4 w-4 sm:h-5 sm:w-5 text-violet-600" />
+                  </div>
+                  <div className="min-w-0">
+                    <p className="text-xl sm:text-2xl font-black text-foreground leading-none"><CountUp value={profileViews} /></p>
+                    <p className="text-[11px] sm:text-xs text-muted-foreground mt-0.5 leading-tight">{t.freelancerStats.profileViews}</p>
+                  </div>
+                </div>
+
+              </div>
+            </div>
+          )}
+
           {/* Profile completion */}
           {pct < 100 && (
-            <div className="rounded-2xl border border-border bg-card p-5 shadow-sm mb-6">
+            <div className="rounded-2xl border border-border/40 bg-card p-5 shadow-sm mb-6">
               <div className="flex items-start justify-between gap-4 mb-3">
                 <div>
                   <h2 className="font-bold text-foreground text-sm">{t.completion.title}</h2>
@@ -781,7 +957,7 @@ export default function DashboardPage() {
                 <Link href="/profil">
                   <User className="h-3.5 w-3.5" />
                   {t.completion.cta}
-                  <ArrowRight className="h-3 w-3" />
+                  <ArrowRight className="h-3 w-3 rtl:rotate-180" />
                 </Link>
               </Button>
             </div>
@@ -879,7 +1055,7 @@ export default function DashboardPage() {
                 <Button asChild variant="ghost" size="sm" className="gap-1.5 text-muted-foreground hover:text-foreground text-xs font-medium">
                   <Link href="/services">
                     {t.services.viewAll}
-                    <ArrowRight className="h-3 w-3" />
+                    <ArrowRight className="h-3 w-3 rtl:rotate-180" />
                   </Link>
                 </Button>
               </div>
@@ -948,7 +1124,7 @@ export default function DashboardPage() {
                 <Button asChild size="sm" className="bg-primary hover:bg-primary/90 text-primary-foreground font-semibold gap-1.5">
                   <Link href="/services">
                     {t.sentOrders.viewServicesBtn}
-                    <ArrowRight className="h-3.5 w-3.5" />
+                    <ArrowRight className="h-3.5 w-3.5 rtl:rotate-180" />
                   </Link>
                 </Button>
               </div>
@@ -1160,6 +1336,6 @@ export default function DashboardPage() {
           </div>
         </DialogContent>
       </Dialog>
-    </>
+    </div>
   )
 }

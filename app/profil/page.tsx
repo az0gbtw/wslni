@@ -3,6 +3,7 @@
 import { useState, useEffect, useRef } from "react"
 import { useRouter } from "next/navigation"
 import Link from "next/link"
+import Image from "next/image"
 import {
   Camera, Edit2, Plus, X, ExternalLink,
   Loader2, Save, Briefcase, Tag, Calendar, MessageSquare, CheckCircle2,
@@ -232,9 +233,8 @@ export default function ProfilPage() {
           <ZelligeCover />
           <Button
             variant="outline"
-            size="sm"
             onClick={() => setEditOpen(true)}
-            className="absolute top-4 end-4 sm:end-8 z-10 bg-white/90 hover:bg-white text-gray-800 border-white/40 shadow-md backdrop-blur-sm font-medium"
+            className="absolute top-4 end-4 sm:end-8 z-10 h-11 bg-white/90 hover:bg-white text-gray-800 border-white/40 shadow-md backdrop-blur-sm font-medium"
           >
             <Edit2 className="h-3.5 w-3.5" />
             {t.editBtn}
@@ -246,9 +246,9 @@ export default function ProfilPage() {
           <div className="relative z-10 -mt-16 pb-6 border-b border-border">
             <div className="flex flex-col sm:flex-row sm:items-start gap-4 sm:gap-6">
               <div className="w-24 h-24 sm:w-32 sm:h-32 rounded-full bg-white shadow-xl shrink-0 p-1.5">
-                <div className="w-full h-full rounded-full bg-primary overflow-hidden flex items-center justify-center">
+                <div className="relative w-full h-full rounded-full bg-primary overflow-hidden flex items-center justify-center">
                   {profile.avatar_url ? (
-                    <img src={profile.avatar_url} alt={displayName} className="w-full h-full object-cover" />
+                    <Image src={profile.avatar_url} alt={displayName} fill sizes="128px" className="object-cover" />
                   ) : (
                     <span className="text-3xl sm:text-4xl font-bold text-white leading-none select-none">{ini}</span>
                   )}
@@ -289,7 +289,7 @@ export default function ProfilPage() {
                     className="relative w-20 h-20 rounded-full overflow-hidden bg-primary flex items-center justify-center shrink-0 group focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2"
                   >
                     {form.avatar_url ? (
-                      <img src={form.avatar_url} alt="" className="w-full h-full object-cover" />
+                      <Image src={form.avatar_url} alt="" fill sizes="80px" className="object-cover" />
                     ) : (
                       <span className="text-xl font-bold text-primary-foreground">{ini}</span>
                     )}
@@ -470,8 +470,7 @@ export default function ProfilPage() {
                       <Button
                         type="button"
                         variant="outline"
-                        size="sm"
-                        className="w-full"
+                        className="w-full h-11"
                         onClick={() => cinRef.current?.click()}
                         disabled={cinUploading}
                       >
@@ -510,7 +509,7 @@ export default function ProfilPage() {
               </div>
 
               <div className="px-6 py-4 border-t border-border shrink-0">
-                <Button onClick={handleSave} disabled={saving} className="w-full bg-primary hover:bg-primary/90 text-primary-foreground">
+                <Button onClick={handleSave} disabled={saving} size="lg" className="w-full bg-primary hover:bg-primary/90 text-primary-foreground">
                   {saving ? (
                     <><Loader2 className="h-4 w-4 animate-spin" />{t.sheet.saving}</>
                   ) : (

@@ -126,7 +126,7 @@ const sections = [
       },
       {
         q: "Comment signaler un utilisateur suspect ou un contenu inapproprié ?",
-        a: "Clique sur le bouton « Signaler » présent sur chaque profil ou message. Tu peux aussi nous écrire à security@wslni.ma. Tous les signalements sont traités de manière confidentielle et dans les meilleurs délais.",
+        a: "Clique sur le bouton « Signaler » présent sur chaque profil ou message. Tu peux aussi nous écrire à support@wslni.ma. Tous les signalements sont traités de manière confidentielle et dans les meilleurs délais.",
       },
       {
         q: "Que faire si je pense que mon compte a été piraté ?",
@@ -259,7 +259,7 @@ export default function FaqPage() {
               <Button asChild size="lg" className="bg-primary text-primary-foreground hover:bg-primary/90">
                 <Link href="/contact">
                   Contacter le support
-                  <ArrowRight className="ms-2 w-4 h-4" />
+                  <ArrowRight className="ms-2 w-4 h-4 rtl:rotate-180" />
                 </Link>
               </Button>
               <Button asChild size="lg" variant="outline" className="border-2 hover:border-primary hover:text-primary transition-all">

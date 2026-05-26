@@ -6,7 +6,7 @@ import Link from "next/link"
 import {
   ArrowLeft, ArrowRight, Check, CheckCircle2, Clock,
   DollarSign, Eye, FileText, ImageIcon, Loader2,
-  Plus, Settings, Sparkles, Upload, X,
+  Music, Plus, Settings, Sparkles, Upload, X,
 } from "lucide-react"
 import { createClient } from "@/lib/supabase/client"
 import { CATEGORY_GROUPS, getCategoryLabel } from "@/lib/categories"
@@ -37,11 +37,20 @@ interface Draft {
 
 type Errs = Record<string, string>
 
+/* ─── Types ─────────────────────────────────────────────────── */
+interface PortfolioItemDraft {
+  file: File
+  preview: string | null
+  title: string
+  type: "image" | "pdf" | "video" | "audio"
+}
+
 /* ─── Constants ─────────────────────────────────────────────── */
-const LS_KEY    = "khadamat-new-service-v1"
-const MAX_TITLE = 80
-const MAX_DESC  = 1200
-const MAX_IMGS  = 5
+const LS_KEY         = "khadamat-new-service-v1"
+const MAX_TITLE      = 80
+const MAX_DESC       = 1200
+const MAX_IMGS       = 5
+const MAX_PORTFOLIO  = 6
 
 const BLANK: Draft = {
   title: "", categoryGroup: "", subcategory: "", description: "",
@@ -82,11 +91,14 @@ export default function NewServicePage() {
   const [step,        setStep]        = useState(1)
   const [draft,       setDraft]       = useState<Draft>(BLANK)
   const [errors,      setErrors]      = useState<Errs>({})
-  const [dragging,    setDragging]    = useState(false)
-  const [publishing,  setPublishing]  = useState(false)
-  const [pubError,    setPubError]    = useState("")
-  const [done,        setDone]        = useState(false)
-  const fileRef = useRef<HTMLInputElement>(null)
+  const [dragging,          setDragging]          = useState(false)
+  const [portfolioDrafts,   setPortfolioDrafts]   = useState<PortfolioItemDraft[]>([])
+  const [portfolioDragOver, setPortfolioDragOver] = useState(false)
+  const [publishing,        setPublishing]        = useState(false)
+  const [pubError,          setPubError]          = useState("")
+  const [done,              setDone]              = useState(false)
+  const fileRef          = useRef<HTMLInputElement>(null)
+  const portfolioFileRef = useRef<HTMLInputElement>(null)
 
   /* auth – middleware already protects /dashboard/:path* but we still need the user id */
   useEffect(() => {
@@ -202,6 +214,40 @@ export default function NewServicePage() {
     patch({ imageDataUrls: draft.imageDataUrls.filter((_, j) => j !== i) })
   }
 
+  /* ── Portfolio ── */
+  function ingestPortfolio(files: FileList | null) {
+    if (!files) return
+    const slots = MAX_PORTFOLIO - portfolioDrafts.length
+    Array.from(files).slice(0, slots).forEach(f => {
+      const isImage = f.type.startsWith("image/")
+      const isPdf   = f.type === "application/pdf"
+      const isVideo = f.type.startsWith("video/")
+      const isAudio = f.type.startsWith("audio/")
+      const maxSize = (isVideo || isAudio) ? 50 * 1024 * 1024 : 5 * 1024 * 1024
+      if (!isImage && !isPdf && !isVideo && !isAudio) return
+      if (f.size > maxSize) return
+      if (isPdf) {
+        setPortfolioDrafts(prev =>
+          [...prev, { file: f, preview: null, title: f.name.replace(/\.pdf$/i, ""), type: "pdf" as const }].slice(0, MAX_PORTFOLIO)
+        )
+      } else if (isVideo || isAudio) {
+        const preview = URL.createObjectURL(f)
+        setPortfolioDrafts(prev =>
+          [...prev, { file: f, preview, title: "", type: (isVideo ? "video" : "audio") as "video" | "audio" }].slice(0, MAX_PORTFOLIO)
+        )
+      } else {
+        const reader = new FileReader()
+        reader.onload = ev => {
+          const url = ev.target?.result as string
+          setPortfolioDrafts(prev =>
+            [...prev, { file: f, preview: url, title: "", type: "image" as const }].slice(0, MAX_PORTFOLIO)
+          )
+        }
+        reader.readAsDataURL(f)
+      }
+    })
+  }
+
   /* ── Requirements ── */
   function addReq()                        { patch({ requirements: [...draft.requirements, ""] }) }
   function removeReq(i: number)            { patch({ requirements: draft.requirements.filter((_, j) => j !== i) }) }
@@ -213,6 +259,7 @@ export default function NewServicePage() {
     setPublishing(true)
     setPubError("")
 
+    // Upload cover images
     const uploadedUrls: string[] = []
     for (const dataUrl of draft.imageDataUrls) {
       try {
@@ -230,27 +277,56 @@ export default function NewServicePage() {
       } catch {}
     }
 
-    const { error } = await supabase.from("services").insert({
-      user_id:        userId,
-      title:          draft.title.trim(),
-      description:    draft.description.trim(),
-      category:       draft.subcategory,
-      category_group: draft.categoryGroup,
-      price:          parseFloat(draft.tiers.basic.price) || 0,
-      delivery_days:  parseInt(draft.tiers.basic.delivery_days, 10) || 1,
-      pricing_tiers:  draft.tiers,
-      images:         uploadedUrls,
-      requirements:   draft.requirements.filter(r => r.trim()),
-      status:         "published",
-    })
+    // Step 1: Insert service to get ID
+    const { data: newService, error: insertError } = await supabase.from("services").insert({
+      user_id:         userId,
+      title:           draft.title.trim(),
+      description:     draft.description.trim(),
+      category:        draft.subcategory,
+      category_group:  draft.categoryGroup,
+      price:           parseFloat(draft.tiers.basic.price) || 0,
+      delivery_days:   parseInt(draft.tiers.basic.delivery_days, 10) || 1,
+      pricing_tiers:   draft.tiers,
+      images:          uploadedUrls,
+      requirements:    draft.requirements.filter(r => r.trim()),
+      status:          "published",
+      portfolio_items: [],
+    }).select("id").single()
+
+    if (insertError || !newService) {
+      setPublishing(false)
+      setPubError("Erreur lors de la publication : " + (insertError?.message ?? ""))
+      return
+    }
+
+    // Step 2: Upload portfolio files and update service
+    if (portfolioDrafts.length > 0) {
+      const portfolioItems: { url: string; title?: string; type: "image" | "pdf" | "video" | "audio" }[] = []
+      for (const item of portfolioDrafts) {
+        try {
+          const ext  = item.file.name.split(".").pop() || "bin"
+          const path = `${newService.id}/${Date.now()}-${Math.random().toString(36).slice(2)}.${ext}`
+          const { data: up, error: upErr } = await supabase.storage
+            .from("service-portfolios")
+            .upload(path, item.file, { contentType: item.file.type })
+          if (!upErr && up) {
+            const { data: pub } = supabase.storage.from("service-portfolios").getPublicUrl(up.path)
+            portfolioItems.push({
+              url:  pub.publicUrl,
+              type: item.type,
+              ...(item.title.trim() ? { title: item.title.trim() } : {}),
+            })
+          }
+        } catch {}
+      }
+      if (portfolioItems.length > 0) {
+        await supabase.from("services").update({ portfolio_items: portfolioItems }).eq("id", newService.id)
+      }
+    }
 
     setPublishing(false)
-    if (error) {
-      setPubError("Erreur lors de la publication : " + error.message)
-    } else {
-      localStorage.removeItem(LS_KEY)
-      setDone(true)
-    }
+    localStorage.removeItem(LS_KEY)
+    setDone(true)
   }
 
   /* ─── Loading ─── */
@@ -310,7 +386,7 @@ export default function NewServicePage() {
             href="/dashboard"
             className="inline-flex items-center gap-2 text-sm text-gray-500 hover:text-gray-900 mb-6 transition-colors animate-fade-in-up"
           >
-            <ArrowLeft className="h-4 w-4" />
+            <ArrowLeft className="h-4 w-4 rtl:rotate-180" />
             Tableau de bord
           </Link>
 
@@ -603,6 +679,96 @@ export default function NewServicePage() {
                     <li>Privilégiez des images lumineuses, nettes et professionnelles</li>
                   </ul>
                 </div>
+
+                {/* ── Portfolio section ── */}
+                <Card
+                  title="Portfolio (optionnel)"
+                  sub={`Ajoutez jusqu'à ${MAX_PORTFOLIO} fichiers (images ou PDF) illustrant vos réalisations passées. Max 5 Mo chacun.`}
+                >
+                  <div
+                    onDragOver={e => { e.preventDefault(); setPortfolioDragOver(true) }}
+                    onDragLeave={() => setPortfolioDragOver(false)}
+                    onDrop={e => { e.preventDefault(); setPortfolioDragOver(false); ingestPortfolio(e.dataTransfer.files) }}
+                    onClick={() => portfolioDrafts.length < MAX_PORTFOLIO && portfolioFileRef.current?.click()}
+                    className={`rounded-xl border-2 border-dashed p-8 flex flex-col items-center gap-3 transition-all duration-200 ${
+                      portfolioDragOver
+                        ? "border-red-400 bg-red-50 cursor-copy"
+                        : portfolioDrafts.length >= MAX_PORTFOLIO
+                        ? "border-gray-200 bg-gray-50 opacity-60 cursor-not-allowed"
+                        : "border-gray-300 bg-white hover:border-red-400 hover:bg-red-50/20 cursor-pointer"
+                    }`}
+                  >
+                    <div className={`h-12 w-12 rounded-full flex items-center justify-center transition-colors ${portfolioDragOver ? "bg-red-100" : "bg-gray-100"}`}>
+                      <Plus className={`h-5 w-5 transition-colors ${portfolioDragOver ? "text-red-600" : "text-gray-400"}`} />
+                    </div>
+                    <div className="text-center">
+                      <p className="font-medium text-gray-700 text-sm">
+                        {portfolioDrafts.length >= MAX_PORTFOLIO
+                          ? "Limite atteinte"
+                          : portfolioDragOver
+                          ? "Relâchez pour ajouter"
+                          : "Glissez images ou PDF ici, ou cliquez"}
+                      </p>
+                      <p className="text-xs text-gray-400 mt-1">
+                        JPG, PNG, WEBP, GIF, PDF · {portfolioDrafts.length}/{MAX_PORTFOLIO}
+                      </p>
+                    </div>
+                    <input
+                      ref={portfolioFileRef}
+                      type="file"
+                      accept="image/*,application/pdf,video/*,audio/*"
+                      multiple
+                      className="hidden"
+                      onChange={e => ingestPortfolio(e.target.files)}
+                    />
+                  </div>
+
+                  {portfolioDrafts.length > 0 && (
+                    <div className="grid grid-cols-2 sm:grid-cols-3 gap-3 mt-1">
+                      {portfolioDrafts.map((item, i) => (
+                        <div key={i} className="relative rounded-xl border border-gray-200 overflow-hidden bg-gray-50">
+                          {item.type === "pdf" ? (
+                            <div className="aspect-square flex flex-col items-center justify-center gap-2 p-4 bg-red-50">
+                              <FileText className="h-8 w-8 text-red-500" />
+                              <span className="text-[10px] font-bold text-red-600 uppercase">PDF</span>
+                            </div>
+                          ) : item.type === "video" ? (
+                            <div className="aspect-square bg-black flex items-center justify-center">
+                              <video src={item.preview!} controls className="w-full h-full" />
+                            </div>
+                          ) : item.type === "audio" ? (
+                            <div className="aspect-square flex flex-col items-center justify-center gap-2 p-4 bg-purple-50">
+                              <Music className="h-8 w-8 text-purple-500" />
+                              <audio src={item.preview!} controls className="w-full" />
+                            </div>
+                          ) : (
+                            <div className="aspect-square">
+                              {/* eslint-disable-next-line @next/next/no-img-element */}
+                              <img src={item.preview!} alt="" className="w-full h-full object-cover" />
+                            </div>
+                          )}
+                          <div className="p-2">
+                            <input
+                              type="text"
+                              value={item.title}
+                              onChange={e => setPortfolioDrafts(prev => prev.map((p, j) => j === i ? { ...p, title: e.target.value } : p))}
+                              placeholder={item.type === "pdf" ? "Titre du document" : "Titre (optionnel)"}
+                              className="w-full text-xs border border-gray-200 rounded px-2 py-1 focus:outline-none focus:border-red-400"
+                            />
+                          </div>
+                          <button
+                            type="button"
+                            onClick={() => setPortfolioDrafts(prev => prev.filter((_, j) => j !== i))}
+                            className="absolute top-1.5 right-1.5 h-6 w-6 rounded-full bg-white/90 shadow flex items-center justify-center text-red-600 hover:bg-white transition-colors"
+                            aria-label="Supprimer"
+                          >
+                            <X className="h-3.5 w-3.5" />
+                          </button>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </Card>
               </div>
             )}
 
@@ -828,7 +994,7 @@ export default function NewServicePage() {
               onClick={goBack}
               className={step <= 1 ? "invisible pointer-events-none" : ""}
             >
-              <ArrowLeft className="mr-2 h-4 w-4" />
+              <ArrowLeft className="me-2 h-4 w-4 rtl:rotate-180" />
               Précédent
             </Button>
 
@@ -838,7 +1004,7 @@ export default function NewServicePage() {
                 className="bg-red-600 hover:bg-red-700 text-white active:scale-[0.97] transition-transform"
               >
                 Suivant
-                <ArrowRight className="ml-2 h-4 w-4" />
+                <ArrowRight className="ms-2 h-4 w-4 rtl:rotate-180" />
               </Button>
             ) : (
               <Button

@@ -9,24 +9,31 @@ export function useScrollReveal(threshold = 0.1) {
     const container = ref.current
     if (!container) return
 
-    if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) {
-      container.querySelectorAll<HTMLElement>(".reveal").forEach((el) => {
-        el.classList.add("in-view")
-      })
-      return
-    }
+    // No-op if the browser can't support the animation — elements stay visible (default)
+    if (typeof IntersectionObserver === "undefined") return
+    if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) return
 
     const items = Array.from(container.querySelectorAll<HTMLElement>(".reveal"))
+    if (items.length === 0) return
+
+    const vh = window.innerHeight
+
+    // Only hide elements that are entirely below the fold at mount time.
+    // Elements already in the viewport are left visible so they never flicker.
+    const offScreen = items.filter((el) => el.getBoundingClientRect().top >= vh)
+    if (offScreen.length === 0) return
+
+    offScreen.forEach((el) => el.classList.add("reveal-hidden"))
+
     const observer = new IntersectionObserver(
       (entries) => {
         entries.forEach((entry) => {
           if (entry.isIntersecting) {
-            entry.target.classList.add("in-view")
-            observer.unobserve(entry.target)
-            // Clear stagger delay after reveal finishes so hover/click feel instant.
-            // Filter to the element itself — child transitionend events bubble and would
-            // fire the listener before the reveal animation actually completes.
             const el = entry.target as HTMLElement
+            el.classList.remove("reveal-hidden")
+            el.classList.add("in-view")
+            observer.unobserve(el)
+            // Clear stagger delay after the reveal transition so hover feels instant
             const clearDelay = (e: Event) => {
               if (e.target === el) {
                 el.style.transitionDelay = ""
@@ -37,11 +44,15 @@ export function useScrollReveal(threshold = 0.1) {
           }
         })
       },
-      { threshold, rootMargin: "0px 0px -40px 0px" }
+      { threshold, rootMargin: "0px 0px -40px 0px" },
     )
 
-    items.forEach((item) => observer.observe(item))
-    return () => observer.disconnect()
+    offScreen.forEach((el) => observer.observe(el))
+    return () => {
+      observer.disconnect()
+      // Safety net: if the component unmounts before reveal fires, restore visibility
+      offScreen.forEach((el) => el.classList.remove("reveal-hidden"))
+    }
   }, [threshold])
 
   return ref

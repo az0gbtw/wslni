@@ -2,54 +2,89 @@
 
 import { useState, useEffect, useMemo, Suspense } from "react"
 import Link from "next/link"
-import { Search, Clock, Loader2, Plus, Star, SlidersHorizontal, X, Palette, Code2, TrendingUp, Video, PenTool, Music, Briefcase, GraduationCap, Sparkles } from "lucide-react"
+import {
+  Search, Clock, Loader2, Plus, Star, SlidersHorizontal, X, ChevronRight,
+  Palette, Code2, TrendingUp, Video, PenTool, Music, Briefcase,
+  GraduationCap, Sparkles, ShieldCheck,
+} from "lucide-react"
 import { useSearchParams } from "next/navigation"
 import { createClient } from "@/lib/supabase/client"
-import { CATEGORY_GROUPS, CATEGORY_COLORS, getCategoryLabel, getGroupForCategory, GROUP_GRADIENTS } from "@/lib/categories"
-import { formatPrice } from "@/lib/utils"
+import { CATEGORY_GROUPS, getCategoryLabel, getGroupForCategory } from "@/lib/categories"
 import { useLanguage } from "@/lib/language-context"
 import { translations } from "@/lib/translations"
 import { Navbar } from "@/components/navbar"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
+import { ContactSellerButton } from "@/components/contact-seller-button"
+import { ServiceCard, type ServiceWithProfile } from "@/components/service-card"
 
-interface ServiceWithProfile {
-  id: string
-  title: string
-  description: string
-  category: string
-  category_group: string | null
-  images: string[] | null
-  price: number
-  delivery_days: number
-  created_at: string
-  user_id: string
-  avgRating: number | null
-  reviewCount: number
-  profiles: {
-    id: string
-    full_name: string | null
-    avatar_url: string | null
-    job_title: string | null
-  } | null
+const PAGE_SIZE = 12
+
+const MOROCCAN_CITIES = [
+  "Casablanca", "Rabat", "Salé", "Marrakech", "Fès", "Meknès", "Tanger",
+  "Agadir", "Oujda", "Tétouan", "El Jadida", "Kenitra", "Laâyoune",
+  "Dakhla", "Beni Mellal", "Settat", "Nador", "Mohammedia",
+]
+
+const LANGUAGE_OPTIONS = ["Darija", "Français", "Anglais", "Arabe classique", "Amazigh"]
+
+function ServiceCardSkeleton() {
+  return (
+    <div className="rounded-xl border border-border/40 bg-card overflow-hidden">
+      <div className="aspect-video bg-gray-200 animate-pulse" />
+      <div className="p-4 space-y-3">
+        <div className="flex items-center gap-2">
+          <div className="w-7 h-7 rounded-full bg-gray-200 animate-pulse shrink-0" />
+          <div className="h-3 w-24 bg-gray-200 animate-pulse rounded" />
+        </div>
+        <div className="h-4 w-3/4 bg-gray-200 animate-pulse rounded" />
+        <div className="h-3 w-1/2 bg-gray-200 animate-pulse rounded" />
+        <div className="pt-2 border-t border-border/40">
+          <div className="h-4 w-1/4 bg-gray-200 animate-pulse rounded" />
+        </div>
+      </div>
+    </div>
+  )
 }
 
-const GROUP_ICONS = [Palette, Code2, TrendingUp, Video, PenTool, Music, Briefcase, GraduationCap, Sparkles]
+function ServicesPageSkeleton() {
+  return (
+    <div className="pt-16">
+      <div className="bg-gradient-to-r from-red-50 via-orange-50/60 to-red-50 border-b border-red-100">
+        <div className="mx-auto max-w-7xl px-4 pt-6 pb-5">
+          <div className="h-3 w-28 bg-gray-200 animate-pulse rounded mb-3" />
+          <div className="h-7 w-56 bg-gray-200 animate-pulse rounded" />
+        </div>
+      </div>
+      <div className="mx-auto max-w-7xl px-4 py-8">
+        <div className="h-4 w-32 bg-gray-200 animate-pulse rounded mb-6" />
+        <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-6">
+          {Array.from({ length: 6 }).map((_, i) => <ServiceCardSkeleton key={i} />)}
+        </div>
+      </div>
+    </div>
+  )
+}
 
 export default function ServicesPage() {
   return (
     <>
       <Navbar />
-      <Suspense
-        fallback={
-          <div className="flex items-center justify-center min-h-[60vh]">
-            <Loader2 className="h-8 w-8 animate-spin text-primary" />
-          </div>
-        }
-      >
+      <Suspense fallback={<ServicesPageSkeleton />}>
         <ServicesContent />
       </Suspense>
     </>
+  )
+}
+
+function FilterChip({ label, onRemove }: { label: string; onRemove: () => void }) {
+  return (
+    <span className="inline-flex items-center gap-1 rounded-full bg-primary/10 text-primary text-xs px-2.5 py-1 font-medium animate-scaleIn">
+      {label}
+      <button onClick={onRemove} className="flex items-center hover:text-primary/70 transition-colors duration-150">
+        <X className="h-3 w-3" />
+      </button>
+    </span>
   )
 }
 
@@ -59,25 +94,35 @@ function ServicesContent() {
   const searchParams = useSearchParams()
   const supabase = createClient()
 
-  const [services, setServices] = useState<ServiceWithProfile[]>([])
-  const [loading, setLoading] = useState(true)
-  const [search, setSearch]                     = useState(searchParams.get("q") ?? "")
-  const [selectedCategory, setSelectedCategory] = useState(searchParams.get("category") ?? "")
-  const [selectedGroup, setSelectedGroup]       = useState(searchParams.get("group") ?? "")
-  const [minPrice, setMinPrice]                 = useState("")
-  const [maxPrice, setMaxPrice]                 = useState("")
-  const [maxDelivery, setMaxDelivery]           = useState(0)
-  const [minRating, setMinRating]               = useState(0)
-  const [sortBy, setSortBy]                     = useState("newest")
-  const [filtersOpen, setFiltersOpen]           = useState(false)
+  const [services, setServices]                   = useState<ServiceWithProfile[]>([])
+  const [loading, setLoading]                     = useState(true)
+  const [loadingMore, setLoadingMore]             = useState(false)
+  const [hasMore, setHasMore]                     = useState(true)
+  const [offset, setOffset]                       = useState(0)
+  const [ratingMap, setRatingMap]                 = useState<Record<string, { sum: number; count: number }>>({})
+  const [profileMap, setProfileMap]               = useState<Record<string, any>>({})
+  const [userId, setUserId]                       = useState<string | null>(null)
+  const [favoriteIds, setFavoriteIds]             = useState<Set<string>>(new Set())
+  const [search, setSearch]                       = useState(searchParams.get("q") ?? "")
+  const [selectedCategory, setSelectedCategory]   = useState(searchParams.get("category") ?? "")
+  const [selectedGroup, setSelectedGroup]         = useState(searchParams.get("group") ?? "")
+  const [minPrice, setMinPrice]                   = useState("")
+  const [maxPrice, setMaxPrice]                   = useState("")
+  const [deliveryFilter, setDeliveryFilter]       = useState("")
+  const [minRating, setMinRating]                 = useState(0)
+  const [selectedCities, setSelectedCities]       = useState<string[]>([])
+  const [selectedLanguages, setSelectedLanguages] = useState<string[]>([])
+  const [verifiedOnly, setVerifiedOnly]           = useState(false)
+  const [sortBy, setSortBy]                       = useState("newest")
+  const [filtersOpen, setFiltersOpen]             = useState(false)
+  const [showAllCities, setShowAllCities]         = useState(false)
 
   const DELIVERY_OPTIONS = [
-    { value: 0,  label: t.delivery.all },
-    { value: 1,  label: t.delivery.day1 },
-    { value: 3,  label: t.delivery.days3 },
-    { value: 7,  label: t.delivery.days7 },
-    { value: 14, label: t.delivery.days14 },
-    { value: 30, label: t.delivery.days30 },
+    { value: "",      label: t.delivery.all },
+    { value: "1",     label: t.delivery.day1 },
+    { value: "3",     label: t.delivery.days3 },
+    { value: "7",     label: t.delivery.days7 },
+    { value: "7plus", label: t.delivery.days7plus },
   ]
 
   const SORT_OPTIONS = [
@@ -87,42 +132,115 @@ function ServicesContent() {
     { value: "rating",     label: t.sort.rating },
   ]
 
-  useEffect(() => {
-    async function fetchData() {
-      const [{ data: servicesData }, { data: reviewsData }] = await Promise.all([
-        supabase.from("services").select("*").eq("status", "published"),
-        supabase.from("reviews").select("freelancer_id, rating"),
-      ])
+  async function fetchProfiles(userIds: string[], existingMap: Record<string, any>) {
+    const newIds = userIds.filter((id) => !existingMap[id])
+    if (newIds.length === 0) return existingMap
+    const { data } = await supabase
+      .from("profiles")
+      .select("id, full_name, avatar_url, job_title, bio, city, languages, cin_status")
+      .in("id", newIds)
+    const updated = { ...existingMap }
+    ;(data ?? []).forEach((p: any) => { updated[p.id] = p })
+    return updated
+  }
 
-      const userIds = [...new Set((servicesData ?? []).map((s: any) => s.user_id as string))]
-      const { data: profilesData } = userIds.length > 0
-        ? await supabase.from("profiles").select("id, full_name, avatar_url, job_title, bio").in("id", userIds)
-        : { data: [] }
+  async function enrichServices(
+    rawServices: any[],
+    currentRatingMap: Record<string, { sum: number; count: number }>,
+    currentProfileMap: Record<string, any>,
+  ): Promise<{ enriched: ServiceWithProfile[]; updatedProfileMap: Record<string, any> }> {
+    const userIds = [...new Set(rawServices.map((s: any) => s.user_id as string))]
+    const updatedProfileMap = await fetchProfiles(userIds, currentProfileMap)
 
-      const profileMap = Object.fromEntries((profilesData ?? []).map((p: any) => [p.id, p]))
-
-      const ratingMap: Record<string, { sum: number; count: number }> = {}
-      reviewsData?.forEach(({ freelancer_id, rating }: { freelancer_id: string; rating: number }) => {
-        if (!ratingMap[freelancer_id]) ratingMap[freelancer_id] = { sum: 0, count: 0 }
-        ratingMap[freelancer_id].sum += rating
-        ratingMap[freelancer_id].count += 1
+    const enriched: ServiceWithProfile[] = rawServices
+      .filter((s: any) => {
+        const p = updatedProfileMap[s.user_id]
+        return p?.full_name?.trim() && p?.job_title?.trim() && p?.bio?.trim()
+      })
+      .map((s: any) => {
+        const r = currentRatingMap[s.user_id]
+        return {
+          ...s,
+          profiles: updatedProfileMap[s.user_id] ?? null,
+          avgRating: r ? r.sum / r.count : null,
+          reviewCount: r?.count ?? 0,
+        }
       })
 
-      const enriched: ServiceWithProfile[] = (servicesData ?? [])
-        .filter((s: any) => {
-          const p = profileMap[s.user_id]
-          return p?.full_name?.trim() && p?.job_title?.trim() && p?.bio?.trim()
-        })
-        .map((s: any) => {
-          const r = ratingMap[s.user_id]
-          return { ...s, profiles: profileMap[s.user_id] ?? null, avgRating: r ? r.sum / r.count : null, reviewCount: r?.count ?? 0 }
-        })
+    return { enriched, updatedProfileMap }
+  }
 
+  useEffect(() => {
+    async function fetchInitial() {
+      const [
+        { data: servicesData },
+        { data: reviewsData },
+        { data: { user } },
+      ] = await Promise.all([
+        supabase
+          .from("services")
+          .select("*")
+          .eq("status", "published")
+          .order("created_at", { ascending: false })
+          .range(0, PAGE_SIZE - 1),
+        supabase.from("reviews").select("freelancer_id, rating"),
+        supabase.auth.getUser(),
+      ])
+
+      const newRatingMap: Record<string, { sum: number; count: number }> = {}
+      reviewsData?.forEach(({ freelancer_id, rating }: { freelancer_id: string; rating: number }) => {
+        if (!newRatingMap[freelancer_id]) newRatingMap[freelancer_id] = { sum: 0, count: 0 }
+        newRatingMap[freelancer_id].sum += rating
+        newRatingMap[freelancer_id].count += 1
+      })
+      setRatingMap(newRatingMap)
+
+      const { enriched, updatedProfileMap } = await enrichServices(servicesData ?? [], newRatingMap, {})
+      setProfileMap(updatedProfileMap)
       setServices(enriched)
+      setOffset(PAGE_SIZE)
+      setHasMore((servicesData ?? []).length === PAGE_SIZE)
+
+      if (user) {
+        setUserId(user.id)
+        const { data: favData } = await supabase
+          .from("favorites")
+          .select("service_id")
+          .eq("user_id", user.id)
+        setFavoriteIds(new Set((favData ?? []).map((f: any) => f.service_id as string)))
+      }
+
       setLoading(false)
     }
-    fetchData()
+    fetchInitial()
   }, [])
+
+  async function handleLoadMore() {
+    setLoadingMore(true)
+    const { data: moreServices } = await supabase
+      .from("services")
+      .select("*")
+      .eq("status", "published")
+      .order("created_at", { ascending: false })
+      .range(offset, offset + PAGE_SIZE - 1)
+
+    const batch = moreServices ?? []
+    const { enriched, updatedProfileMap } = await enrichServices(batch, ratingMap, profileMap)
+    setProfileMap(updatedProfileMap)
+    setServices((prev) => [...prev, ...enriched])
+    setOffset((prev) => prev + PAGE_SIZE)
+    setHasMore(batch.length === PAGE_SIZE)
+    setLoadingMore(false)
+  }
+
+  function handleFavoriteToggle(serviceId: string, newState: boolean) {
+    setFavoriteIds((prev) => {
+      const next = new Set(prev)
+      if (newState) next.add(serviceId)
+      else next.delete(serviceId)
+      return next
+    })
+  }
 
   const filtered = useMemo(() => {
     const q   = search.toLowerCase().trim()
@@ -134,13 +252,25 @@ function ServicesContent() {
       : []
 
     let result = services.filter((s) => {
-      if (q && !s.title.toLowerCase().includes(q) && !s.description.toLowerCase().includes(q)) return false
+      if (q) {
+        const name = (s.profiles?.full_name ?? "").toLowerCase()
+        if (!s.title.toLowerCase().includes(q) && !s.description.toLowerCase().includes(q) && !name.includes(q)) return false
+      }
       if (selectedCategory && s.category !== selectedCategory) return false
       if (selectedGroup && !groupSubcategories.includes(s.category)) return false
       if (min !== null && s.price < min) return false
       if (max !== null && s.price > max) return false
-      if (maxDelivery > 0 && s.delivery_days > maxDelivery) return false
+      if (deliveryFilter === "1"    && s.delivery_days > 1)  return false
+      if (deliveryFilter === "3"    && s.delivery_days > 3)  return false
+      if (deliveryFilter === "7"    && s.delivery_days > 7)  return false
+      if (deliveryFilter === "7plus" && s.delivery_days <= 7) return false
       if (minRating > 0 && (s.avgRating === null || s.avgRating < minRating)) return false
+      if (selectedCities.length > 0 && !selectedCities.includes(s.profiles?.city ?? "")) return false
+      if (selectedLanguages.length > 0) {
+        const profLangs = s.profiles?.languages ?? []
+        if (!selectedLanguages.some((l) => profLangs.includes(l))) return false
+      }
+      if (verifiedOnly && s.profiles?.cin_status !== "verified") return false
       return true
     })
 
@@ -150,26 +280,54 @@ function ServicesContent() {
       if (sortBy === "rating")     return (b.avgRating ?? 0) - (a.avgRating ?? 0)
       return new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
     })
-  }, [services, search, selectedCategory, selectedGroup, minPrice, maxPrice, maxDelivery, minRating, sortBy])
+  }, [services, search, selectedCategory, selectedGroup, minPrice, maxPrice, deliveryFilter, minRating, selectedCities, selectedLanguages, verifiedOnly, sortBy])
 
-  const hasFilters = !!(search || selectedCategory || selectedGroup || minPrice || maxPrice || maxDelivery > 0 || minRating > 0)
+  const hasFilters = !!(
+    search || selectedCategory || selectedGroup || minPrice || maxPrice ||
+    deliveryFilter || minRating > 0 || selectedCities.length > 0 || selectedLanguages.length > 0 || verifiedOnly
+  )
 
   function resetFilters() {
-    setSearch(""); setSelectedCategory(""); setSelectedGroup(""); setMinPrice(""); setMaxPrice("")
-    setMaxDelivery(0); setMinRating(0); setSortBy("newest")
+    setSearch("")
+    setSelectedCategory("")
+    setSelectedGroup("")
+    setMinPrice("")
+    setMaxPrice("")
+    setDeliveryFilter("")
+    setMinRating(0)
+    setSortBy("newest")
+    setSelectedCities([])
+    setSelectedLanguages([])
+    setVerifiedOnly(false)
   }
+
+  function toggleCity(city: string) {
+    setSelectedCities((prev) =>
+      prev.includes(city) ? prev.filter((c) => c !== city) : [...prev, city]
+    )
+  }
+
+  function toggleLanguage(option: string) {
+    setSelectedLanguages((prev) =>
+      prev.includes(option) ? prev.filter((l) => l !== option) : [...prev, option]
+    )
+  }
+
+  const activeDeliveryLabel = DELIVERY_OPTIONS.find((o) => o.value === deliveryFilter)?.label ?? ""
 
   return (
     <>
-      {/* Header */}
-      <div className="bg-primary text-primary-foreground py-16 px-4">
-        <div className="mx-auto max-w-7xl">
-          <div className="flex flex-col sm:flex-row sm:items-end sm:justify-between gap-6">
-            <div>
-              <h1 className="text-4xl font-bold mb-3">{t.header}</h1>
-              <p className="text-primary-foreground/80 text-lg max-w-xl">{t.headerSub}</p>
-            </div>
-            <Button asChild variant="secondary" className="shrink-0 font-semibold">
+      {/* Hero banner */}
+      <div className="bg-gradient-to-r from-red-50 via-orange-50/60 to-red-50 dark:from-red-950/20 dark:via-orange-950/10 dark:to-red-950/20 border-b border-red-100 dark:border-red-900/30">
+        <div className="mx-auto max-w-7xl px-4 pt-20 pb-5 sm:pt-24 sm:pb-6">
+          <nav className="flex items-center gap-1 text-xs text-muted-foreground mb-2">
+            <Link href="/" className="hover:text-foreground transition-colors">Accueil</Link>
+            <ChevronRight className="h-3 w-3 shrink-0" />
+            <span className="text-foreground font-medium">Services</span>
+          </nav>
+          <div className="flex items-end justify-between gap-4">
+            <h1 className="text-2xl sm:text-3xl font-bold text-foreground tracking-tight">Explorer les services</h1>
+            <Button asChild variant="outline" size="sm" className="shrink-0 border-red-200 text-red-600 hover:bg-red-50 hover:border-red-300 dark:border-red-800 dark:text-red-400 font-semibold hidden sm:flex">
               <Link href="/dashboard/new-service">
                 <Plus className="me-2 h-4 w-4" />
                 {t.offerBtn}
@@ -179,66 +337,121 @@ function ServicesContent() {
         </div>
       </div>
 
-      {/* Search + sort bar */}
-      <div className="sticky top-0 z-10 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/80 border-b border-border shadow-sm">
-        <div className="mx-auto max-w-7xl px-4 py-3 flex gap-3 items-center">
-          <div className="relative flex-1">
-            <Search className="absolute start-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-            <Input
-              placeholder={t.searchPlaceholder}
-              value={search}
-              onChange={(e) => setSearch(e.target.value)}
-              className="ps-9"
-            />
-          </div>
-
-          <Button
-            variant="outline"
-            size="sm"
-            className="lg:hidden shrink-0 gap-2"
-            onClick={() => setFiltersOpen((v) => !v)}
-          >
-            <SlidersHorizontal className="h-4 w-4" />
-            {t.filtersBtn}
-            {hasFilters && <span className="h-2 w-2 rounded-full bg-primary" />}
-          </Button>
-
-          <select
-            value={sortBy}
-            onChange={(e) => setSortBy(e.target.value)}
-            className="hidden sm:block h-9 rounded-md border border-input bg-background px-3 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 shrink-0"
-          >
-            {SORT_OPTIONS.map((o) => (
-              <option key={o.value} value={o.value}>{o.label}</option>
-            ))}
-          </select>
-        </div>
-      </div>
-
       {/* Body: filters sidebar + results grid */}
       <div className="mx-auto max-w-7xl px-4 py-8">
-        <div className="lg:flex lg:gap-8 lg:items-start">
+        <div className="flex gap-8 items-start">
 
           {/* Filters panel */}
-          <aside className={`lg:w-64 lg:shrink-0 lg:sticky lg:top-24 mb-6 lg:mb-0 ${filtersOpen ? "block" : "hidden lg:block"}`}>
-            <div className="rounded-2xl border border-border bg-card p-5 space-y-6">
+          <aside className={`w-72 shrink-0 sticky top-20 self-start lg:mb-0 ${filtersOpen ? "block" : "hidden lg:block"}`}>
+            <div className="rounded-2xl border border-border/40 bg-card p-5 space-y-6 shadow-sm">
 
               <div className="flex items-center justify-between">
                 <h2 className="text-sm font-semibold text-foreground">{t.filtersTitle}</h2>
-                {hasFilters && (
+                <div className="flex items-center gap-2">
+                  {hasFilters && (
+                    <button
+                      onClick={resetFilters}
+                      className="text-xs text-red-500 hover:text-red-600 font-medium flex items-center gap-1 transition-colors"
+                    >
+                      <X className="h-3 w-3" />
+                      {t.reset}
+                    </button>
+                  )}
                   <button
-                    onClick={resetFilters}
-                    className="text-xs text-primary hover:underline underline-offset-4 flex items-center gap-1"
+                    onClick={() => setFiltersOpen(false)}
+                    className="lg:hidden text-muted-foreground hover:text-foreground transition-colors"
+                    aria-label="Fermer les filtres"
                   >
-                    <X className="h-3 w-3" />
-                    {t.reset}
+                    <X className="h-4 w-4" />
+                  </button>
+                </div>
+              </div>
+
+              {/* Ville marocaine */}
+              <div>
+                <p className="text-[10px] font-semibold text-muted-foreground/70 uppercase tracking-widest mb-2">
+                  {t.cityLabel}
+                </p>
+                <div className="grid grid-cols-2 gap-1.5">
+                  {(showAllCities ? MOROCCAN_CITIES : MOROCCAN_CITIES.slice(0, 8)).map((city) => {
+                    const active = selectedCities.includes(city)
+                    return (
+                      <button
+                        key={city}
+                        onClick={() => toggleCity(city)}
+                        className={`text-xs px-2 py-1 rounded-full border transition-all duration-150 truncate text-start ${
+                          active
+                            ? "bg-primary text-primary-foreground border-primary font-medium"
+                            : "bg-transparent text-foreground border-border hover:border-primary/40 hover:text-primary"
+                        }`}
+                      >
+                        {city}
+                      </button>
+                    )
+                  })}
+                </div>
+                {MOROCCAN_CITIES.length > 8 && (
+                  <button
+                    onClick={() => setShowAllCities((v) => !v)}
+                    className="mt-2 text-[11px] text-primary hover:underline underline-offset-4 font-medium"
+                  >
+                    {showAllCities ? "Voir moins ↑" : `Voir plus (${MOROCCAN_CITIES.length - 8}) ↓`}
                   </button>
                 )}
               </div>
 
+              <div className="border-t border-border/60" />
+
+              {/* Langue de travail */}
+              <div>
+                <p className="text-[10px] font-semibold text-muted-foreground/70 uppercase tracking-widest mb-2">
+                  {t.languageLabel}
+                </p>
+                <div className="flex flex-wrap gap-1.5">
+                  {LANGUAGE_OPTIONS.map((option) => {
+                    const active = selectedLanguages.includes(option)
+                    return (
+                      <button
+                        key={option}
+                        onClick={() => toggleLanguage(option)}
+                        className={`text-xs px-3 py-1 rounded-full border transition-all duration-150 ${
+                          active
+                            ? "bg-primary text-primary-foreground border-primary font-medium"
+                            : "bg-muted/40 text-foreground border-border hover:border-primary/40 hover:text-primary"
+                        }`}
+                      >
+                        {option}
+                      </button>
+                    )
+                  })}
+                </div>
+              </div>
+
+              <div className="border-t border-border/60" />
+
+              {/* Freelancer vérifié */}
+              <div>
+                <button
+                  role="switch"
+                  aria-checked={verifiedOnly}
+                  onClick={() => setVerifiedOnly((v) => !v)}
+                  className="flex items-center gap-3 w-full group"
+                >
+                  <div className={`relative inline-flex h-5 w-9 shrink-0 rounded-full border-2 border-transparent transition-colors duration-200 ${verifiedOnly ? "bg-primary" : "bg-muted"}`}>
+                    <span className={`pointer-events-none inline-block h-4 w-4 transform rounded-full bg-white shadow transition-transform duration-200 ${verifiedOnly ? "translate-x-4" : "translate-x-0"}`} />
+                  </div>
+                  <span className="text-sm text-foreground group-hover:text-primary transition-colors flex items-center gap-1.5">
+                    <ShieldCheck className="h-3.5 w-3.5 text-emerald-500 shrink-0" />
+                    {t.verifiedLabel}
+                  </span>
+                </button>
+              </div>
+
+              <div className="border-t border-border/60" />
+
               {/* Category */}
               <div>
-                <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wide mb-2.5">
+                <p className="text-[10px] font-semibold text-muted-foreground/70 uppercase tracking-widest mb-2">
                   {t.categoryLabel}
                 </p>
                 <select
@@ -273,9 +486,11 @@ function ServicesContent() {
                 </select>
               </div>
 
+              <div className="border-t border-border/60" />
+
               {/* Price range */}
               <div>
-                <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wide mb-2.5">
+                <p className="text-[10px] font-semibold text-muted-foreground/70 uppercase tracking-widest mb-2">
                   {t.priceLabel}
                 </p>
                 <div className="flex items-center gap-2">
@@ -299,9 +514,11 @@ function ServicesContent() {
                 </div>
               </div>
 
+              <div className="border-t border-border/60" />
+
               {/* Delivery */}
               <div>
-                <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wide mb-2.5">
+                <p className="text-[10px] font-semibold text-muted-foreground/70 uppercase tracking-widest mb-2">
                   {t.deliveryLabel}
                 </p>
                 <div className="space-y-1.5">
@@ -311,8 +528,8 @@ function ServicesContent() {
                         type="radio"
                         name="delivery"
                         value={o.value}
-                        checked={maxDelivery === o.value}
-                        onChange={() => setMaxDelivery(o.value)}
+                        checked={deliveryFilter === o.value}
+                        onChange={() => setDeliveryFilter(o.value)}
                         className="accent-primary shrink-0"
                       />
                       <span className="text-sm text-foreground group-hover:text-primary transition-colors">
@@ -323,9 +540,11 @@ function ServicesContent() {
                 </div>
               </div>
 
+              <div className="border-t border-border/60" />
+
               {/* Min rating */}
               <div>
-                <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wide mb-2.5">
+                <p className="text-[10px] font-semibold text-muted-foreground/70 uppercase tracking-widest mb-2">
                   {t.ratingLabel}
                 </p>
                 <div className="flex flex-wrap gap-1.5">
@@ -363,7 +582,8 @@ function ServicesContent() {
 
               {/* Sort (mobile only) */}
               <div className="sm:hidden">
-                <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wide mb-2.5">
+                <div className="border-t border-border/60 mb-4" />
+                <p className="text-[10px] font-semibold text-muted-foreground/70 uppercase tracking-widest mb-2">
                   {t.sortLabel}
                 </p>
                 <select
@@ -379,14 +599,88 @@ function ServicesContent() {
             </div>
           </aside>
 
-          {/* Results grid */}
+          {/* Results column */}
           <div className="flex-1 min-w-0">
+
+            {/* Search bar — scoped to results area width */}
+            <div className="sticky top-16 z-40 -mx-4 px-4 py-3 mb-5 flex gap-3 items-center bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/80 border-b border-border shadow-sm lg:static lg:mx-0 lg:px-0 lg:py-0 lg:mb-5 lg:bg-transparent lg:backdrop-blur-none lg:border-0 lg:shadow-none">
+              <div className="relative flex-1">
+                <Search className="absolute start-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                <Input
+                  placeholder={t.searchPlaceholder}
+                  value={search}
+                  onChange={(e) => setSearch(e.target.value)}
+                  className="ps-9"
+                />
+              </div>
+              <Button
+                variant="outline"
+                size="sm"
+                className="lg:hidden shrink-0 gap-2"
+                onClick={() => setFiltersOpen((v) => !v)}
+              >
+                <SlidersHorizontal className="h-4 w-4" />
+                {t.filtersBtn}
+                {hasFilters && <span className="h-2 w-2 rounded-full bg-primary" />}
+              </Button>
+            </div>
+
+            {/* Active filter chips */}
+            {hasFilters && (
+              <div className="flex flex-wrap items-center gap-2 mb-5">
+                {search && (
+                  <FilterChip label={`"${search}"`} onRemove={() => setSearch("")} />
+                )}
+                {selectedCities.map((city) => (
+                  <FilterChip key={city} label={city} onRemove={() => toggleCity(city)} />
+                ))}
+                {selectedLanguages.map((l) => (
+                  <FilterChip key={l} label={l} onRemove={() => toggleLanguage(l)} />
+                ))}
+                {verifiedOnly && (
+                  <FilterChip label={t.verifiedChip} onRemove={() => setVerifiedOnly(false)} />
+                )}
+                {(selectedCategory || selectedGroup) && (
+                  <FilterChip
+                    label={
+                      selectedCategory
+                        ? getCategoryLabel(selectedCategory, lang)
+                        : (CATEGORY_GROUPS.find((g) => g.value === selectedGroup)?.label ?? selectedGroup)
+                    }
+                    onRemove={() => { setSelectedCategory(""); setSelectedGroup("") }}
+                  />
+                )}
+                {(minPrice || maxPrice) && (
+                  <FilterChip
+                    label={`${minPrice || "0"} — ${maxPrice || "∞"} MAD`}
+                    onRemove={() => { setMinPrice(""); setMaxPrice("") }}
+                  />
+                )}
+                {deliveryFilter && (
+                  <FilterChip label={activeDeliveryLabel} onRemove={() => setDeliveryFilter("")} />
+                )}
+                {minRating > 0 && (
+                  <FilterChip
+                    label={minRating === 5 ? t.starsOnly : t.starsAndMore(minRating)}
+                    onRemove={() => setMinRating(0)}
+                  />
+                )}
+                <button
+                  onClick={resetFilters}
+                  className="text-xs text-muted-foreground hover:text-primary hover:underline underline-offset-4 ms-1"
+                >
+                  {t.resetAll}
+                </button>
+              </div>
+            )}
+
             {loading ? (
-              <div className="flex items-center justify-center py-24">
-                <Loader2 className="h-8 w-8 animate-spin text-primary" />
+              <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-6">
+                {Array.from({ length: 6 }).map((_, i) => <ServiceCardSkeleton key={i} />)}
               </div>
             ) : filtered.length === 0 ? (
-              <div className="text-center py-24">
+              <div className="text-center py-24 animate-fadeIn">
+                <Search className="h-12 w-12 text-muted-foreground/30 mx-auto mb-4 animate-float" />
                 <p className="text-muted-foreground text-lg mb-2">{t.noResults}</p>
                 {hasFilters && (
                   <button onClick={resetFilters} className="text-sm text-primary hover:underline underline-offset-4">
@@ -396,11 +690,54 @@ function ServicesContent() {
               </div>
             ) : (
               <>
-                <p className="text-sm text-muted-foreground mb-5">{t.servicesFound(filtered.length)}</p>
-                <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-5">
+                <div className="flex items-center justify-between mb-5 gap-3 flex-wrap">
+                  <p className="text-foreground font-bold text-base">
+                    <span className="text-primary font-extrabold text-xl me-1">{filtered.length}</span>
+                    {t.servicesFound(filtered.length).replace(/^\d+\s?/, "")}
+                  </p>
+                  <select
+                    value={sortBy}
+                    onChange={(e) => setSortBy(e.target.value)}
+                    className="h-9 rounded-lg border border-input bg-background px-3 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 shrink-0"
+                  >
+                    {SORT_OPTIONS.map((o) => (
+                      <option key={o.value} value={o.value}>{o.label}</option>
+                    ))}
+                  </select>
+                </div>
+                <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-6">
                   {filtered.map((service) => (
-                    <ServiceCard key={service.id} service={service} t={t} lang={lang} />
+                    <ServiceCard
+                      key={service.id}
+                      service={service}
+                      t={t}
+                      lang={lang}
+                      isFavorited={favoriteIds.has(service.id)}
+                      userId={userId}
+                      onFavoriteToggle={handleFavoriteToggle}
+                    />
                   ))}
+                </div>
+
+                {/* Load more */}
+                <div className="mt-10 flex flex-col items-center gap-2">
+                  {hasMore ? (
+                    <Button
+                      variant="outline"
+                      size="lg"
+                      onClick={handleLoadMore}
+                      disabled={loadingMore}
+                      className="min-w-[160px]"
+                    >
+                      {loadingMore ? (
+                        <Loader2 className="h-4 w-4 animate-spin" />
+                      ) : (
+                        t.loadMore
+                      )}
+                    </Button>
+                  ) : (
+                    <p className="text-sm text-muted-foreground text-center">{t.allLoaded}</p>
+                  )}
                 </div>
               </>
             )}
@@ -408,125 +745,5 @@ function ServicesContent() {
         </div>
       </div>
     </>
-  )
-}
-
-function StarDisplay({ rating }: { rating: number }) {
-  const rounded = Math.round(rating)
-  return (
-    <div className="flex gap-0.5">
-      {[1, 2, 3, 4, 5].map((n) => (
-        <Star
-          key={n}
-          className={`h-3 w-3 ${
-            n <= rounded ? "fill-amber-400 text-amber-400" : "fill-muted-foreground/10 text-muted-foreground/25"
-          }`}
-        />
-      ))}
-    </div>
-  )
-}
-
-function ServiceCard({ service, t, lang }: { service: ServiceWithProfile; t: typeof translations["fr"]["services"]; lang: "fr" | "ar" }) {
-  const profile = service.profiles
-  const categoryColor = CATEGORY_COLORS[service.category] ?? "bg-gray-100 text-gray-700"
-  const categoryLabel = getCategoryLabel(service.category, lang)
-  const ini = profile?.full_name
-    ? profile.full_name.split(" ").map((n) => n[0]).slice(0, 2).join("").toUpperCase()
-    : "?"
-
-  const coverImage = service.images?.[0] ?? null
-  const groupValue = service.category_group ?? getGroupForCategory(service.category) ?? ""
-  const groupIdx   = CATEGORY_GROUPS.findIndex((g) => g.value === groupValue)
-  const GroupIcon  = GROUP_ICONS[groupIdx] ?? Palette
-  const gradient   = GROUP_GRADIENTS[groupValue] ?? { bg: "from-gray-50 to-gray-100", icon: "text-gray-400" }
-
-  return (
-    <div className="group flex flex-col rounded-2xl border border-border bg-card shadow-sm hover:shadow-md transition-shadow overflow-hidden">
-
-      {/* ── Cover image 16:9 ── */}
-      <Link href={`/services/${service.id}`} className="relative block aspect-video overflow-hidden bg-muted">
-        {coverImage ? (
-          // eslint-disable-next-line @next/next/no-img-element
-          <img
-            src={coverImage}
-            alt={service.title}
-            className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-105"
-          />
-        ) : (
-          <div className={`w-full h-full bg-gradient-to-br ${gradient.bg} flex items-center justify-center`}>
-            <GroupIcon className={`h-12 w-12 opacity-40 ${gradient.icon}`} />
-          </div>
-        )}
-      </Link>
-
-      {/* ── Category badge ── */}
-      <div className="px-5 pt-4 pb-0">
-        <span className={`inline-block rounded-full px-2.5 py-0.5 text-xs font-medium ${categoryColor}`}>
-          {categoryLabel}
-        </span>
-      </div>
-
-      <div className="flex flex-col flex-1 p-5 pt-3 gap-3">
-        <Link href={`/services/${service.id}`}>
-          <h2 className="text-base font-semibold text-foreground leading-snug line-clamp-2 group-hover:text-primary transition-colors">
-            {service.title}
-          </h2>
-        </Link>
-        <p className="text-sm text-muted-foreground line-clamp-3 flex-1">{service.description}</p>
-
-        {service.avgRating !== null && (
-          <div className="flex items-center gap-1.5">
-            <StarDisplay rating={service.avgRating} />
-            <span className="text-xs text-muted-foreground">
-              {service.avgRating.toFixed(1)}
-              <span className="ms-1">({service.reviewCount} {t.reviews})</span>
-            </span>
-          </div>
-        )}
-
-        <Link
-          href={`/profil/${service.user_id}`}
-          onClick={(e) => e.stopPropagation()}
-          className="flex items-center gap-2 pt-1 hover:opacity-80 transition-opacity"
-        >
-          {profile?.avatar_url ? (
-            // eslint-disable-next-line @next/next/no-img-element
-            <img
-              src={profile.avatar_url}
-              alt={profile.full_name ?? "Freelance"}
-              className="h-7 w-7 rounded-full object-cover shrink-0"
-            />
-          ) : (
-            <div className="h-7 w-7 rounded-full bg-primary/10 flex items-center justify-center shrink-0">
-              <span className="text-[10px] font-bold text-primary">{ini}</span>
-            </div>
-          )}
-          <div className="min-w-0">
-            <p className="text-xs font-medium text-foreground truncate">{profile?.full_name ?? "Freelance"}</p>
-            {profile?.job_title && <p className="text-xs text-muted-foreground truncate">{profile.job_title}</p>}
-          </div>
-        </Link>
-      </div>
-
-      <div className="flex items-center justify-between border-t border-border px-5 py-3 bg-muted/30">
-        <div className="flex items-center gap-1.5 text-sm text-muted-foreground">
-          <Clock className="h-3.5 w-3.5" />
-          <span>{service.delivery_days} {service.delivery_days > 1 ? t.days : t.day}</span>
-        </div>
-        <div className="flex items-center gap-3">
-          <span className="text-base font-bold text-primary">
-            {formatPrice(service.price, lang)} MAD
-          </span>
-          <Button
-            asChild
-            size="sm"
-            className="bg-primary hover:bg-primary/90 text-primary-foreground font-semibold text-xs h-7 px-3"
-          >
-            <Link href={`/paiement/${service.id}`}>{t.contact}</Link>
-          </Button>
-        </div>
-      </div>
-    </div>
   )
 }

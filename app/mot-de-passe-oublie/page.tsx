@@ -64,7 +64,7 @@ export default function MotDePasseOubliePage() {
             </p>
             <Button asChild variant="outline" className="w-full">
               <Link href="/connexion">
-                <ArrowLeft className="h-4 w-4 me-2" />
+                <ArrowLeft className="h-4 w-4 me-2 rtl:rotate-180" />
                 Retour à la connexion
               </Link>
             </Button>
@@ -130,7 +130,7 @@ export default function MotDePasseOubliePage() {
               href="/connexion"
               className="text-primary font-medium hover:underline inline-flex items-center gap-1"
             >
-              <ArrowLeft className="h-3.5 w-3.5" />
+              <ArrowLeft className="h-3.5 w-3.5 rtl:rotate-180" />
               Retour à la connexion
             </Link>
           </p>

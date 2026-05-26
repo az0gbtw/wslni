@@ -1,12 +1,21 @@
 import type { Metadata, Viewport } from 'next'
-import { Plus_Jakarta_Sans, Cairo, Libre_Baskerville, Cormorant_Garamond } from 'next/font/google'
+import { Plus_Jakarta_Sans, Inter, Cairo } from 'next/font/google'
 import { Analytics } from '@vercel/analytics/next'
 import { Providers } from '@/components/providers'
+import { PageTransition } from '@/components/page-transition'
 import './globals.css'
 
-const plusJakartaSans = Plus_Jakarta_Sans({
-  subsets: ["latin"],
+const jakarta = Plus_Jakarta_Sans({
+  subsets: ['latin'],
+  weight: ['600', '700', '800'],
   variable: '--font-jakarta',
+  display: 'swap',
+})
+
+const inter = Inter({
+  subsets: ['latin'],
+  weight: ['400', '500', '600'],
+  variable: '--font-inter',
   display: 'swap',
 })
 
@@ -16,26 +25,24 @@ const cairo = Cairo({
   display: 'swap',
 })
 
-const cormorantGaramond = Cormorant_Garamond({
-  subsets: ["latin"],
-  variable: '--font-cormorant',
-  display: 'swap',
-  weight: ['400', '600', '700'],
-})
-
-const libreBaskerville = Libre_Baskerville({
-  subsets: ["latin"],
-  variable: '--font-baskerville',
-  display: 'swap',
-  weight: ['400', '700'],
-  style: ['normal', 'italic'],
-})
-
 export const metadata: Metadata = {
   title: 'Wslni.ma | Marketplace Freelance Marocain',
   description: 'Trouve le talent qu\'il te faut. Des milliers de freelances qualifiés au Maroc, prêts à travailler sur ton projet.',
   generator: 'v0.app',
   keywords: ['freelance', 'Maroc', 'marketplace', 'travail', 'talent', 'design', 'développement', 'services'],
+  openGraph: {
+    title: 'Wslni.ma | Marketplace Freelance Marocain',
+    description: 'Trouve le talent qu\'il te faut. Des milliers de freelances qualifiés au Maroc, prêts à travailler sur ton projet.',
+    url: 'https://wslni.ma',
+    siteName: 'Wslni.ma',
+    locale: 'fr_MA',
+    type: 'website',
+  },
+  twitter: {
+    card: 'summary_large_image',
+    title: 'Wslni.ma | Marketplace Freelance Marocain',
+    description: 'Trouve le talent qu\'il te faut. Des milliers de freelances qualifiés au Maroc, prêts à travailler sur ton projet.',
+  },
   icons: {
     icon: [
       {
@@ -68,9 +75,11 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="fr" className="bg-background" suppressHydrationWarning>
-      <body className={`${plusJakartaSans.variable} ${cairo.variable} ${libreBaskerville.variable} ${cormorantGaramond.variable} font-sans antialiased`}>
+      <body className={`${jakarta.variable} ${inter.variable} ${cairo.variable} font-sans antialiased`}>
         <Providers>
-          {children}
+          <PageTransition>
+            {children}
+          </PageTransition>
         </Providers>
         {process.env.NODE_ENV === 'production' && <Analytics />}
       </body>
