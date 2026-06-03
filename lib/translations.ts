@@ -612,6 +612,13 @@ const fr = {
       mismatchError: "Les mots de passe ne correspondent pas.",
       tooShortError: "Le nouveau mot de passe doit contenir au moins 8 caractères.",
     },
+    exportData: {
+      sectionTitle: "Mes données",
+      sectionDesc: "Téléchargez une copie de toutes vos données : profil, services, commandes, messages, avis, notifications et favoris.",
+      btn: "Télécharger mes données",
+      downloading: "Préparation...",
+      errorMsg: "Erreur lors de l'export. Veuillez réessayer.",
+    },
     deleteAccount: {
       sectionTitle: "Zone de danger",
       sectionDesc: "La suppression de votre compte est irréversible. Toutes vos données — services, commandes, messages et avis — seront définitivement effacées.",
@@ -1229,6 +1236,13 @@ const ar: typeof fr = {
       errorMsg: "خطأ أثناء تغيير كلمة المرور. تحقق من كلمة المرور الحالية.",
       mismatchError: "كلمات المرور غير متطابقة.",
       tooShortError: "يجب أن تحتوي كلمة المرور الجديدة على 8 أحرف على الأقل.",
+    },
+    exportData: {
+      sectionTitle: "بياناتي",
+      sectionDesc: "نزّل نسخة من جميع بياناتك: الملف الشخصي والخدمات والطلبات والرسائل والتقييمات والإشعارات والمفضلة.",
+      btn: "تنزيل بياناتي",
+      downloading: "جاري التحضير...",
+      errorMsg: "خطأ أثناء التصدير. يرجى المحاولة مرة أخرى.",
     },
     deleteAccount: {
       sectionTitle: "منطقة الخطر",

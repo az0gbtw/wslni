@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useRef } from "react"
 import { useRouter } from "next/navigation"
-import { Eye, EyeOff, Loader2, Plus, X, Save, ShieldCheck, ShieldAlert, Shield, Upload, AlertTriangle } from "lucide-react"
+import { Eye, EyeOff, Loader2, Plus, X, Save, ShieldCheck, ShieldAlert, Shield, Upload, AlertTriangle, Download } from "lucide-react"
 import type { User } from "@supabase/supabase-js"
 import { createClient } from "@/lib/supabase/client"
 import { useLanguage } from "@/lib/language-context"
@@ -66,7 +66,10 @@ export default function ParametresPage() {
   const [showConfirm, setShowConfirm] = useState(false)
   const [savingPassword, setSavingPassword] = useState(false)
 
-  // Section 5: Delete account
+  // Section 5: Export data
+  const [downloadingData, setDownloadingData] = useState(false)
+
+  // Section 6: Delete account
   const [showDeleteModal, setShowDeleteModal] = useState(false)
   const [deleteEmailInput, setDeleteEmailInput] = useState("")
   const [deleting, setDeleting] = useState(false)
@@ -237,6 +240,25 @@ export default function ParametresPage() {
 
     setCinStatus("pending")
     toast({ title: "CIN envoyée — vérification en cours." })
+  }
+
+  async function handleExportData() {
+    setDownloadingData(true)
+    try {
+      const res = await fetch("/api/user/export-data")
+      if (!res.ok) throw new Error("export failed")
+      const blob = await res.blob()
+      const url = URL.createObjectURL(blob)
+      const a = document.createElement("a")
+      a.href = url
+      a.download = "wslni-mes-donnees.json"
+      a.click()
+      URL.revokeObjectURL(url)
+    } catch {
+      toast({ title: t.exportData.errorMsg, variant: "destructive" })
+    } finally {
+      setDownloadingData(false)
+    }
   }
 
   async function handleDeleteAccount() {
@@ -664,7 +686,27 @@ export default function ParametresPage() {
               </div>
             </section>
 
-            {/* Section 5: Danger zone */}
+            {/* Section 5: Export data */}
+            <section className="rounded-2xl border border-border/40 bg-card p-6 shadow-sm">
+              <div className="flex items-center gap-2 mb-1">
+                <Download className="h-4 w-4 text-muted-foreground shrink-0" />
+                <h2 className="text-base font-semibold text-foreground">{t.exportData.sectionTitle}</h2>
+              </div>
+              <p className="text-sm text-muted-foreground mb-5">{t.exportData.sectionDesc}</p>
+              <Button
+                variant="outline"
+                onClick={handleExportData}
+                disabled={downloadingData}
+              >
+                {downloadingData ? (
+                  <><Loader2 className="h-4 w-4 animate-spin" />{t.exportData.downloading}</>
+                ) : (
+                  <><Download className="h-4 w-4" />{t.exportData.btn}</>
+                )}
+              </Button>
+            </section>
+
+            {/* Section 6: Danger zone */}
             <section className="rounded-2xl border border-destructive/40 bg-destructive/5 p-6">
               <div className="flex items-center gap-2 mb-1">
                 <AlertTriangle className="h-4 w-4 text-destructive shrink-0" />
