@@ -60,10 +60,10 @@ function StatNumber({ value, label }: { value: number; label: string }) {
   const { count, containerRef } = useCountUp(value)
   return (
     <div ref={containerRef}>
-      <div className="text-2xl font-black text-white tabular-nums leading-none">
+      <div className="text-3xl font-black text-white tabular-nums leading-none">
         {count.toLocaleString()}
       </div>
-      <div className="text-sm text-white/70 mt-1">{label}</div>
+      <div className="text-xs text-white/80 mt-1">{label}</div>
     </div>
   )
 }
@@ -95,11 +95,26 @@ export function HeroSection({ freelancerCount, serviceCount }: HeroSectionProps)
         <rect width="100%" height="100%" fill="url(#zellige-hero)" />
       </svg>
 
+      {/* ── Geometric depth — large abstract circles at low opacity ── */}
+      <svg
+        className="absolute inset-0 w-full h-full pointer-events-none select-none"
+        xmlns="http://www.w3.org/2000/svg"
+        aria-hidden="true"
+      >
+        <circle cx="90%" cy="-8%" r="380" fill="none" stroke="white" strokeWidth="1.5" opacity="0.10" />
+        <circle cx="-1%" cy="96%" r="300" fill="none" stroke="white" strokeWidth="1.5" opacity="0.11" />
+        <circle cx="66%" cy="72%" r="150" fill="none" stroke="white" strokeWidth="1" opacity="0.08" />
+      </svg>
+
       {/* ── Content — strict vertical flow ── */}
       <div className="relative z-10 w-full max-w-4xl mx-auto px-4 sm:px-6 flex flex-col items-start text-start">
 
-        {/* 1. Understated tagline replacing the badge */}
-        <p className="text-sm text-white/70">{lang === "ar" ? "صُنع للمغرب 🇲🇦" : "Fait pour le Maroc 🇲🇦"}</p>
+        {/* 1. Badge pill */}
+        <div className="inline-flex items-center border border-white/30 rounded-full px-3 py-1 bg-white/[0.07]">
+          <span className="text-xs font-semibold text-white tracking-wider">
+            {lang === "ar" ? "صُنع للمغرب" : "Fait pour le Maroc"}
+          </span>
+        </div>
 
         {/* 2. H1 — word-by-word slide-up */}
         <h1 className="text-5xl sm:text-7xl font-black text-white leading-tight tracking-tight mt-6">
@@ -136,7 +151,7 @@ export function HeroSection({ freelancerCount, serviceCount }: HeroSectionProps)
 
         {/* 4. Search bar */}
         <form action="/services" method="get" className="mt-8 w-full max-w-2xl">
-          <div className="hero-search-wrapper flex bg-white rounded-2xl shadow-xl overflow-hidden">
+          <div className="hero-search-wrapper flex bg-white rounded-2xl overflow-hidden">
             <input
               type="text"
               name="q"
@@ -146,7 +161,7 @@ export function HeroSection({ freelancerCount, serviceCount }: HeroSectionProps)
             <button
               type="submit"
               aria-label={lang === "ar" ? "بحث" : "Rechercher"}
-              className="flex items-center gap-2 bg-red-700 hover:bg-red-800 text-white font-bold px-8 transition-colors shrink-0"
+              className="flex items-center gap-2 hero-search-btn text-white font-bold px-8 shrink-0"
             >
               <Search className="h-4 w-4 shrink-0" aria-hidden="true" />
               <span className="hidden sm:inline">{lang === "ar" ? "بحث" : "Rechercher"}</span>
@@ -178,7 +193,7 @@ export function HeroSection({ freelancerCount, serviceCount }: HeroSectionProps)
             <Link
               key={chip.href}
               href={chip.href}
-              className="hero-pill bg-white/15 hover:bg-white/25 text-white border border-white/20 rounded-lg px-4 py-2 text-sm font-medium transition-colors"
+              className="hero-pill bg-white/15 hover:bg-white/25 text-white border border-white/25 rounded-lg px-4 py-2 text-sm font-medium transition-colors"
               style={{ animationDelay: `${i * 75}ms` }}
             >
               {lang === "ar" ? chip.ar : chip.fr}

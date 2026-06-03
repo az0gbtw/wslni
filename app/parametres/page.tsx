@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useRef } from "react"
 import { useRouter } from "next/navigation"
-import { Eye, EyeOff, Loader2, Plus, X, Save, ShieldCheck, ShieldAlert, Shield, Upload } from "lucide-react"
+import { Eye, EyeOff, Loader2, Plus, X, Save, ShieldCheck, ShieldAlert, Shield, Upload, AlertTriangle } from "lucide-react"
 import type { User } from "@supabase/supabase-js"
 import { createClient } from "@/lib/supabase/client"
 import { useLanguage } from "@/lib/language-context"
@@ -12,6 +12,7 @@ import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Textarea } from "@/components/ui/textarea"
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog"
 import { useToast } from "@/hooks/use-toast"
 
 type CinStatus = "none" | "pending" | "verified" | "rejected"
@@ -64,6 +65,11 @@ export default function ParametresPage() {
   const [showNew, setShowNew] = useState(false)
   const [showConfirm, setShowConfirm] = useState(false)
   const [savingPassword, setSavingPassword] = useState(false)
+
+  // Section 5: Delete account
+  const [showDeleteModal, setShowDeleteModal] = useState(false)
+  const [deleteEmailInput, setDeleteEmailInput] = useState("")
+  const [deleting, setDeleting] = useState(false)
 
   useEffect(() => {
     const supabase = createClient()
@@ -231,6 +237,27 @@ export default function ParametresPage() {
 
     setCinStatus("pending")
     toast({ title: "CIN envoyée — vérification en cours." })
+  }
+
+  async function handleDeleteAccount() {
+    if (!user || deleteEmailInput !== user.email || deleting) return
+    setDeleting(true)
+
+    const res = await fetch("/api/user/delete-account", {
+      method: "DELETE",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ email: deleteEmailInput }),
+    })
+
+    if (!res.ok) {
+      setDeleting(false)
+      toast({ title: t.deleteAccount.errorMsg, variant: "destructive" })
+      return
+    }
+
+    const supabase = createClient()
+    await supabase.auth.signOut()
+    router.replace("/")
   }
 
   if (loading) {
@@ -637,9 +664,75 @@ export default function ParametresPage() {
               </div>
             </section>
 
+            {/* Section 5: Danger zone */}
+            <section className="rounded-2xl border border-destructive/40 bg-destructive/5 p-6">
+              <div className="flex items-center gap-2 mb-1">
+                <AlertTriangle className="h-4 w-4 text-destructive shrink-0" />
+                <h2 className="text-base font-semibold text-destructive">{t.deleteAccount.sectionTitle}</h2>
+              </div>
+              <p className="text-sm text-muted-foreground mb-5">{t.deleteAccount.sectionDesc}</p>
+              <Button
+                variant="destructive"
+                onClick={() => { setDeleteEmailInput(""); setShowDeleteModal(true) }}
+              >
+                {t.deleteAccount.trigger}
+              </Button>
+            </section>
+
           </div>
         </div>
       </main>
+
+      {/* Delete account confirmation modal */}
+      <Dialog open={showDeleteModal} onOpenChange={(open) => { if (!deleting) setShowDeleteModal(open) }}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2 text-destructive">
+              <AlertTriangle className="h-5 w-5 shrink-0" />
+              {t.deleteAccount.modalTitle}
+            </DialogTitle>
+            <DialogDescription>{t.deleteAccount.modalDesc}</DialogDescription>
+          </DialogHeader>
+
+          <div className="space-y-4 pt-2">
+            <div className="space-y-1.5">
+              <Label htmlFor="delete-email-confirm">{t.deleteAccount.emailLabel}</Label>
+              <Input
+                id="delete-email-confirm"
+                type="email"
+                value={deleteEmailInput}
+                onChange={(e) => setDeleteEmailInput(e.target.value)}
+                placeholder={user?.email ?? ""}
+                disabled={deleting}
+                autoComplete="off"
+              />
+            </div>
+
+            <div className="flex flex-col-reverse sm:flex-row gap-2 pt-1">
+              <Button
+                variant="outline"
+                className="flex-1"
+                onClick={() => setShowDeleteModal(false)}
+                disabled={deleting}
+              >
+                {t.deleteAccount.cancelBtn}
+              </Button>
+              <Button
+                variant="destructive"
+                className="flex-1"
+                onClick={handleDeleteAccount}
+                disabled={deleting || deleteEmailInput !== user?.email}
+              >
+                {deleting ? (
+                  <><Loader2 className="h-4 w-4 animate-spin" />{t.deleteAccount.deleting}</>
+                ) : (
+                  t.deleteAccount.confirmBtn
+                )}
+              </Button>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
     </>
   )
 }

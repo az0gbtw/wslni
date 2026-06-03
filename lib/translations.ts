@@ -612,6 +612,18 @@ const fr = {
       mismatchError: "Les mots de passe ne correspondent pas.",
       tooShortError: "Le nouveau mot de passe doit contenir au moins 8 caractères.",
     },
+    deleteAccount: {
+      sectionTitle: "Zone de danger",
+      sectionDesc: "La suppression de votre compte est irréversible. Toutes vos données — services, commandes, messages et avis — seront définitivement effacées.",
+      trigger: "Supprimer mon compte",
+      modalTitle: "Supprimer votre compte",
+      modalDesc: "Cette action est irréversible. Pour confirmer, saisissez votre adresse e-mail ci-dessous.",
+      emailLabel: "Votre adresse e-mail",
+      confirmBtn: "Supprimer définitivement",
+      deleting: "Suppression...",
+      cancelBtn: "Annuler",
+      errorMsg: "La suppression du compte a échoué. Veuillez réessayer.",
+    },
   },
 }
 
@@ -1217,6 +1229,18 @@ const ar: typeof fr = {
       errorMsg: "خطأ أثناء تغيير كلمة المرور. تحقق من كلمة المرور الحالية.",
       mismatchError: "كلمات المرور غير متطابقة.",
       tooShortError: "يجب أن تحتوي كلمة المرور الجديدة على 8 أحرف على الأقل.",
+    },
+    deleteAccount: {
+      sectionTitle: "منطقة الخطر",
+      sectionDesc: "حذف حسابك أمر لا رجعة فيه. سيتم مسح جميع بياناتك — الخدمات والطلبات والرسائل والتقييمات — نهائياً.",
+      trigger: "حذف حسابي",
+      modalTitle: "حذف حسابك",
+      modalDesc: "هذا الإجراء لا رجعة فيه. للتأكيد، أدخل بريدك الإلكتروني أدناه.",
+      emailLabel: "بريدك الإلكتروني",
+      confirmBtn: "حذف نهائياً",
+      deleting: "جاري الحذف...",
+      cancelBtn: "إلغاء",
+      errorMsg: "فشل حذف الحساب. يرجى المحاولة مرة أخرى.",
     },
   },
 }
