@@ -9,6 +9,7 @@ import {
 } from "lucide-react"
 import type { User as SupabaseUser } from "@supabase/supabase-js"
 import { createClient } from "@/lib/supabase/client"
+import { toast } from "sonner"
 import { useLanguage } from "@/lib/language-context"
 import { translations } from "@/lib/translations"
 import { formatDate as fmtDate } from "@/lib/utils"
@@ -223,11 +224,19 @@ export default function CommandesPage() {
       if (!user) { router.replace("/connexion"); return }
       setUser(user)
 
-      const [{ data: ordersData }, { data: reviewsData }] = await Promise.all([
+      const [{ data: ordersData, error: ordersError }, { data: reviewsData, error: reviewsError }] = await Promise.all([
         supabase.from("orders").select("*").eq("client_id", user.id)
           .order("created_at", { ascending: false }),
         supabase.from("reviews").select("order_id").eq("client_id", user.id),
       ])
+
+      if (ordersError) {
+        console.error("[commandes] orders fetch:", ordersError.message)
+        toast.error("Impossible de charger vos commandes.")
+        setLoading(false)
+        return
+      }
+      if (reviewsError) console.error("[commandes] reviews fetch:", reviewsError.message)
 
       const list = (ordersData as Order[]) ?? []
       setOrders(list)
@@ -235,8 +244,9 @@ export default function CommandesPage() {
 
       const freelancerIds = [...new Set(list.map((o) => o.freelancer_id))]
       if (freelancerIds.length > 0) {
-        const { data: profilesData } = await supabase
+        const { data: profilesData, error: profilesError } = await supabase
           .from("profiles").select("id, full_name, avatar_url").in("id", freelancerIds)
+        if (profilesError) console.error("[commandes] profiles fetch:", profilesError.message)
         const map: Record<string, ProfileSnap> = {}
         profilesData?.forEach((p: { id: string; full_name: string | null; avatar_url: string | null }) => {
           map[p.id] = { full_name: p.full_name, avatar_url: p.avatar_url }
@@ -253,6 +263,9 @@ export default function CommandesPage() {
     const { error } = await supabase.from("orders").update({ status: "terminé" }).eq("id", orderId)
     if (!error) {
       setOrders((prev) => prev.map((o) => (o.id === orderId ? { ...o, status: "terminé" } : o)))
+    } else {
+      console.error("[commandes] confirm delivery:", error.message)
+      toast.error("Impossible de confirmer la livraison. Réessayez.")
     }
   }
 
@@ -267,7 +280,12 @@ export default function CommandesPage() {
       rating: reviewRating,
       comment: reviewComment.trim() || null,
     })
-    if (!error) setReviewedOrderIds((prev) => new Set([...prev, reviewDialog.id]))
+    if (!error) {
+      setReviewedOrderIds((prev) => new Set([...prev, reviewDialog.id]))
+    } else {
+      console.error("[commandes] submit review:", error.message)
+      toast.error("Impossible de soumettre l'avis. Réessayez.")
+    }
     setReviewDialog(null)
     setReviewRating(0)
     setReviewComment("")

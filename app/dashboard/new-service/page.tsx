@@ -103,17 +103,29 @@ export default function NewServicePage() {
   /* auth – middleware already protects /dashboard/:path* but we still need the user id */
   useEffect(() => {
     ;(async () => {
-      const { data } = await supabase.auth.getUser()
+      const { data, error: authError } = await supabase.auth.getUser()
+      if (authError) {
+        console.error("[new-service] auth:", authError.message)
+        toast.error("Impossible de vérifier votre session.")
+        return
+      }
       if (!data.user) {
         router.replace("/inscription?redirect=/dashboard/new-service")
         return
       }
 
-      const { data: profileData } = await supabase
+      const { data: profileData, error: profileFetchError } = await supabase
         .from("profiles")
         .select("full_name, job_title, bio")
         .eq("id", data.user.id)
         .single()
+
+      if (profileFetchError) {
+        console.error("[new-service] profile fetch:", profileFetchError.message)
+        toast.error("Impossible de vérifier votre profil. Réessayez.")
+        setLoadingUser(false)
+        return
+      }
 
       const isComplete = !!(
         profileData?.full_name?.trim() &&

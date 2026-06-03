@@ -72,12 +72,16 @@ export function NotificationsBell({ user }: { user: User }) {
   const [bellRinging, setBellRinging] = useState(false)
 
   const fetchNotifications = useCallback(async () => {
-    const { data } = await supabase
+    const { data, error } = await supabase
       .from("notifications")
       .select("id, type, title, body, link, is_read, created_at")
       .eq("user_id", user.id)
       .order("created_at", { ascending: false })
       .limit(10)
+    if (error) {
+      console.error("[notifications] fetch:", error.message)
+      return
+    }
     if (data) {
       setNotifications(data as Notification[])
       setUnreadCount(data.filter((n) => !n.is_read).length)

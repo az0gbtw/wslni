@@ -11,6 +11,7 @@ import {
 } from "lucide-react"
 import type { User } from "@supabase/supabase-js"
 import { createClient } from "@/lib/supabase/client"
+import { toast } from "sonner"
 import { useLanguage } from "@/lib/language-context"
 import { translations } from "@/lib/translations"
 import { formatPrice } from "@/lib/utils"
@@ -117,7 +118,8 @@ export default function ProfilPage() {
     supabase.auth.getUser().then(async ({ data: { user } }) => {
       if (!user) { router.replace("/connexion"); return }
       setUser(user)
-      const { data } = await supabase.from("profiles").select("*").eq("id", user.id).single()
+      const { data, error } = await supabase.from("profiles").select("*").eq("id", user.id).single()
+      if (error) console.error("[profil] profile load:", error.message)
       const p: Profile = data ?? { id: user.id, ...EMPTY, full_name: (user.user_metadata?.full_name as string) ?? null }
       setProfile(p)
       setForm(formFromProfile(p))
@@ -141,6 +143,9 @@ export default function ProfilPage() {
     if (!error) {
       const { data: { publicUrl } } = supabase.storage.from("avatars").getPublicUrl(path)
       setForm((f) => ({ ...f, avatar_url: `${publicUrl}?t=${Date.now()}` }))
+    } else {
+      console.error("[profil] avatar upload:", error.message)
+      toast.error("Impossible de télécharger la photo. Réessayez.")
     }
     setUploading(false)
     if (fileRef.current) fileRef.current.value = ""

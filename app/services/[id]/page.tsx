@@ -23,11 +23,12 @@ interface PricingTiers {
 export async function generateMetadata({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params
   const supabase = await createClient()
-  const { data: service } = await supabase
+  const { data: service, error: metaError } = await supabase
     .from("services")
     .select("title, description")
     .eq("id", id)
     .single()
+  if (metaError) console.error("[service-detail] metadata:", metaError.message)
   if (!service) return { title: "Service | Wslni.ma" }
   return {
     title: `${service.title} | Wslni.ma`,
@@ -45,24 +46,29 @@ export default async function ServiceDetailPage({
   const cookieStore = await cookies()
   const lang = (cookieStore.get("lang")?.value === "ar" ? "ar" : "fr") as "fr" | "ar"
 
-  const { data: service } = await supabase
+  const { data: service, error: serviceError } = await supabase
     .from("services")
     .select("*")
     .eq("id", id)
     .single()
 
+  if (serviceError) console.error("[service-detail] service:", serviceError.message)
   if (!service) return <div className="p-10 text-center text-muted-foreground">Service introuvable.</div>
 
-  const { data: profile } = await supabase
+  const { data: profile, error: profileError } = await supabase
     .from("profiles")
     .select("id, full_name, avatar_url, job_title, cin_status, created_at")
     .eq("id", service.user_id)
     .single()
 
-  const { data: reviewsData } = await supabase
+  if (profileError) console.error("[service-detail] profile:", profileError.message)
+
+  const { data: reviewsData, error: reviewsError } = await supabase
     .from("reviews")
     .select("rating")
     .eq("freelancer_id", profile?.id ?? "")
+
+  if (reviewsError) console.error("[service-detail] reviews:", reviewsError.message)
 
   const reviewCount = reviewsData?.length ?? 0
   const avgRating =

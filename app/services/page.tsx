@@ -9,6 +9,7 @@ import {
 } from "lucide-react"
 import { useSearchParams } from "next/navigation"
 import { createClient } from "@/lib/supabase/client"
+import { toast } from "sonner"
 import { CATEGORY_GROUPS, getCategoryLabel, getGroupForCategory } from "@/lib/categories"
 import { useLanguage } from "@/lib/language-context"
 import { translations } from "@/lib/translations"
@@ -135,10 +136,14 @@ function ServicesContent() {
   async function fetchProfiles(userIds: string[], existingMap: Record<string, any>) {
     const newIds = userIds.filter((id) => !existingMap[id])
     if (newIds.length === 0) return existingMap
-    const { data } = await supabase
+    const { data, error } = await supabase
       .from("profiles")
       .select("id, full_name, avatar_url, job_title, bio, city, languages, cin_status")
       .in("id", newIds)
+    if (error) {
+      console.error("[services] fetchProfiles:", error.message)
+      return existingMap
+    }
     const updated = { ...existingMap }
     ;(data ?? []).forEach((p: any) => { updated[p.id] = p })
     return updated
@@ -173,8 +178,8 @@ function ServicesContent() {
   useEffect(() => {
     async function fetchInitial() {
       const [
-        { data: servicesData },
-        { data: reviewsData },
+        { data: servicesData, error: servicesError },
+        { data: reviewsData, error: reviewsError },
         { data: { user } },
       ] = await Promise.all([
         supabase
@@ -186,6 +191,14 @@ function ServicesContent() {
         supabase.from("reviews").select("freelancer_id, rating"),
         supabase.auth.getUser(),
       ])
+
+      if (servicesError) {
+        console.error("[services] initial fetch:", servicesError.message)
+        toast.error("Impossible de charger les services.")
+        setLoading(false)
+        return
+      }
+      if (reviewsError) console.error("[services] reviews:", reviewsError.message)
 
       const newRatingMap: Record<string, { sum: number; count: number }> = {}
       reviewsData?.forEach(({ freelancer_id, rating }: { freelancer_id: string; rating: number }) => {
@@ -203,10 +216,11 @@ function ServicesContent() {
 
       if (user) {
         setUserId(user.id)
-        const { data: favData } = await supabase
+        const { data: favData, error: favError } = await supabase
           .from("favorites")
           .select("service_id")
           .eq("user_id", user.id)
+        if (favError) console.error("[services] favorites:", favError.message)
         setFavoriteIds(new Set((favData ?? []).map((f: any) => f.service_id as string)))
       }
 
@@ -217,12 +231,19 @@ function ServicesContent() {
 
   async function handleLoadMore() {
     setLoadingMore(true)
-    const { data: moreServices } = await supabase
+    const { data: moreServices, error: loadMoreError } = await supabase
       .from("services")
       .select("*")
       .eq("status", "published")
       .order("created_at", { ascending: false })
       .range(offset, offset + PAGE_SIZE - 1)
+
+    if (loadMoreError) {
+      console.error("[services] load more:", loadMoreError.message)
+      toast.error("Impossible de charger plus de services.")
+      setLoadingMore(false)
+      return
+    }
 
     const batch = moreServices ?? []
     const { enriched, updatedProfileMap } = await enrichServices(batch, ratingMap, profileMap)

@@ -13,10 +13,10 @@ export default async function HomePage() {
   const supabase = await createClient()
 
   const [
-    { count: freelancerCount },
-    { count: serviceCount },
-    { data: rawProfiles },
-    { data: rawServiceCategories },
+    { count: freelancerCount, error: e1 },
+    { count: serviceCount, error: e2 },
+    { data: rawProfiles, error: e3 },
+    { data: rawServiceCategories, error: e4 },
   ] = await Promise.all([
     supabase.from("profiles").select("*", { count: "exact", head: true }).neq("role", "admin"),
     supabase.from("services").select("*", { count: "exact", head: true }).eq("status", "published"),
@@ -31,6 +31,10 @@ export default async function HomePage() {
       .select("category, category_group")
       .eq("status", "published"),
   ])
+  if (e1) console.error("[home] profiles count:", e1.message)
+  if (e2) console.error("[home] services count:", e2.message)
+  if (e3) console.error("[home] profiles:", e3.message)
+  if (e4) console.error("[home] service categories:", e4.message)
 
   // Aggregate service counts per subcategory for the trending section
   const catCountMap = new Map<string, { count: number; group: string | null }>()
@@ -54,10 +58,12 @@ export default async function HomePage() {
   let reviews: { freelancer_id: string; rating: number }[] = []
   let servicePrices: { user_id: string; price: string }[] = []
   if (profileIds.length > 0) {
-    const [{ data: reviewData }, { data: priceData }] = await Promise.all([
+    const [{ data: reviewData, error: e5 }, { data: priceData, error: e6 }] = await Promise.all([
       supabase.from("reviews").select("freelancer_id, rating").in("freelancer_id", profileIds),
       supabase.from("services").select("user_id, price").in("user_id", profileIds).eq("status", "published"),
     ])
+    if (e5) console.error("[home] reviews:", e5.message)
+    if (e6) console.error("[home] prices:", e6.message)
     reviews = reviewData ?? []
     servicePrices = priceData ?? []
   }

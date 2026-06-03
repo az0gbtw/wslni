@@ -3,6 +3,7 @@
 import { useState, useEffect } from "react"
 import { useRouter } from "next/navigation"
 import { createClient } from "@/lib/supabase/client"
+import { toast } from "sonner"
 import { Navbar } from "@/components/navbar"
 import { Button } from "@/components/ui/button"
 import { Loader2, ShieldCheck, ShieldX, Eye, Shield } from "lucide-react"
@@ -33,11 +34,18 @@ export default function AdminVerificationsPage() {
     supabase.auth.getUser().then(async ({ data: { user } }) => {
       if (!user) { router.replace("/connexion"); return }
 
-      const { data: profile } = await supabase
+      const { data: profile, error: roleError } = await supabase
         .from("profiles")
         .select("role")
         .eq("id", user.id)
         .single()
+
+      if (roleError) {
+        console.error("[admin/verifications] role fetch:", roleError.message)
+        toast.error("Impossible de vérifier vos droits d'accès.")
+        setLoading(false)
+        return
+      }
 
       if (profile?.role !== "admin") {
         setUnauthorized(true)
@@ -45,11 +53,16 @@ export default function AdminVerificationsPage() {
         return
       }
 
-      const { data } = await supabase
+      const { data, error: fetchError } = await supabase
         .from("profiles")
         .select("id, full_name, cin_uploaded_at")
         .eq("cin_status", "pending")
         .order("cin_uploaded_at", { ascending: true })
+
+      if (fetchError) {
+        console.error("[admin/verifications] pending fetch:", fetchError.message)
+        toast.error("Impossible de charger les demandes de vérification.")
+      }
 
       setFreelancers(data ?? [])
       setLoading(false)
@@ -59,23 +72,38 @@ export default function AdminVerificationsPage() {
   async function handleViewCin(userId: string) {
     setViewLoading((v) => ({ ...v, [userId]: true }))
     setViewingUrl((v) => ({ ...v, [userId]: null }))
-    const res = await fetch(`/api/admin/cin/signed-url?userId=${userId}`)
-    const json = await res.json()
-    setViewingUrl((v) => ({ ...v, [userId]: json.url ?? null }))
+    try {
+      const res = await fetch(`/api/admin/cin/signed-url?userId=${userId}`)
+      if (!res.ok) {
+        toast.error("Impossible de charger l'image CIN.")
+        setViewLoading((v) => ({ ...v, [userId]: false }))
+        return
+      }
+      const json = await res.json()
+      setViewingUrl((v) => ({ ...v, [userId]: json.url ?? null }))
+      if (json.url) window.open(json.url, "_blank", "noopener,noreferrer")
+    } catch {
+      toast.error("Impossible de charger l'image CIN.")
+    }
     setViewLoading((v) => ({ ...v, [userId]: false }))
-    if (json.url) window.open(json.url, "_blank", "noopener,noreferrer")
   }
 
   async function handleAction(userId: string, action: "approve" | "reject") {
     setActionLoading((a) => ({ ...a, [userId]: action }))
-    const res = await fetch("/api/admin/cin", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ action, userId }),
-    })
-    if (res.ok) {
-      setDone((d) => ({ ...d, [userId]: action }))
-      setFreelancers((f) => f.filter((x) => x.id !== userId))
+    try {
+      const res = await fetch("/api/admin/cin", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ action, userId }),
+      })
+      if (res.ok) {
+        setDone((d) => ({ ...d, [userId]: action }))
+        setFreelancers((f) => f.filter((x) => x.id !== userId))
+      } else {
+        toast.error("L'action a échoué. Réessayez.")
+      }
+    } catch {
+      toast.error("Erreur réseau. Vérifiez votre connexion.")
     }
     setActionLoading((a) => ({ ...a, [userId]: null }))
   }

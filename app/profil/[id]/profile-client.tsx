@@ -133,14 +133,23 @@ export default function PublicProfilePage({ params }: { params: Promise<{ id: st
         .eq("user_id", id)
         .eq("status", "published")
         .order("created_at", { ascending: false }),
-    ]).then(async ([{ data: profileData }, { data: { user } }, { data: reviewsData }, { data: servicesData }]) => {
+    ]).then(async ([
+      { data: profileData, error: profileError },
+      { data: { user } },
+      { data: reviewsData, error: reviewsError },
+      { data: servicesData, error: servicesError },
+    ]) => {
+      if (profileError) console.error("[profil] profile:", profileError.message)
+      if (reviewsError) console.error("[profil] reviews:", reviewsError.message)
+      if (servicesError) console.error("[profil] services:", servicesError.message)
+
       setProfile(profileData ?? null)
       setViewer(user)
       setServices(servicesData ?? [])
 
       // Check if viewer has an active (non-cancelled) order with this freelancer
       if (user && user.id !== id) {
-        const { data: activeOrder } = await supabase
+        const { data: activeOrder, error: activeOrderError } = await supabase
           .from("orders")
           .select("id")
           .eq("client_id", user.id)
@@ -148,25 +157,28 @@ export default function PublicProfilePage({ params }: { params: Promise<{ id: st
           .neq("status", "annulé")
           .limit(1)
           .maybeSingle()
+        if (activeOrderError) console.error("[profil] active order:", activeOrderError.message)
         setHasActiveOrder(!!activeOrder)
       }
 
       if (user && servicesData && servicesData.length > 0) {
         const svcIds = servicesData.map((s: { id: string }) => s.id)
-        const { data: favData } = await supabase
+        const { data: favData, error: favError } = await supabase
           .from("favorites")
           .select("service_id")
           .eq("user_id", user.id)
           .in("service_id", svcIds)
+        if (favError) console.error("[profil] favorites:", favError.message)
         setFavoriteIds(new Set((favData ?? []).map((f: { service_id: string }) => f.service_id)))
       }
 
       if (reviewsData && reviewsData.length > 0) {
         const clientIds = [...new Set(reviewsData.map((r: { client_id: string }) => r.client_id))]
-        const { data: clientsData } = await supabase
+        const { data: clientsData, error: clientsError } = await supabase
           .from("profiles")
           .select("id, full_name, avatar_url")
           .in("id", clientIds)
+        if (clientsError) console.error("[profil] review clients:", clientsError.message)
         const clientsMap: Record<string, { full_name: string | null; avatar_url: string | null }> = {}
         clientsData?.forEach((c: { id: string; full_name: string | null; avatar_url: string | null }) => {
           clientsMap[c.id] = { full_name: c.full_name, avatar_url: c.avatar_url }

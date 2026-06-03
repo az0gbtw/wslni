@@ -140,12 +140,17 @@ function MessagesPageInner() {
   // ── Fetch conversations ─────────────────────────────────────────────────────
   const loadConversations = useCallback(
     async (uid: string) => {
-      const { data: convs } = await supabase
+      const { data: convs, error: convsError } = await supabase
         .from("conversations")
         .select("*")
         .or(`participant1_id.eq.${uid},participant2_id.eq.${uid}`)
         .order("last_message_at", { ascending: false })
 
+      if (convsError) {
+        console.error("[messages] conversations:", convsError.message)
+        toast({ title: "Impossible de charger les conversations." })
+        return
+      }
       if (!convs) return
 
       const otherIds = [
@@ -156,12 +161,14 @@ function MessagesPageInner() {
         ),
       ]
 
-      const { data: profiles } = otherIds.length
+      const { data: profiles, error: profilesError } = otherIds.length
         ? await supabase
             .from("profiles")
             .select("id, full_name, avatar_url, job_title")
             .in("id", otherIds)
-        : { data: [] }
+        : { data: [], error: null }
+
+      if (profilesError) console.error("[messages] conv profiles:", profilesError.message)
 
       const profileMap: Record<string, Profile> = {}
       for (const p of profiles ?? []) {
@@ -185,13 +192,14 @@ function MessagesPageInner() {
       setConversations(enriched)
 
       if (convs.length > 0) {
-        const { data: unread } = await supabase
+        const { data: unread, error: unreadError } = await supabase
           .from("messages")
           .select("conversation_id")
           .eq("is_read", false)
           .neq("sender_id", uid)
           .in("conversation_id", convs.map((c) => c.id))
 
+        if (unreadError) console.error("[messages] unread count:", unreadError.message)
         const counts: Record<string, number> = {}
         for (const m of unread ?? []) {
           counts[m.conversation_id] = (counts[m.conversation_id] ?? 0) + 1
@@ -199,7 +207,7 @@ function MessagesPageInner() {
         setUnreadCounts(counts)
       }
     },
-    [supabase]
+    [supabase, toast]
   )
 
   // ── Auth + initial load ─────────────────────────────────────────────────────
@@ -279,7 +287,13 @@ function MessagesPageInner() {
       .select("*")
       .eq("conversation_id", activeConvId)
       .order("created_at", { ascending: true })
-      .then(({ data }) => {
+      .then(({ data, error }) => {
+        if (error) {
+          console.error("[messages] load messages:", error.message)
+          toast({ title: "Impossible de charger les messages." })
+          setLoadingMsgs(false)
+          return
+        }
         setMessages((data as Message[]) ?? [])
         setLoadingMsgs(false)
 
@@ -307,7 +321,9 @@ function MessagesPageInner() {
       body: JSON.stringify({ conversation_id: activeConvId, content }),
     })
 
-    if (res.ok) {
+    if (!res.ok) {
+      toast({ title: "Impossible d'envoyer le message. Réessayez." })
+    } else {
       const { message: data, wasFiltered, crossMessageDetected, maskedMessageIds } = await res.json()
 
       if (crossMessageDetected) {
@@ -361,12 +377,17 @@ function MessagesPageInner() {
     }
     const timer = setTimeout(async () => {
       setSearchingUsers(true)
-      const { data } = await supabase
+      const { data, error } = await supabase
         .from("profiles")
         .select("id, full_name, avatar_url, job_title")
         .ilike("full_name", `%${userSearch}%`)
         .neq("id", user?.id ?? "")
         .limit(10)
+      if (error) {
+        console.error("[messages] user search:", error.message)
+        setSearchingUsers(false)
+        return
+      }
       setUserResults((data as Profile[]) ?? [])
       setSearchingUsers(false)
     }, 300)
@@ -379,24 +400,34 @@ function MessagesPageInner() {
     if (!user) return
     const [p1, p2] = [user.id, other.id].sort()
 
-    const { data: existing } = await supabase
+    const { data: existing, error: existingError } = await supabase
       .from("conversations")
       .select("id")
       .eq("participant1_id", p1)
       .eq("participant2_id", p2)
       .maybeSingle()
 
+    if (existingError) {
+      console.error("[messages] find conversation:", existingError.message)
+      toast({ title: "Impossible d'ouvrir la conversation." })
+      return
+    }
+
     let convId: string
     if (existing) {
       convId = existing.id
     } else {
-      const { data: created } = await supabase
+      const { data: created, error: createError } = await supabase
         .from("conversations")
         .insert({ participant1_id: p1, participant2_id: p2 })
         .select("id")
         .single()
 
-      if (!created) return
+      if (createError || !created) {
+        console.error("[messages] create conversation:", createError?.message)
+        toast({ title: "Impossible de créer la conversation." })
+        return
+      }
       convId = created.id
       await loadConversations(user.id)
     }

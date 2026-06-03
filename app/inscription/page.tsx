@@ -64,7 +64,10 @@ export default function InscriptionPage() {
     }
 
     if (data.user) {
-      await supabase.from("profiles").upsert({ id: data.user.id, full_name: trimmedName })
+      const { error: profileError } = await supabase
+        .from("profiles")
+        .upsert({ id: data.user.id, full_name: trimmedName })
+      if (profileError) console.error("[inscription] profile upsert:", profileError.message)
     }
 
     fetch("/api/emails/welcome", {
