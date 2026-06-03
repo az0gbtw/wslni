@@ -2,7 +2,7 @@
 
 import { Fragment, useEffect, useRef, useState } from "react"
 import Link from "next/link"
-import { Sparkles, Search } from "lucide-react"
+import { Search } from "lucide-react"
 import { useLanguage } from "@/lib/language-context"
 import { translations } from "@/lib/translations"
 
@@ -59,7 +59,7 @@ function useCountUp(target: number, duration = 1500) {
 function StatNumber({ value, label }: { value: number; label: string }) {
   const { count, containerRef } = useCountUp(value)
   return (
-    <div ref={containerRef} className="text-center">
+    <div ref={containerRef}>
       <div className="text-2xl font-black text-white tabular-nums leading-none">
         {count.toLocaleString()}
       </div>
@@ -96,13 +96,10 @@ export function HeroSection({ freelancerCount, serviceCount }: HeroSectionProps)
       </svg>
 
       {/* ── Content — strict vertical flow ── */}
-      <div className="relative z-10 w-full max-w-3xl mx-auto px-4 sm:px-6 flex flex-col items-center text-center">
+      <div className="relative z-10 w-full max-w-4xl mx-auto px-4 sm:px-6 flex flex-col items-start text-start">
 
-        {/* 1. Badge */}
-        <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-white/20 border border-white/25 backdrop-blur-sm">
-          <Sparkles className="w-3.5 h-3.5 text-white shrink-0" aria-hidden="true" />
-          <span className="text-[11px] font-bold tracking-widest text-white uppercase">{t.badge}</span>
-        </div>
+        {/* 1. Understated tagline replacing the badge */}
+        <p className="text-sm text-white/70">{lang === "ar" ? "صُنع للمغرب 🇲🇦" : "Fait pour le Maroc 🇲🇦"}</p>
 
         {/* 2. H1 — word-by-word slide-up */}
         <h1 className="text-5xl sm:text-7xl font-black text-white leading-tight tracking-tight mt-6">
@@ -162,7 +159,7 @@ export function HeroSection({ freelancerCount, serviceCount }: HeroSectionProps)
 
         {/* 5. Stats — viewport-triggered count-up */}
         {(freelancerCount > 0 || serviceCount > 0) && (
-          <div className="mt-8 flex items-center gap-8 justify-center">
+          <div className="mt-8 flex items-center gap-8">
             {freelancerCount > 0 && (
               <StatNumber value={freelancerCount} label={t.freelancesLabel} />
             )}
@@ -176,12 +173,12 @@ export function HeroSection({ freelancerCount, serviceCount }: HeroSectionProps)
         )}
 
         {/* 6. Category pills — staggered fade-in-up */}
-        <div className="mt-6 flex flex-wrap gap-2 justify-center">
+        <div className="mt-6 flex flex-wrap gap-2">
           {CHIPS.map((chip, i) => (
             <Link
               key={chip.href}
               href={chip.href}
-              className="hero-pill bg-white/15 hover:bg-white/25 text-white border border-white/20 rounded-full px-4 py-2 text-sm font-medium transition-colors"
+              className="hero-pill bg-white/15 hover:bg-white/25 text-white border border-white/20 rounded-lg px-4 py-2 text-sm font-medium transition-colors"
               style={{ animationDelay: `${i * 75}ms` }}
             >
               {lang === "ar" ? chip.ar : chip.fr}

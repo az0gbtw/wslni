@@ -22,7 +22,7 @@ export default async function HomePage() {
     supabase.from("services").select("*", { count: "exact", head: true }).eq("status", "published"),
     supabase
       .from("profiles")
-      .select("id, full_name, job_title, avatar_url, cin_status")
+      .select("id, full_name, job_title, avatar_url, cin_status, skills")
       .not("full_name", "is", null)
       .not("job_title", "is", null)
       .limit(20),
@@ -92,6 +92,7 @@ export default async function HomePage() {
       job_title:    p.job_title as string,
       avatar_url:   (p.avatar_url as string | null) ?? null,
       cin_status:   (p.cin_status as string | null) ?? null,
+      skills:       (p.skills as string[] | null) ?? null,
       rating:       ratingMap[p.id] ? ratingMap[p.id].sum / ratingMap[p.id].count : null,
       review_count: ratingMap[p.id]?.count ?? 0,
       min_price:    minPriceMap[p.id] ?? null,

@@ -25,6 +25,7 @@ export interface FeaturedProfile {
   review_count: number
   min_price?: number | null
   cin_status?: string | null
+  skills?: string[] | null
 }
 
 interface FeaturedFreelancersSectionProps {
@@ -177,6 +178,15 @@ export function FeaturedFreelancersSection({ profiles }: FeaturedFreelancersSect
                         )}
                       </h3>
                       <p className="text-xs text-muted-foreground mt-0.5 truncate">{profile.job_title}</p>
+                      {profile.skills && profile.skills.length > 0 && (
+                        <div className="flex flex-wrap gap-1 justify-center mt-1.5">
+                          {profile.skills.slice(0, 3).map((skill) => (
+                            <span key={skill} className="text-[10px] bg-secondary text-muted-foreground rounded-md px-2 py-0.5 leading-relaxed">
+                              {skill}
+                            </span>
+                          ))}
+                        </div>
+                      )}
                     </div>
 
                     {/* Star rating */}
@@ -205,7 +215,7 @@ export function FeaturedFreelancersSection({ profiles }: FeaturedFreelancersSect
                     )}
 
                     {/* CTA */}
-                    <span className="mt-auto w-full inline-flex items-center justify-center rounded-full bg-primary text-primary-foreground text-sm font-semibold h-9 px-4 group-hover:bg-primary/90 transition-colors">
+                    <span className="mt-auto w-full inline-flex items-center justify-center rounded-full bg-white border border-primary text-primary text-sm font-semibold h-9 px-4 group-hover:bg-primary/5 transition-colors">
                       {t.viewProfile}
                     </span>
                   </div>

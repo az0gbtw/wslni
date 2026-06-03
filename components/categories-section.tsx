@@ -41,9 +41,16 @@ export function CategoriesSection() {
               <Link
                 key={group.value}
                 href={`/services?group=${group.value}`}
-                className={`reveal category-card-hover group relative flex flex-col items-start p-5 md:p-6 rounded-2xl bg-gradient-to-br ${grad.bg} border border-transparent hover:border-current/10 shadow-sm hover:shadow-xl hover:shadow-black/10 cursor-pointer gap-4 overflow-hidden`}
+                className={`reveal category-card-hover group relative isolate flex flex-col items-start p-5 md:p-6 rounded-xl border border-transparent hover:border-current/10 shadow-[0_1px_3px_rgba(0,0,0,0.08)] hover:shadow-xl hover:shadow-black/10 cursor-pointer gap-4 overflow-hidden`}
                 style={{ transitionDelay: `${(index + 1) * 55}ms` }}
               >
+                {/* Desaturated background gradient — isolated so filter doesn't affect children */}
+                <div
+                  className={`absolute inset-0 bg-gradient-to-br ${grad.bg}`}
+                  style={{ zIndex: -1, filter: 'saturate(0.55)' }}
+                  aria-hidden="true"
+                />
+
                 {/* Icon container — white pill with colored icon */}
                 <div className="flex items-center justify-center rounded-xl bg-white shadow-sm group-hover:shadow-md transition-shadow duration-200 p-3">
                   <Icon className={`w-7 h-7 ${grad.icon} transition-transform duration-200 group-hover:scale-110`} />
