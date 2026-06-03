@@ -3,6 +3,7 @@ import { Plus_Jakarta_Sans, Inter, Cairo } from 'next/font/google'
 import { Analytics } from '@vercel/analytics/next'
 import { Providers } from '@/components/providers'
 import { PageTransition } from '@/components/page-transition'
+import { ProgressBar } from '@/components/progress-bar'
 import './globals.css'
 
 const jakarta = Plus_Jakarta_Sans({
@@ -76,6 +77,7 @@ export default function RootLayout({
   return (
     <html lang="fr" className="bg-background" suppressHydrationWarning>
       <body className={`${jakarta.variable} ${inter.variable} ${cairo.variable} font-sans antialiased`}>
+        <ProgressBar />
         <Providers>
           <PageTransition>
             {children}

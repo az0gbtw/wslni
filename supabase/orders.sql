@@ -21,20 +21,30 @@ create table if not exists public.orders (
 
 alter table public.orders enable row level security;
 
--- Les clients peuvent voir leurs propres commandes
+-- Each party only sees their own side of the marketplace.
 create policy "Les clients peuvent voir leurs commandes"
   on public.orders for select
   using (auth.uid() = client_id);
 
--- Les freelances peuvent voir les commandes reçues sur leurs services
+-- Freelancers need to read orders to manage delivery and status updates.
 create policy "Les freelances peuvent voir les commandes reçues"
   on public.orders for select
   using (auth.uid() = freelancer_id);
 
--- Les clients peuvent créer des commandes (uniquement pour eux-mêmes)
+-- client_id must equal the inserting user, AND freelancer_id must be the actual
+-- owner of the service — prevents a client from fabricating orders that attribute
+-- revenue or work to an arbitrary user.
 create policy "Les clients peuvent créer des commandes"
   on public.orders for insert
-  with check (auth.uid() = client_id);
+  with check (
+    auth.uid() = client_id
+    AND EXISTS (
+      SELECT 1 FROM public.services
+      WHERE id       = service_id
+        AND user_id  = freelancer_id
+        AND status   = 'published'
+    )
+  );
 
 -- Reuses handle_updated_at() defined in schema.sql
 create trigger on_orders_updated

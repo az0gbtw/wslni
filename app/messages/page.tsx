@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useEffect, useRef, useMemo, useCallback } from "react"
+import { useState, useEffect, useRef, useMemo, useCallback, Suspense } from "react"
 import { useRouter, useSearchParams } from "next/navigation"
 import Link from "next/link"
 import { format, isToday, isYesterday } from "date-fns"
@@ -100,7 +100,7 @@ function formatConvTime(dateStr: string, yesterday: string): string {
 
 const BANNER_KEY = "wslni_protect_banner_dismissed"
 
-export default function MessagesPage() {
+function MessagesPageInner() {
   const router = useRouter()
   const searchParams = useSearchParams()
   const { lang } = useLanguage()
@@ -807,5 +807,13 @@ export default function MessagesPage() {
         </div>
       )}
     </>
+  )
+}
+
+export default function MessagesPage() {
+  return (
+    <Suspense fallback={null}>
+      <MessagesPageInner />
+    </Suspense>
   )
 }

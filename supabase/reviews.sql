@@ -19,13 +19,16 @@ CREATE INDEX reviews_client_id_idx    ON reviews (client_id);
 -- Activation de la sécurité au niveau des lignes
 ALTER TABLE reviews ENABLE ROW LEVEL SECURITY;
 
--- Tout le monde peut lire les avis (profils publics)
+-- Reviews are shown on public freelancer profiles and service detail pages.
 CREATE POLICY "Avis visibles par tous"
   ON reviews
   FOR SELECT
   USING (true);
 
--- Seul le client d'une commande livrée peut laisser un avis
+-- Requires (1) the inserting user is the order's client, (2) the order is in
+-- 'livré' status — prevents reviewing orders that were never delivered, and
+-- prevents a freelancer from self-reviewing or reviewing on another client's behalf.
+-- The UNIQUE (order_id) constraint on the table enforces one review per order.
 CREATE POLICY "Le client peut laisser un avis pour une commande livrée"
   ON reviews
   FOR INSERT
@@ -40,8 +43,5 @@ CREATE POLICY "Le client peut laisser un avis pour une commande livrée"
     )
   );
 
--- Un avis ne peut pas être modifié après publication
--- (aucune politique UPDATE n'est définie)
-
--- Un client ne peut pas supprimer son avis
--- (aucune politique DELETE n'est définie)
+-- UPDATE intentionally absent: reviews are immutable once published.
+-- DELETE intentionally absent: clients cannot retract a review.

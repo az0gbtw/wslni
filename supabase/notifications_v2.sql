@@ -9,7 +9,8 @@
 --        en_cours  → order_accepted  → client
 --        livré     → order_delivered → client
 --        terminé   → order_completed → freelancer
---   3. Adds a delete policy so the service-role client can insert freely.
+-- Note: INSERT into notifications is only done by SECURITY DEFINER triggers and
+-- the service-role client (lib/notifications.ts); both bypass RLS automatically.
 
 
 -- ─── 1. Update check constraint ──────────────────────────────────────────────

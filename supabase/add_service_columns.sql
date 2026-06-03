@@ -15,7 +15,7 @@ INSERT INTO storage.buckets (id, name, public)
 VALUES ('service-images', 'service-images', true)
 ON CONFLICT (id) DO NOTHING;
 
--- Allow anyone to view service images
+-- Service images appear on public listing and detail pages — no auth required.
 DO $$
 BEGIN
   IF NOT EXISTS (
@@ -30,7 +30,9 @@ BEGIN
   END IF;
 END $$;
 
--- Allow authenticated users to upload into their own folder
+-- Path convention: {user_id}/{timestamp}-{random}.{ext}
+-- Scoping to the first folder segment prevents a user from uploading into
+-- another user's folder and having images appear under the wrong service.
 DO $$
 BEGIN
   IF NOT EXISTS (
@@ -48,7 +50,7 @@ BEGIN
   END IF;
 END $$;
 
--- Allow users to delete their own images
+-- Allows removing old images when a service is updated or deleted.
 DO $$
 BEGIN
   IF NOT EXISTS (

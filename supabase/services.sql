@@ -20,59 +20,34 @@ create table if not exists public.services (
 
 alter table public.services enable row level security;
 
--- Published services are visible to everyone
-DO $$
-BEGIN
-  IF NOT EXISTS (
-    SELECT 1 FROM pg_policies
-    WHERE schemaname = 'public' AND tablename = 'services'
-      AND policyname = 'Services are publicly viewable'
-  ) THEN
-    CREATE POLICY "Services are publicly viewable"
-      ON public.services FOR SELECT
-      USING (status = 'published');
-  END IF;
-END $$;
+-- Drop and recreate all service policies so the conditions are always current.
+DROP POLICY IF EXISTS "Services are publicly viewable"    ON public.services;
+DROP POLICY IF EXISTS "Users can insert their own services" ON public.services;
+DROP POLICY IF EXISTS "Users can update their own services" ON public.services;
+DROP POLICY IF EXISTS "Users can delete their own services" ON public.services;
 
--- Owners can insert, update, delete their own services
-DO $$
-BEGIN
-  IF NOT EXISTS (
-    SELECT 1 FROM pg_policies
-    WHERE schemaname = 'public' AND tablename = 'services'
-      AND policyname = 'Users can insert their own services'
-  ) THEN
-    CREATE POLICY "Users can insert their own services"
-      ON public.services FOR INSERT
-      WITH CHECK (auth.uid() = user_id);
-  END IF;
-END $$;
+-- Visitors see only published services; owners also see their drafts/archived
+-- services so the freelancer dashboard can list and edit them.
+CREATE POLICY "Services are publicly viewable"
+  ON public.services FOR SELECT
+  USING (status = 'published' OR auth.uid() = user_id);
 
-DO $$
-BEGIN
-  IF NOT EXISTS (
-    SELECT 1 FROM pg_policies
-    WHERE schemaname = 'public' AND tablename = 'services'
-      AND policyname = 'Users can update their own services'
-  ) THEN
-    CREATE POLICY "Users can update their own services"
-      ON public.services FOR UPDATE
-      USING (auth.uid() = user_id);
-  END IF;
-END $$;
+-- user_id must equal the inserting user — prevents creating services on behalf of others.
+CREATE POLICY "Users can insert their own services"
+  ON public.services FOR INSERT
+  WITH CHECK (auth.uid() = user_id);
 
-DO $$
-BEGIN
-  IF NOT EXISTS (
-    SELECT 1 FROM pg_policies
-    WHERE schemaname = 'public' AND tablename = 'services'
-      AND policyname = 'Users can delete their own services'
-  ) THEN
-    CREATE POLICY "Users can delete their own services"
-      ON public.services FOR DELETE
-      USING (auth.uid() = user_id);
-  END IF;
-END $$;
+-- USING restricts which rows can be updated; WITH CHECK prevents the owner field
+-- from being swapped to a different user during the update.
+CREATE POLICY "Users can update their own services"
+  ON public.services FOR UPDATE
+  USING  (auth.uid() = user_id)
+  WITH CHECK (auth.uid() = user_id);
+
+-- Cascades to service-images and portfolio_items via application code.
+CREATE POLICY "Users can delete their own services"
+  ON public.services FOR DELETE
+  USING (auth.uid() = user_id);
 
 -- Reuses handle_updated_at() defined in schema.sql
 create trigger on_services_updated

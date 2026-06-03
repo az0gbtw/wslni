@@ -17,14 +17,25 @@ create index if not exists notifications_user_created_idx
 
 alter table public.notifications enable row level security;
 
+-- Users can only read their own notifications; no cross-user notification leakage.
+-- INSERT is intentionally absent — only SECURITY DEFINER triggers may create
+-- notifications, preventing users from injecting fake alerts.
 create policy "Voir ses propres notifications"
   on public.notifications for select
   using (auth.uid() = user_id);
 
+-- WITH CHECK ensures the user_id cannot be changed to another user during an update
+-- (e.g. someone trying to mark another user's notifications as read).
 create policy "Marquer ses notifications comme lues"
   on public.notifications for update
   using  (auth.uid() = user_id)
   with check (auth.uid() = user_id);
+
+-- Allows users to dismiss notifications from the UI.  Without this policy
+-- notifications accumulate forever since users have no way to clear them.
+create policy "Supprimer ses propres notifications"
+  on public.notifications for delete
+  using (auth.uid() = user_id);
 
 -- Realtime
 alter publication supabase_realtime add table public.notifications;

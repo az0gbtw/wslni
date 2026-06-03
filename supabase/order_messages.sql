@@ -11,7 +11,9 @@ create table if not exists public.order_messages (
 
 alter table public.order_messages enable row level security;
 
--- Only client and freelancer of the order can view its messages
+-- Only client and freelancer of the order can view its messages;
+-- no other user (including other freelancers) can read order-scoped threads.
+-- UPDATE and DELETE are intentionally absent — order messages are permanent.
 create policy "Order parties can view order messages"
   on public.order_messages for select
   using (
@@ -22,7 +24,8 @@ create policy "Order parties can view order messages"
     )
   );
 
--- Only client and freelancer can insert, and only as themselves
+-- sender_id must equal the inserting user AND they must be a party to the order —
+-- prevents impersonation and prevents outsiders from messaging into an order.
 create policy "Order parties can insert order messages"
   on public.order_messages for insert
   with check (

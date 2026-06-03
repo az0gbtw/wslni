@@ -17,14 +17,18 @@ create table if not exists public.profiles (
 
 alter table public.profiles enable row level security;
 
+-- Public profiles power the freelancer listing and service detail pages.
 create policy "Profiles are publicly viewable"
   on public.profiles for select
   using (true);
 
+-- The trigger in create_profile_trigger.sql inserts via SECURITY DEFINER, but
+-- the app may also call upsert from the client; restrict to own row.
 create policy "Users can create their own profile"
   on public.profiles for insert
   with check (auth.uid() = id);
 
+-- Prevents a user from modifying another user's profile fields.
 create policy "Users can update their own profile"
   on public.profiles for update
   using (auth.uid() = id);
@@ -50,18 +54,27 @@ insert into storage.buckets (id, name, public)
 values ('avatars', 'avatars', true)
 on conflict (id) do nothing;
 
+-- Avatars are displayed on public profiles and service cards — no auth needed.
 create policy "Avatar images are publicly accessible"
   on storage.objects for select
   using (bucket_id = 'avatars');
 
+-- Uploads are restricted to the uploader's own folder ({user_id}/avatar.*).
+-- Without the path check any authenticated user could overwrite another user's avatar.
 create policy "Authenticated users can upload avatars"
   on storage.objects for insert
-  with check (bucket_id = 'avatars' and auth.role() = 'authenticated');
+  with check (
+    bucket_id = 'avatars'
+    and auth.role() = 'authenticated'
+    and auth.uid()::text = (storage.foldername(name))[1]
+  );
 
+-- Path convention is {user_id}/avatar.{ext}; first folder segment equals the owner.
 create policy "Users can update their own avatar"
   on storage.objects for update
   using (bucket_id = 'avatars' and auth.uid()::text = (storage.foldername(name))[1]);
 
+-- Allows removing an old avatar before uploading a replacement.
 create policy "Users can delete their own avatar"
   on storage.objects for delete
   using (bucket_id = 'avatars' and auth.uid()::text = (storage.foldername(name))[1]);

@@ -42,11 +42,16 @@ CREATE INDEX IF NOT EXISTS idx_messages_unread          ON public.messages(conve
 
 ALTER TABLE public.conversations ENABLE ROW LEVEL SECURITY;
 
+-- Each user sees only conversations they participate in.
+-- UPDATE is intentionally absent: last_message_at is maintained exclusively by
+-- the SECURITY DEFINER trigger update_conversation_on_message(), not by app code.
 CREATE POLICY "Voir ses conversations"
   ON public.conversations FOR SELECT
   TO authenticated
   USING (auth.uid() = participant1_id OR auth.uid() = participant2_id);
 
+-- A user may only create a conversation where they are one of the two participants;
+-- prevents creating phantom conversations between two other users.
 CREATE POLICY "Créer une conversation"
   ON public.conversations FOR INSERT
   TO authenticated
@@ -56,6 +61,7 @@ CREATE POLICY "Créer une conversation"
 
 ALTER TABLE public.messages ENABLE ROW LEVEL SECURITY;
 
+-- Only participants of a conversation may read its messages.
 CREATE POLICY "Voir les messages de ses conversations"
   ON public.messages FOR SELECT
   TO authenticated
@@ -67,6 +73,8 @@ CREATE POLICY "Voir les messages de ses conversations"
     )
   );
 
+-- sender_id must equal the inserting user AND the user must be a participant —
+-- prevents sending a message impersonating the other party.
 CREATE POLICY "Envoyer un message"
   ON public.messages FOR INSERT
   TO authenticated
@@ -79,7 +87,9 @@ CREATE POLICY "Envoyer un message"
     )
   );
 
--- Seul le destinataire peut marquer un message comme lu.
+-- USING allows any participant to access the row for update; WITH CHECK (sender_id
+-- <> auth.uid()) ensures you can only mark the *other* person's messages as read,
+-- not edit your own (the only mutable field is is_read).
 CREATE POLICY "Marquer un message comme lu"
   ON public.messages FOR UPDATE
   TO authenticated

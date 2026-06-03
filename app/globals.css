@@ -171,18 +171,6 @@
   .animate-bellRing  { animation: bellRing  400ms ease-in-out; }
   .animate-heartBeat { animation: heartBeat 300ms ease-in-out; }
 
-  /* Zellige Pattern / empty-state float */
-  @keyframes float {
-    0%, 100% { transform: translateY(0); }
-    50%      { transform: translateY(-8px); }
-  }
-  @keyframes pulse-subtle {
-    0%, 100% { opacity: 0.6; }
-    50%      { opacity: 1; }
-  }
-  .animate-float        { animation: float        3s ease-in-out infinite; }
-  .animate-pulse-subtle { animation: pulse-subtle 3s ease-in-out infinite; }
-
   /* Hero load animation */
   @keyframes fade-in-up {
     from { opacity: 0; transform: translateY(20px); }
@@ -406,4 +394,28 @@ html[lang="ar"] .font-display {
 [dir="rtl"] input:not([type="checkbox"]):not([type="radio"]):not([type="range"]),
 [dir="rtl"] textarea {
   text-align: right;
+}
+
+/* NProgress top loading bar */
+#nprogress {
+  pointer-events: none;
+}
+#nprogress .bar {
+  background: #dc2626;
+  position: fixed;
+  z-index: 9999;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 3px;
+}
+#nprogress .peg {
+  display: block;
+  position: absolute;
+  right: 0px;
+  width: 100px;
+  height: 100%;
+  box-shadow: 0 0 10px #dc2626, 0 0 5px #dc2626;
+  opacity: 1;
+  transform: rotate(3deg) translate(0px, -4px);
 }
