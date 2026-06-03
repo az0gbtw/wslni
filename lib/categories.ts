@@ -119,6 +119,7 @@ export const CATEGORIES = CATEGORY_GROUPS.flatMap((g) => g.subcategories)
 
 export type CategoryValue = string
 
+// Not exported — consumers use CATEGORY_COLORS (per-subcategory) or GROUP_GRADIENTS/GROUP_PILL_COLORS
 const GROUP_COLORS: Record<string, string> = {
   "graphics-design":      "bg-rose-100 text-rose-700",
   "programmation-tech":   "bg-emerald-100 text-emerald-700",
@@ -137,6 +138,10 @@ export const CATEGORY_COLORS: Record<string, string> = Object.fromEntries(
   )
 )
 
+/**
+ * Resolves a subcategory slug to its localised display label.
+ * Returns the raw slug if not found so unknown values render gracefully.
+ */
 export function getCategoryLabel(value: string, lang: "fr" | "ar" = "fr"): string {
   for (const g of CATEGORY_GROUPS) {
     const sub = g.subcategories.find((s) => s.value === value)
@@ -145,12 +150,20 @@ export function getCategoryLabel(value: string, lang: "fr" | "ar" = "fr"): strin
   return value
 }
 
+/**
+ * Resolves a category group slug to its localised display label.
+ * Returns the raw slug if not found.
+ */
 export function getGroupLabel(value: string, lang: "fr" | "ar" = "fr"): string {
   const group = CATEGORY_GROUPS.find((g) => g.value === value)
   if (!group) return value
   return lang === "ar" ? (group.arLabel ?? group.label) : group.label
 }
 
+/**
+ * Returns the parent group slug for a given subcategory slug, or undefined if not found.
+ * Used to look up GROUP_GRADIENTS / GROUP_PILL_COLORS from a service's `category` field.
+ */
 export function getGroupForCategory(categoryValue: string): string | undefined {
   return CATEGORY_GROUPS.find((g) =>
     g.subcategories.some((s) => s.value === categoryValue)

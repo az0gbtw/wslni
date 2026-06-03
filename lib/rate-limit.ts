@@ -12,6 +12,7 @@ interface Entry {
 const store = new Map<string, Entry>()
 let lastCleanup = Date.now()
 
+/** Evicts expired entries from the store; runs at most once per minute to avoid O(n) on every request. */
 function cleanup(now: number) {
   if (now - lastCleanup < 60_000) return
   lastCleanup = now
@@ -34,10 +35,12 @@ export function rateLimit(key: string, limit: number, windowMs: number): boolean
   return true
 }
 
+/** Extracts the originating client IP from the X-Forwarded-For header (first entry = real IP). */
 export function getClientIp(req: NextRequest): string {
   return req.headers.get("x-forwarded-for")?.split(",")[0]?.trim() ?? "unknown"
 }
 
+/** Returns a pre-built 429 Too Many Requests JSON response. */
 export function tooManyRequests(): NextResponse {
   return NextResponse.json({ error: "Too many requests" }, { status: 429 })
 }

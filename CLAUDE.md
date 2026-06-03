@@ -20,6 +20,7 @@ NEXT_PUBLIC_SUPABASE_URL
 NEXT_PUBLIC_SUPABASE_ANON_KEY
 SUPABASE_SERVICE_ROLE_KEY   # server-only, used in lib/notifications.ts and /api/admin/*
 RESEND_API_KEY               # transactional emails
+NEXT_PUBLIC_SITE_URL         # canonical site URL used in email templates (defaults to https://wslni.ma)
 ```
 
 ## Stack
@@ -38,7 +39,7 @@ RESEND_API_KEY               # transactional emails
 Two separate clients are used — never mix them:
 - `lib/supabase/server.ts` — async `createClient()` for Server Components, Server Actions, Route Handlers. Uses `next/headers` cookies.
 - `lib/supabase/client.ts` — sync `createClient()` for Client Components. Uses browser storage.
-- `lib/supabase/admin.ts` — service-role client, `server-only`, used exclusively in admin API routes.
+- `lib/supabase/admin.ts` — service-role client. No `server-only` guard in the file itself; callers are responsible for using it only in server-side code.
 
 ### Rendering pattern
 Data-heavy pages (services list, service detail, profile, home) are **async Server Components** that fetch from Supabase and pass serialisable props down to a `*-client.tsx` Client Component for interactivity. Example: `app/services/[id]/page.tsx` → `components/service-detail-client.tsx`.
@@ -49,23 +50,38 @@ Data-heavy pages (services list, service detail, profile, home) are **async Serv
 Admin-only pages (`/admin/*`) additionally check `profiles.role === 'admin'` inside the page component itself.
 
 ### i18n (FR / AR)
-- Language stored in a `lang` cookie (`"fr"` or `"ar"`).
+- Language preference is stored in **localStorage** (client source of truth) and mirrored to a `lang` cookie so Server Components and middleware can read it without JS.
 - All UI strings live in `lib/translations.ts` under a `fr` / `ar` object tree. Import `translations[lang].sectionKey`.
 - `lib/i18n.ts` exposes `useTranslation()` hook and re-exports `translations`.
 - Arabic uses the **Cairo** font (`--font-cairo`). RTL direction is toggled with Tailwind's `rtl:` variant and CSS logical properties. The `<html>` `lang` / `dir` attributes are set dynamically by `components/providers.tsx` via `useLanguage()`.
-- `lib/language-context.tsx` provides `useLanguage()` (reads/writes the `lang` cookie client-side).
+- `lib/language-context.tsx` provides `useLanguage()`. Initial state defaults to `"fr"` for SSR hydration safety; localStorage is read in a `useEffect`.
 
 ### Categories
 `lib/categories.ts` is the single source of truth. It exports:
 - `CATEGORY_GROUPS` — 9 top-level groups, each with `subcategories[]`. Each entry has `value` (slug), `label` (FR), `arLabel` (AR).
+- `CATEGORIES` — flat array of all subcategories derived from `CATEGORY_GROUPS`.
+- `CATEGORY_COLORS` — per-subcategory Tailwind badge classes derived from their parent group.
 - `GROUP_GRADIENTS`, `GROUP_PILL_COLORS` — per-group visual tokens used on the service detail hero and service cards.
 - `getCategoryLabel(value, lang)` — resolves a subcategory slug to its localised label.
-- `getGroupForCategory(subcategoryValue)` — returns the parent group value.
+- `getGroupLabel(value, lang)` — resolves a group slug to its localised label.
+- `getGroupForCategory(subcategoryValue)` — returns the parent group slug.
 
 Services store **both** `category` (subcategory slug) and `category_group` (group slug).
 
 ### Contact info filtering
-`lib/contact-filter.ts` exports `filterContactInfo(text)` — strips Moroccan phone numbers, emails, WhatsApp references, and `@handles` from free-text fields. Applied to messages before insert to prevent off-platform solicitation.
+`lib/contact-filter.ts` exports `filterContactInfo(text)` — strips Moroccan phone numbers, emails, WhatsApp references, and `@handles` from free-text fields. Preserves price amounts (MAD/DH) and years (1900–2099) to avoid false positives. Applied to messages before insert to prevent off-platform solicitation.
+
+`lib/cross-message-filter.ts` exports `checkCrossMessageContext(...)` — detects contact info smuggled across multiple short messages by concatenating the sender's last 10 messages within a 5-minute window and re-running the filter on the combined string. Retroactively masks prior messages that contain the fragmented digits.
+
+### Security & validation utilities
+- `lib/sanitize.ts` — typed input validation helpers (`sanitizeString`, `sanitizeUUID`, `sanitizeEmail`, `sanitizeEnum`, `sanitizeNumber`, `sanitizePath`). All throw `ValidationError` on invalid input. Used at API route boundaries.
+- `lib/rate-limit.ts` — in-memory fixed-window rate limiter. Per-instance only (does not coordinate across Vercel serverless instances). Exports `rateLimit(key, limit, windowMs)`, `getClientIp(req)`, `tooManyRequests()`.
+
+### Utility helpers
+`lib/utils.ts` exports:
+- `cn(...inputs)` — Tailwind class merger (clsx + tailwind-merge).
+- `formatPrice(amount, lang)` — locale-aware price formatting (Arabic-Indic numerals for AR, Moroccan French for FR).
+- `formatDate(ts, lang, options?)` — locale-aware date formatting from an ISO timestamp string.
 
 ## Database Schema
 
@@ -115,14 +131,23 @@ Run migrations in this order in the Supabase SQL Editor:
 | Route | Notes |
 |-------|-------|
 | `/` | Server component, fetches freelancer/service counts + profiles for home sections |
+| `/connexion` | Login page |
+| `/inscription` | Registration page |
+| `/mot-de-passe-oublie` | Forgot-password form |
+| `/reset-password` | Password reset handler (linked from email) |
 | `/services` | Service listing with filter/sort, server component |
 | `/services/[id]` | Server component → `ServiceDetailClient`. Hero uses `next/image fill` over a red gradient fallback. Portfolio shown as "Exemples de travaux" before the seller card |
+| `/favoris` | Saved/favourite services for the logged-in user |
 | `/dashboard` | Freelancer dashboard — services CRUD, order management |
 | `/dashboard/new-service` | 5-step wizard (Infos → Tarifs → Médias → Exigences → Aperçu). Saves draft to `localStorage` under key `khadamat-new-service-v1` |
 | `/dashboard/services/[id]/edit` | Same 5-step structure, loads existing service |
 | `/commande/[serviceId]` | Order placement — accepts `?tier=&price=&delivery_days=` query params |
+| `/commande/success` | Order success confirmation page |
+| `/commandes` | Orders list with client/freelancer tabs |
 | `/commandes/[id]` | Order detail with per-order messaging |
+| `/a-livrer` | Freelancer delivery queue (orders they need to deliver) |
 | `/messages` | Real-time conversation inbox (Supabase Realtime subscription) |
+| `/profil` | Own profile page (redirects to `/profil/[own-id]`) |
 | `/profil/[id]` | Public profile — `profile-client.tsx` for tab interactivity |
 | `/parametres` | Account settings including CIN upload |
 | `/admin/verifications` | Admin-only CIN review panel, uses service-role signed URLs |

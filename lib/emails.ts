@@ -5,6 +5,7 @@ const resend = new Resend(process.env.RESEND_API_KEY)
 const FROM_EMAIL = "Wslni.ma <onboarding@resend.dev>"
 const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL ?? "https://wslni.ma"
 
+/** Wraps HTML content in the standard Wslni email chrome (logo header, footer). */
 function emailLayout(content: string, previewText: string): string {
   return `<!DOCTYPE html>
 <html lang="fr" xmlns="http://www.w3.org/1999/xhtml">
@@ -61,10 +62,12 @@ function emailLayout(content: string, previewText: string): string {
 </html>`
 }
 
+/** Renders an inline red CTA button linking to href. */
 function ctaButton(href: string, label: string): string {
   return `<a href="${href}" style="display:inline-block;background-color:#DC2626;color:#FFFFFF;text-decoration:none;padding:14px 32px;border-radius:8px;font-size:15px;font-weight:700;letter-spacing:0.1px;margin-top:8px;">${label}</a>`
 }
 
+/** Renders a bordered info card with labelled key-value rows. */
 function infoCard(rows: Array<{ label: string; value: string; valueStyle?: string }>): string {
   const rowsHtml = rows
     .map(
@@ -90,6 +93,7 @@ function infoCard(rows: Array<{ label: string; value: string; valueStyle?: strin
 
 // ─── 1. Welcome Email ─────────────────────────────────────────────────────────
 
+/** Sends the welcome email to a newly registered user. */
 export async function sendWelcomeEmail(email: string, fullName: string) {
   const firstName = fullName.trim().split(" ")[0]
 
@@ -163,6 +167,7 @@ export async function sendWelcomeEmail(email: string, fullName: string) {
 
 // ─── 2. New Order Notification (freelancer) ───────────────────────────────────
 
+/** Notifies a freelancer by email when a new order arrives for one of their services. */
 export async function sendNewOrderEmail(params: {
   freelancerEmail: string
   freelancerName: string
@@ -230,6 +235,7 @@ const STATUS_MESSAGES: Record<string, string> = {
   annulé: "Votre commande a été annulée. Si vous avez des questions, contactez notre support.",
 }
 
+/** Notifies a client by email when their order status changes (en_cours, livré, annulé). */
 export async function sendOrderStatusEmail(params: {
   clientEmail: string
   clientName: string
@@ -289,6 +295,7 @@ export async function sendOrderStatusEmail(params: {
 
 // ─── 4. CIN Verification Result ───────────────────────────────────────────────
 
+/** Notifies a user by email that their CIN identity verification was approved. */
 export async function sendCinApprovedEmail(params: {
   email: string
   fullName: string
@@ -329,6 +336,7 @@ export async function sendCinApprovedEmail(params: {
   })
 }
 
+/** Notifies a user by email that their CIN verification was rejected and prompts resubmission. */
 export async function sendCinRejectedEmail(params: {
   email: string
   fullName: string
@@ -372,6 +380,7 @@ export async function sendCinRejectedEmail(params: {
 
 // ─── 5. New Message Notification (recipient) ─────────────────────────────────
 
+/** Notifies a user by email when they receive a new message, including a preview of the content. */
 export async function sendNewMessageEmail(params: {
   recipientEmail: string
   recipientName: string

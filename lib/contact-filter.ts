@@ -3,6 +3,11 @@ export interface FilterResult {
   wasFiltered: boolean
 }
 
+/**
+ * Strips contact information from user-submitted text to prevent off-platform solicitation.
+ * Handles Moroccan phone numbers, emails, WhatsApp references, @handles, and fragmented digits.
+ * Preserves price amounts (MAD/DH) and years (1900–2099) to avoid false positives.
+ */
 export function filterContactInfo(content: string): FilterResult {
   let text = content
 
