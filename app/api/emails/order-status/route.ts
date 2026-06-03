@@ -1,6 +1,8 @@
 import { NextRequest, NextResponse } from "next/server"
 import { createClient } from "@supabase/supabase-js"
 import { sendOrderStatusEmail } from "@/lib/emails"
+import { sanitizeUUID, sanitizeString, sanitizeOptionalString, sanitizeNonNegativeNumber, ValidationError } from "@/lib/sanitize"
+import { rateLimit, getClientIp, tooManyRequests } from "@/lib/rate-limit"
 
 const supabaseAdmin = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -8,17 +10,22 @@ const supabaseAdmin = createClient(
 )
 
 export async function POST(request: NextRequest) {
-  const body = await request.json()
-  const { clientId, freelancerName, serviceTitle, newStatus, price } = body as {
-    clientId?: string
-    freelancerName?: string
-    serviceTitle?: string
-    newStatus?: string
-    price?: number
+  if (!rateLimit(`emails:order-status:${getClientIp(request)}`, 10, 60_000)) {
+    return tooManyRequests()
   }
 
-  if (!clientId || !serviceTitle || !newStatus) {
-    return NextResponse.json({ error: "Missing required fields" }, { status: 400 })
+  let clientId: string, serviceTitle: string, newStatus: string
+  let freelancerName: string | undefined, price: number | undefined
+  try {
+    const body = await request.json()
+    clientId = sanitizeUUID(body.clientId, "clientId")
+    serviceTitle = sanitizeString(body.serviceTitle, 200, "serviceTitle")
+    newStatus = sanitizeString(body.newStatus, 50, "newStatus")
+    freelancerName = sanitizeOptionalString(body.freelancerName, 100, "freelancerName")
+    price = typeof body.price === "number" ? sanitizeNonNegativeNumber(body.price, "price") : undefined
+  } catch (err) {
+    if (err instanceof ValidationError) return NextResponse.json({ error: err.message }, { status: 400 })
+    return NextResponse.json({ error: "Invalid request body" }, { status: 400 })
   }
 
   try {

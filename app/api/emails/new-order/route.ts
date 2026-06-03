@@ -1,6 +1,8 @@
 import { NextRequest, NextResponse } from "next/server"
 import { createClient } from "@supabase/supabase-js"
 import { sendNewOrderEmail } from "@/lib/emails"
+import { sanitizeUUID, sanitizeString, sanitizeNonNegativeNumber, ValidationError } from "@/lib/sanitize"
+import { rateLimit, getClientIp, tooManyRequests } from "@/lib/rate-limit"
 
 const supabaseAdmin = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -8,16 +10,20 @@ const supabaseAdmin = createClient(
 )
 
 export async function POST(request: NextRequest) {
-  const body = await request.json()
-  const { freelancerId, clientName, serviceTitle, price } = body as {
-    freelancerId?: string
-    clientName?: string
-    serviceTitle?: string
-    price?: number
+  if (!rateLimit(`emails:new-order:${getClientIp(request)}`, 10, 60_000)) {
+    return tooManyRequests()
   }
 
-  if (!freelancerId || !clientName || !serviceTitle || price === undefined) {
-    return NextResponse.json({ error: "Missing required fields" }, { status: 400 })
+  let freelancerId: string, clientName: string, serviceTitle: string, price: number
+  try {
+    const body = await request.json()
+    freelancerId = sanitizeUUID(body.freelancerId, "freelancerId")
+    clientName = sanitizeString(body.clientName, 100, "clientName")
+    serviceTitle = sanitizeString(body.serviceTitle, 200, "serviceTitle")
+    price = sanitizeNonNegativeNumber(body.price, "price")
+  } catch (err) {
+    if (err instanceof ValidationError) return NextResponse.json({ error: err.message }, { status: 400 })
+    return NextResponse.json({ error: "Invalid request body" }, { status: 400 })
   }
 
   try {

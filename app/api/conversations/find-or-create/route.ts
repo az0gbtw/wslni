@@ -1,5 +1,7 @@
 import { NextRequest, NextResponse } from "next/server"
 import { createClient } from "@/lib/supabase/server"
+import { sanitizeUUID, ValidationError } from "@/lib/sanitize"
+import { rateLimit, tooManyRequests } from "@/lib/rate-limit"
 
 export async function POST(request: NextRequest) {
   const supabase = await createClient()
@@ -9,16 +11,17 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
   }
 
+  if (!rateLimit(`conversations:${user.id}`, 20, 60_000)) {
+    return tooManyRequests()
+  }
+
   let freelancerId: string
   try {
     const body = await request.json()
-    freelancerId = body.freelancerId
-  } catch {
+    freelancerId = sanitizeUUID(body.freelancerId, "freelancerId")
+  } catch (err) {
+    if (err instanceof ValidationError) return NextResponse.json({ error: err.message }, { status: 400 })
     return NextResponse.json({ error: "Invalid request body" }, { status: 400 })
-  }
-
-  if (!freelancerId || typeof freelancerId !== "string") {
-    return NextResponse.json({ error: "Missing freelancerId" }, { status: 400 })
   }
 
   if (freelancerId === user.id) {

@@ -2,6 +2,8 @@ import { NextRequest, NextResponse } from "next/server"
 import { createClient } from "@/lib/supabase/server"
 import { filterContactInfo } from "@/lib/contact-filter"
 import { checkCrossMessageContext } from "@/lib/cross-message-filter"
+import { sanitizeUUID, sanitizeString, ValidationError } from "@/lib/sanitize"
+import { rateLimit, tooManyRequests } from "@/lib/rate-limit"
 
 export async function POST(request: NextRequest) {
   const supabase = await createClient()
@@ -11,18 +13,19 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
   }
 
+  if (!rateLimit(`order-messages:${user.id}`, 60, 60_000)) {
+    return tooManyRequests()
+  }
+
   let conversationId: string, content: string, orderId: string
   try {
     const body = await request.json()
-    conversationId = body.conversation_id
-    content = body.content
-    orderId = body.order_id
-  } catch {
+    conversationId = sanitizeUUID(body.conversation_id, "conversation_id")
+    content = sanitizeString(body.content, 5000, "content")
+    orderId = sanitizeUUID(body.order_id, "order_id")
+  } catch (err) {
+    if (err instanceof ValidationError) return NextResponse.json({ error: err.message }, { status: 400 })
     return NextResponse.json({ error: "Invalid request body" }, { status: 400 })
-  }
-
-  if (!conversationId || !content?.trim() || !orderId) {
-    return NextResponse.json({ error: "Missing fields" }, { status: 400 })
   }
 
   // Verify user is a party on this order

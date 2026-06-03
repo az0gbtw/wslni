@@ -1,6 +1,8 @@
 import { NextRequest, NextResponse } from "next/server"
 import { createClient } from "@supabase/supabase-js"
 import { sendNewMessageEmail } from "@/lib/emails"
+import { sanitizeUUID, sanitizeString, ValidationError } from "@/lib/sanitize"
+import { rateLimit, getClientIp, tooManyRequests } from "@/lib/rate-limit"
 
 const supabaseAdmin = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -8,15 +10,19 @@ const supabaseAdmin = createClient(
 )
 
 export async function POST(request: NextRequest) {
-  const body = await request.json()
-  const { recipientId, senderName, messagePreview } = body as {
-    recipientId?: string
-    senderName?: string
-    messagePreview?: string
+  if (!rateLimit(`emails:new-message:${getClientIp(request)}`, 30, 60_000)) {
+    return tooManyRequests()
   }
 
-  if (!recipientId || !senderName || !messagePreview) {
-    return NextResponse.json({ error: "Missing required fields" }, { status: 400 })
+  let recipientId: string, senderName: string, messagePreview: string
+  try {
+    const body = await request.json()
+    recipientId = sanitizeUUID(body.recipientId, "recipientId")
+    senderName = sanitizeString(body.senderName, 100, "senderName")
+    messagePreview = sanitizeString(body.messagePreview, 500, "messagePreview")
+  } catch (err) {
+    if (err instanceof ValidationError) return NextResponse.json({ error: err.message }, { status: 400 })
+    return NextResponse.json({ error: "Invalid request body" }, { status: 400 })
   }
 
   try {
