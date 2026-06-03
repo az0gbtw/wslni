@@ -1,6 +1,7 @@
 "use client"
 
 import Link from "next/link"
+import Image from "next/image"
 import {
   Clock, Star, ShieldCheck,
   Palette, Code2, TrendingUp, Video, PenTool, Music, Briefcase, GraduationCap, Sparkles,
@@ -83,11 +84,12 @@ export function ServiceCard({ service, t, lang, isFavorited, userId, onFavoriteT
       <div className="relative aspect-video overflow-hidden bg-muted">
         <Link href={`/services/${service.id}`} className="block w-full h-full">
           {coverImage ? (
-            // eslint-disable-next-line @next/next/no-img-element
-            <img
+            <Image
               src={coverImage}
               alt={service.title}
-              className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
+              fill
+              className="object-cover transition-transform duration-500 group-hover:scale-105"
+              sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 33vw"
             />
           ) : (
             <div className={`w-full h-full bg-gradient-to-br ${gradient.bg} flex items-center justify-center`}>
@@ -142,11 +144,12 @@ export function ServiceCard({ service, t, lang, isFavorited, userId, onFavoriteT
           className="flex items-center gap-2 flex-1 min-w-0 hover:opacity-80 transition-opacity"
         >
           {profile?.avatar_url ? (
-            // eslint-disable-next-line @next/next/no-img-element
-            <img
+            <Image
               src={profile.avatar_url}
               alt={profile.full_name ?? "Freelance"}
-              className="h-7 w-7 rounded-full object-cover shrink-0 ring-1 ring-border"
+              width={28}
+              height={28}
+              className="rounded-full object-cover shrink-0 ring-1 ring-border"
             />
           ) : (
             <div className="h-7 w-7 rounded-full bg-primary/10 flex items-center justify-center shrink-0">

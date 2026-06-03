@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useEffect, useRef } from "react"
+import { useState, useEffect, useRef, useMemo } from "react"
 import { Search, Menu, X, Globe, LogOut, LayoutDashboard, MessageSquare, ShoppingBag, PackageCheck, ChevronDown, User as UserIcon, Settings, HelpCircle, Briefcase, ShieldCheck, Heart } from "lucide-react"
 import { NotificationsBell } from "@/components/notifications-bell"
 import Link from "next/link"
@@ -39,6 +39,7 @@ export function Navbar() {
   const [unreadCount, setUnreadCount] = useState(0)
   const [showSearch, setShowSearch] = useState(false)
   const lastScrollY = useRef(0)
+  const supabase = useMemo(() => createClient(), [])
 
   const navRef = useRef<HTMLElement>(null)
   const desktopSearchRef = useRef<HTMLInputElement>(null)
@@ -72,7 +73,6 @@ export function Navbar() {
   }, [isMobileMenuOpen])
 
   useEffect(() => {
-    const supabase = createClient()
     supabase.auth.getSession().then(({ data: { session } }) => {
       setUser(session?.user ?? null)
     })
@@ -80,21 +80,19 @@ export function Navbar() {
       setUser(session?.user ?? null)
     })
     return () => subscription.unsubscribe()
-  }, [])
+  }, [supabase])
 
   useEffect(() => {
     if (!user) { setIsAdmin(false); return }
-    const supabase = createClient()
     supabase.from("profiles").select("role").eq("id", user.id).single()
       .then(({ data }) => setIsAdmin(data?.role === "admin"))
-  }, [user])
+  }, [user, supabase])
 
   useEffect(() => {
     if (!user) {
       setUnreadCount(0)
       return
     }
-    const supabase = createClient()
 
     async function fetchUnread() {
       const { count } = await supabase
@@ -113,7 +111,7 @@ export function Navbar() {
       .subscribe()
 
     return () => { supabase.removeChannel(channel) }
-  }, [user])
+  }, [user, supabase])
 
   // Show search bar only on "/" when scrolled past 500px
   useEffect(() => {
@@ -140,7 +138,6 @@ export function Navbar() {
   }
 
   async function handleLogout() {
-    const supabase = createClient()
     await supabase.auth.signOut()
     router.push("/")
     router.refresh()

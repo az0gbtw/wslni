@@ -3,6 +3,7 @@
 import { useState, useEffect, useRef, useMemo, useCallback, Suspense } from "react"
 import { useRouter, useSearchParams } from "next/navigation"
 import Link from "next/link"
+import Image from "next/image"
 import { format, isToday, isYesterday } from "date-fns"
 import { ar as arLocale, fr as frLocale } from "date-fns/locale"
 import { Loader2, Send, Search, Plus, ArrowLeft, MessageSquare, X, Lock } from "lucide-react"
@@ -72,15 +73,17 @@ function UserAvatar({
   return (
     <div
       className={cn(
-        "rounded-full bg-primary overflow-hidden flex items-center justify-center shrink-0 font-semibold text-white select-none",
+        "relative rounded-full bg-primary overflow-hidden flex items-center justify-center shrink-0 font-semibold text-white select-none",
         cls
       )}
     >
       {profile.avatar_url ? (
-        <img
+        <Image
           src={profile.avatar_url}
           alt={profile.full_name || ""}
-          className="w-full h-full object-cover"
+          fill
+          className="object-cover"
+          sizes="48px"
         />
       ) : (
         getInitials(profile.full_name)

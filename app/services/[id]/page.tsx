@@ -55,19 +55,22 @@ export default async function ServiceDetailPage({
   if (serviceError) console.error("[service-detail] service:", serviceError.message)
   if (!service) return <div className="p-10 text-center text-muted-foreground">Service introuvable.</div>
 
-  const { data: profile, error: profileError } = await supabase
-    .from("profiles")
-    .select("id, full_name, avatar_url, job_title, cin_status, created_at")
-    .eq("id", service.user_id)
-    .single()
+  const [
+    { data: profile, error: profileError },
+    { data: reviewsData, error: reviewsError },
+  ] = await Promise.all([
+    supabase
+      .from("profiles")
+      .select("id, full_name, avatar_url, job_title, cin_status, created_at")
+      .eq("id", service.user_id)
+      .single(),
+    supabase
+      .from("reviews")
+      .select("rating")
+      .eq("freelancer_id", service.user_id),
+  ])
 
   if (profileError) console.error("[service-detail] profile:", profileError.message)
-
-  const { data: reviewsData, error: reviewsError } = await supabase
-    .from("reviews")
-    .select("rating")
-    .eq("freelancer_id", profile?.id ?? "")
-
   if (reviewsError) console.error("[service-detail] reviews:", reviewsError.message)
 
   const reviewCount = reviewsData?.length ?? 0

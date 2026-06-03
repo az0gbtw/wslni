@@ -346,11 +346,12 @@ export function ServiceDetailClient({
                         onClick={() => setLightboxUrl(item.url)}
                         className="relative aspect-square rounded-xl overflow-hidden border border-border/60 group cursor-zoom-in"
                       >
-                        {/* eslint-disable-next-line @next/next/no-img-element */}
-                        <img
+                        <Image
                           src={item.url}
                           alt={item.title || ""}
-                          className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-105"
+                          fill
+                          className="object-cover transition-transform duration-300 group-hover:scale-105"
+                          sizes="(max-width: 640px) 50vw, (max-width: 1024px) 33vw, 25vw"
                         />
                         <div className="absolute inset-0 bg-black/0 group-hover:bg-black/30 transition-colors flex items-center justify-center">
                           <ZoomIn className="h-6 w-6 text-white opacity-0 group-hover:opacity-100 transition-opacity drop-shadow-md" />
