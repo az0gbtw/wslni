@@ -1,20 +1,13 @@
 "use client"
 
 import { useRef } from "react"
-import { ChevronLeft, ChevronRight, UserPlus, ShieldCheck } from "lucide-react"
+import { ChevronLeft, ChevronRight, ShieldCheck } from "lucide-react"
 import Link from "next/link"
 import Image from "next/image"
 import { Button } from "@/components/ui/button"
 import { useLanguage } from "@/lib/language-context"
 import { translations } from "@/lib/translations"
 import { useScrollReveal } from "@/hooks/use-scroll-reveal"
-
-const AVATAR_GRADIENTS = [
-  "from-rose-400 to-pink-500",
-  "from-blue-400 to-indigo-500",
-  "from-amber-400 to-orange-500",
-  "from-emerald-400 to-teal-500",
-]
 
 export interface FeaturedProfile {
   id: string
@@ -73,7 +66,7 @@ export function FeaturedFreelancersSection({ profiles }: FeaturedFreelancersSect
   return (
     <section
       ref={sectionRef as React.RefObject<HTMLElement>}
-      className="py-20 md:py-28 bg-primary/5 overflow-hidden"
+      className="py-16 md:py-24 bg-secondary/40 overflow-hidden"
     >
       <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
 
@@ -83,10 +76,9 @@ export function FeaturedFreelancersSection({ profiles }: FeaturedFreelancersSect
           style={{ transitionDelay: "0ms" }}
         >
           <div>
-            <h2 className="font-serif font-bold text-4xl md:text-5xl text-foreground tracking-tight leading-tight">
+            <h2 className="font-serif font-bold text-3xl md:text-4xl text-foreground tracking-tight leading-tight">
               {t.title}
             </h2>
-            <p className="text-muted-foreground text-sm mt-2">{t.subtitle}</p>
           </div>
 
           {profiles.length > 0 && (
@@ -118,10 +110,7 @@ export function FeaturedFreelancersSection({ profiles }: FeaturedFreelancersSect
         {/* Empty state */}
         {profiles.length === 0 ? (
           <div className="reveal" style={{ transitionDelay: "80ms" }}>
-            <div className="flex flex-col items-center justify-center gap-5 rounded-2xl border border-dashed border-border bg-secondary/30 px-6 py-16 text-center">
-              <div className="flex h-14 w-14 items-center justify-center rounded-xl bg-primary/10">
-                <UserPlus className="h-6 w-6 text-primary" />
-              </div>
+            <div className="flex flex-col items-center justify-center gap-5 rounded-lg border border-border bg-background px-6 py-14 text-center">
               <p className="text-sm text-muted-foreground max-w-xs">{t.emptyMessage}</p>
               <Button asChild className="rounded-full hover-spring">
                 <Link href="/inscription">{t.emptyAction}</Link>
@@ -143,14 +132,11 @@ export function FeaturedFreelancersSection({ profiles }: FeaturedFreelancersSect
               >
                 <Link
                   href={`/profil/${profile.id}`}
-                  className="group relative flex flex-col items-center text-center h-full bg-white rounded-2xl border border-red-100/60 shadow-md hover:shadow-xl hover:shadow-primary/10 hover:-translate-y-2 transition-all duration-300 overflow-hidden"
+                  className="group flex flex-col items-center text-center h-full bg-card rounded-lg border border-border hover:border-primary/40 transition-colors overflow-hidden"
                 >
-                  {/* Top banner */}
-                  <div className="w-full h-16 bg-gradient-to-r from-red-600 to-rose-500 shrink-0" />
-
-                  {/* Avatar — overlaps banner */}
+                  {/* Avatar */}
                   <div
-                    className={`relative w-18 h-18 rounded-2xl bg-gradient-to-br ${AVATAR_GRADIENTS[index % AVATAR_GRADIENTS.length]} flex items-center justify-center text-white font-bold text-lg shadow-lg overflow-hidden shrink-0 -mt-9 ring-4 ring-white z-10`}
+                    className="relative mt-6 flex items-center justify-center rounded-full bg-secondary text-foreground font-semibold text-lg overflow-hidden shrink-0"
                     style={{ width: 72, height: 72 }}
                   >
                     {profile.avatar_url ? (
@@ -167,7 +153,7 @@ export function FeaturedFreelancersSection({ profiles }: FeaturedFreelancersSect
                   </div>
 
                   {/* Card body */}
-                  <div className="flex flex-col items-center gap-3 px-5 pb-5 pt-3 w-full flex-1">
+                  <div className="flex flex-col items-center gap-3 px-5 pb-5 pt-4 w-full flex-1">
 
                     {/* Name + verified badge */}
                     <div className="w-full">
@@ -215,7 +201,7 @@ export function FeaturedFreelancersSection({ profiles }: FeaturedFreelancersSect
                     )}
 
                     {/* CTA */}
-                    <span className="mt-auto w-full inline-flex items-center justify-center rounded-full bg-white border border-primary text-primary text-sm font-semibold h-9 px-4 group-hover:bg-primary/5 transition-colors">
+                    <span className="mt-auto w-full inline-flex items-center justify-center rounded-md border border-border text-foreground text-sm font-medium h-9 px-4 group-hover:border-primary/40 transition-colors">
                       {t.viewProfile}
                     </span>
                   </div>

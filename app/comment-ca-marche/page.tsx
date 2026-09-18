@@ -21,28 +21,13 @@ import {
   Briefcase,
 } from "lucide-react"
 
-function ZelligeDivider() {
-  return (
-    <div className="w-full h-2 flex overflow-hidden">
-      {Array.from({ length: 40 }).map((_, i) => (
-        <div
-          key={i}
-          className={`flex-1 h-full ${
-            i % 4 === 0 ? "bg-primary" : i % 4 === 1 ? "bg-primary/70" : i % 4 === 2 ? "bg-secondary" : "bg-primary/40"
-          }`}
-        />
-      ))}
-    </div>
-  )
-}
-
 const clientSteps = [
   {
     number: "01",
     icon: Search,
     title: "Trouve le bon talent",
     description:
-      "Parcours des milliers de profils de freelances vérifiés ou publie ton projet et reçois des offres directement. Filtre par compétence, budget et disponibilité.",
+      "Parcours les profils et les services des freelances, ou écris directement à celui qui t'intéresse. Filtre par catégorie et par budget.",
     detail: "Accès gratuit à tous les profils",
   },
   {
@@ -101,7 +86,7 @@ const freelanceGuarantees = [
   { icon: Banknote, label: "Paiement rapide et garanti" },
   { icon: FileText, label: "Contrat clair pour chaque commande" },
   { icon: Clock, label: "Délais respectés et protégés" },
-  { icon: Briefcase, label: "Visibilité auprès de milliers de clients" },
+  { icon: Briefcase, label: "Un profil public que les clients peuvent trouver" },
 ]
 
 export default function CommentCaMarchePage() {
@@ -144,8 +129,6 @@ export default function CommentCaMarchePage() {
           </p>
         </div>
       </section>
-
-      <ZelligeDivider />
 
       {/* Tabs Section */}
       <section className="py-16 md:py-24 bg-background">
@@ -230,7 +213,7 @@ export default function CommentCaMarchePage() {
                 <div className="relative z-10">
                   <h3 className="text-2xl font-bold mb-3">Prêt à trouver le bon talent&nbsp;?</h3>
                   <p className="text-primary-foreground/75 mb-7 max-w-sm mx-auto">
-                    Des milliers de freelances marocains qualifiés attendent ton projet.
+                    Parcours les services et écris au freelance qui te correspond.
                   </p>
                   <div className="flex flex-col sm:flex-row justify-center gap-3">
                     <Button
@@ -317,7 +300,7 @@ export default function CommentCaMarchePage() {
                 <div className="relative z-10">
                   <h3 className="text-2xl font-bold mb-3">Prêt à monetiser tes compétences&nbsp;?</h3>
                   <p className="text-primary-foreground/70 mb-7 max-w-sm mx-auto">
-                    Rejoins des milliers de freelances marocains qui gagnent leur vie grâce à leurs talents.
+                    Crée ton profil, publie ton premier service et fixe tes tarifs.
                   </p>
                   <div className="flex flex-col sm:flex-row justify-center gap-3">
                     <Button

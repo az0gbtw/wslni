@@ -22,22 +22,20 @@ const fr = {
     favorites: "Mes favoris",
   },
   hero: {
-    badge: "La plateforme n°1 au Maroc",
     headline1: "Trouve le talent",
     headline2: "qu'il te faut",
     headline3: "Au Maroc, pour le Maroc.",
     subtext:
-      "Des milliers de freelances qualifiés, prêts à travailler sur ton projet. Design, développement, marketing et bien plus.",
+      "Des freelances marocains pour ton logo, ton site, ta vidéo ou tes traductions. Wslni vient de démarrer : les premiers profils sont déjà là.",
     ctaFind: "Je cherche un freelance",
     ctaOffer: "Je propose mes services",
     freelancesLabel: "freelances inscrits",
     servicesLabel: "services disponibles",
   },
   categories: {
-    title: "Explore nos catégories",
-    subtitle:
-      "Plus de 50 catégories de services pour répondre à tous tes besoins professionnels",
-    viewAll: "Voir toutes les catégories",
+    title: "Parcourir par domaine",
+    subtitle: "Choisis un domaine, tu pourras affiner ensuite.",
+    viewAll: "Tous les services",
     items: [
       "Graphics & Design",
       "Programmation & Tech",
@@ -51,42 +49,36 @@ const fr = {
     ],
   },
   howItWorks: {
-    title: "Comment ça marche ?",
-    subtitle: "Trois étapes simples pour trouver le freelance idéal",
+    title: "Concrètement, ça se passe comme ça",
     steps: [
       {
-        title: "Décris ton besoin",
+        title: "Tu trouves un service",
         description:
-          "Explique ton projet en quelques mots. Sois précis sur tes attentes et ton budget.",
+          "Parcours les services ou cherche par mot-clé. Chaque fiche affiche ses formules, ses délais et des exemples de travaux.",
       },
       {
-        title: "Choisis ton freelance",
+        title: "Tu passes commande",
         description:
-          "Compare les profils, portfolios et avis. Trouve le talent parfait pour ta mission.",
+          "Tu choisis une formule, tu réponds aux questions du freelance, et vous discutez directement dans la commande.",
       },
       {
-        title: "Reçois ton travail",
+        title: "Le freelance livre, tu valides",
         description:
-          "Collabore en temps réel, valide les livrables et paie en toute sécurité.",
+          "La livraison arrive dans ta commande. Tu regardes, et tu peux laisser un avis ensuite.",
       },
     ],
   },
   featured: {
-    title: "Freelances les mieux notés",
-    subtitle: "Découvre nos talents les mieux notés",
+    title: "Ils sont déjà sur Wslni",
     reviews: "avis",
     from: "À partir de",
     viewProfile: "Voir profil",
-    emptyMessage: "Soyez parmi les premiers freelances sur Wslni — créez votre profil dès maintenant",
+    emptyMessage: "Personne ici pour l'instant. Crée ton profil et sois le premier.",
     emptyAction: "Créer mon profil",
-  },
-  trust: {
-    freelances: "Freelances",
-    categories: "Services",
   },
   footer: {
     tagline:
-      "La première marketplace freelance 100% marocaine. Trouve le talent qu'il te faut.",
+      "Une marketplace de freelances faite au Maroc. Trouve le talent qu'il te faut.",
     copyright: "© 2026 Wslni.ma. Tous droits réservés.",
     services: {
       title: "Services",
@@ -656,22 +648,20 @@ const ar: typeof fr = {
     favorites: "المفضلة",
   },
   hero: {
-    badge: "المنصة رقم 1 في المغرب",
     headline1: "اعثر على الكفاءة",
     headline2: "التي تحتاجها",
     headline3: "في المغرب، للمغرب.",
     subtext:
-      "آلاف المستقلين المؤهلين، جاهزون للعمل على مشروعك. تصميم، تطوير، تسويق والمزيد.",
+      "مستقلون مغاربة لإنجاز شعارك أو موقعك أو فيديو أو ترجماتك. وصلني في بدايته، والملفات الأولى موجودة بالفعل.",
     ctaFind: "أبحث عن مستقل",
     ctaOffer: "أقدم خدماتي",
     freelancesLabel: "مستقل مسجل",
     servicesLabel: "خدمة متاحة",
   },
   categories: {
-    title: "استكشف فئاتنا",
-    subtitle:
-      "أكثر من 50 فئة خدمات لتلبية جميع احتياجاتك المهنية",
-    viewAll: "عرض جميع الفئات",
+    title: "تصفّح حسب المجال",
+    subtitle: "اختر مجالاً، وبعدها يمكنك التدقيق أكثر.",
+    viewAll: "كل الخدمات",
     items: [
       "الجرافيك والتصميم",
       "البرمجة والتقنية",
@@ -685,42 +675,36 @@ const ar: typeof fr = {
     ],
   },
   howItWorks: {
-    title: "كيف يعمل؟",
-    subtitle: "ثلاث خطوات بسيطة للعثور على المستقل المثالي",
+    title: "كيف يتم الأمر عمليًا",
     steps: [
       {
-        title: "صف احتياجك",
+        title: "تجد خدمة",
         description:
-          "اشرح مشروعك بكلمات قليلة. كن دقيقًا في توقعاتك وميزانيتك.",
+          "تصفّح الخدمات أو ابحث بكلمة مفتاحية. كل خدمة تعرض باقاتها ومدة التسليم ونماذج من الأعمال.",
       },
       {
-        title: "اختر مستقلك",
+        title: "تطلب الخدمة",
         description:
-          "قارن الملفات الشخصية والأعمال والتقييمات. اعثر على الكفاءة المثالية لمهمتك.",
+          "تختار باقة، وتجيب عن أسئلة المستقل، وتتناقشان مباشرة داخل الطلب.",
       },
       {
-        title: "استلم عملك",
+        title: "المستقل يسلّم وأنت تقبل",
         description:
-          "تعاون في الوقت الحقيقي، وافق على التسليمات وادفع بأمان.",
+          "يصلك التسليم داخل الطلب. تراجعه، ثم يمكنك ترك تقييم.",
       },
     ],
   },
   featured: {
-    title: "أفضل المستقلين تقييمًا",
-    subtitle: "اكتشف أفضل المواهب تقييمًا",
+    title: "موجودون بالفعل على وصلني",
     reviews: "تقييم",
     from: "ابتداءً من",
     viewProfile: "عرض الملف",
-    emptyMessage: "كن من أوائل المستقلين على Wslni — أنشئ ملفك الشخصي الآن",
+    emptyMessage: "لا أحد هنا حتى الآن. أنشئ ملفك وكن الأول.",
     emptyAction: "إنشاء ملفي",
-  },
-  trust: {
-    freelances: "مستقل",
-    categories: "خدمة",
   },
   footer: {
     tagline:
-      "أول سوق للمستقلين المغاربة 100%. اعثر على الكفاءة التي تحتاجها.",
+      "سوق للمستقلين صُنع في المغرب. اعثر على الكفاءة التي تحتاجها.",
     copyright: "© 2026 Wslni.ma. جميع الحقوق محفوظة.",
     services: {
       title: "الخدمات",

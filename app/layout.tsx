@@ -29,12 +29,12 @@ const cairo = Cairo({
 
 export const metadata: Metadata = {
   title: 'Wslni.ma | Marketplace Freelance Marocain',
-  description: 'Trouve le talent qu\'il te faut. Des milliers de freelances qualifiés au Maroc, prêts à travailler sur ton projet.',
+  description: 'Trouve le talent qu\'il te faut. Des freelances marocains pour ton logo, ton site, ta vidéo ou tes traductions.',
   generator: 'v0.app',
   keywords: ['freelance', 'Maroc', 'marketplace', 'travail', 'talent', 'design', 'développement', 'services'],
   openGraph: {
     title: 'Wslni.ma | Marketplace Freelance Marocain',
-    description: 'Trouve le talent qu\'il te faut. Des milliers de freelances qualifiés au Maroc, prêts à travailler sur ton projet.',
+    description: 'Trouve le talent qu\'il te faut. Des freelances marocains pour ton logo, ton site, ta vidéo ou tes traductions.',
     url: 'https://wslni.ma',
     siteName: 'Wslni.ma',
     locale: 'fr_MA',
@@ -43,7 +43,7 @@ export const metadata: Metadata = {
   twitter: {
     card: 'summary_large_image',
     title: 'Wslni.ma | Marketplace Freelance Marocain',
-    description: 'Trouve le talent qu\'il te faut. Des milliers de freelances qualifiés au Maroc, prêts à travailler sur ton projet.',
+    description: 'Trouve le talent qu\'il te faut. Des freelances marocains pour ton logo, ton site, ta vidéo ou tes traductions.',
   },
   icons: {
     icon: [

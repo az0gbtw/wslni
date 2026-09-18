@@ -210,10 +210,9 @@ function FreelancerWheel({ freelancers, ratings }: { freelancers: TopFreelancer[
           })}
         </div>
 
-        {/* Center decoration — static, outside the rotating layer */}
-        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 z-10 flex h-20 w-20 flex-col items-center justify-center gap-1 rounded-full border border-white/30 bg-gradient-to-br from-white/20 to-white/5 shadow-lg backdrop-blur-sm">
-          <RatingStar className="w-7 h-7 animate-pulse [animation-duration:3s]" />
-          <span className="text-[10px] font-semibold uppercase tracking-widest text-white">Tops</span>
+        {/* Center logo — static, outside the rotating layer */}
+        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 z-10 flex h-20 w-20 items-center justify-center rounded-full border-2 border-white/30 bg-red-700 shadow-lg">
+          <span className="font-serif text-2xl font-black text-white">W</span>
         </div>
 
       </div>

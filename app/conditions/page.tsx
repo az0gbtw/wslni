@@ -5,16 +5,6 @@ import { Navbar } from "@/components/navbar"
 import { Footer } from "@/components/footer"
 import { FileText, Calendar } from "lucide-react"
 
-function ZelligeDivider() {
-  return (
-    <div className="w-full h-2 flex overflow-hidden">
-      {Array.from({ length: 40 }).map((_, i) => (
-        <div key={i} className={`flex-1 h-full ${i % 4 === 0 ? "bg-primary" : i % 4 === 1 ? "bg-primary/70" : i % 4 === 2 ? "bg-secondary" : "bg-primary/40"}`} />
-      ))}
-    </div>
-  )
-}
-
 const sections = [
   { id: "s1", number: "1.", title: "Objet et champ d'application" },
   { id: "s2", number: "2.", title: "Inscription et compte utilisateur" },
@@ -82,8 +72,6 @@ export default function ConditionsPage() {
           </div>
         </div>
       </section>
-
-      <ZelligeDivider />
 
       <section className="py-12 bg-background">
         <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">

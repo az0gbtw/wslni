@@ -13,16 +13,6 @@ import {
   Clock,
 } from "lucide-react"
 
-function ZelligeDivider() {
-  return (
-    <div className="w-full h-2 flex overflow-hidden">
-      {Array.from({ length: 40 }).map((_, i) => (
-        <div key={i} className={`flex-1 h-full ${i % 4 === 0 ? "bg-primary" : i % 4 === 1 ? "bg-primary/70" : i % 4 === 2 ? "bg-secondary" : "bg-primary/40"}`} />
-      ))}
-    </div>
-  )
-}
-
 const perks = [
   {
     icon: Rocket,
@@ -75,12 +65,10 @@ export default function CarrieresPage() {
             <span className="text-primary">freelance au Maroc</span>
           </h1>
           <p className="text-lg text-muted-foreground max-w-2xl mx-auto leading-relaxed">
-            Wslni.ma est une startup marocaine en pleine croissance. Rejoins une équipe passionnée qui construit un produit à impact réel pour des milliers de jeunes talents.
+            Wslni.ma est un tout jeune projet marocain. Si l'idée de construire une plateforme pour les freelances d'ici te parle, lis la suite.
           </p>
         </div>
       </section>
-
-      <ZelligeDivider />
 
       {/* Open Positions */}
       <section className="py-16 bg-background">

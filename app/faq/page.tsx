@@ -9,16 +9,6 @@ import { Input } from "@/components/ui/input"
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion"
 import { Search, HelpCircle, ArrowRight, MessageSquare } from "lucide-react"
 
-function ZelligeDivider() {
-  return (
-    <div className="w-full h-2 flex overflow-hidden">
-      {Array.from({ length: 40 }).map((_, i) => (
-        <div key={i} className={`flex-1 h-full ${i % 4 === 0 ? "bg-primary" : i % 4 === 1 ? "bg-primary/70" : i % 4 === 2 ? "bg-secondary" : "bg-primary/40"}`} />
-      ))}
-    </div>
-  )
-}
-
 const sections = [
   {
     id: "general",
@@ -193,8 +183,6 @@ export default function FaqPage() {
           </div>
         </div>
       </section>
-
-      <ZelligeDivider />
 
       <section className="py-16 bg-background">
         <div className="mx-auto max-w-3xl px-4 sm:px-6 lg:px-8">

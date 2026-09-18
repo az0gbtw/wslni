@@ -4,7 +4,6 @@ import { CategoriesSection } from "@/components/categories-section"
 import { TrendingCategoriesSection } from "@/components/trending-categories-section"
 import { HowItWorksSection } from "@/components/how-it-works-section"
 import { FeaturedFreelancersSection } from "@/components/featured-freelancers-section"
-import { TrustBannerSection } from "@/components/trust-banner-section"
 import { Footer } from "@/components/footer"
 import { SectionErrorBoundary } from "@/components/section-error-boundary"
 import { createClient } from "@/lib/supabase/server"
@@ -137,9 +136,6 @@ export default async function HomePage() {
       </SectionErrorBoundary>
       <SectionErrorBoundary name="featured-freelancers">
         <FeaturedFreelancersSection profiles={featuredProfiles} />
-      </SectionErrorBoundary>
-      <SectionErrorBoundary name="trust-banner">
-        <TrustBannerSection freelancerCount={freelancerCount ?? 0} serviceCount={serviceCount ?? 0} />
       </SectionErrorBoundary>
       <Footer />
     </main>

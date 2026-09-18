@@ -1,38 +1,8 @@
 "use client"
 
 import Link from "next/link"
-import { Facebook, Instagram, Twitter, Linkedin, Youtube } from "lucide-react"
 import { useLanguage } from "@/lib/language-context"
 import { translations } from "@/lib/translations"
-
-const socialLinks = [
-  { icon: Facebook, href: "#", label: "Facebook" },
-  { icon: Instagram, href: "#", label: "Instagram" },
-  { icon: Twitter, href: "#", label: "Twitter" },
-  { icon: Linkedin, href: "#", label: "LinkedIn" },
-  { icon: Youtube, href: "#", label: "YouTube" },
-]
-
-function ZelligeDivider() {
-  return (
-    <div className="w-full h-2 flex overflow-hidden">
-      {Array.from({ length: 40 }).map((_, i) => (
-        <div
-          key={i}
-          className={`flex-1 h-full ${
-            i % 4 === 0
-              ? "bg-primary"
-              : i % 4 === 1
-              ? "bg-primary/70"
-              : i % 4 === 2
-              ? "bg-secondary"
-              : "bg-primary/40"
-          }`}
-        />
-      ))}
-    </div>
-  )
-}
 
 export function Footer() {
   const { lang } = useLanguage()
@@ -70,8 +40,6 @@ export function Footer() {
 
   return (
     <footer className="bg-foreground text-background">
-      <ZelligeDivider />
-
       <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 py-12 md:py-16">
         <div className="grid grid-cols-2 md:grid-cols-4 gap-8 md:gap-12">
           {/* Brand Column */}
@@ -82,27 +50,9 @@ export function Footer() {
               </div>
               <span className="text-xl font-bold">Wslni.ma</span>
             </Link>
-            <p className="text-sm text-background/70 mb-6 max-w-xs">
+            <p className="text-sm text-background/70 max-w-xs">
               {t.tagline}
             </p>
-
-            <div className="flex gap-3">
-              {socialLinks.map((social, index) => {
-                const Icon = social.icon
-                return (
-                  <a
-                    key={index}
-                    href={social.href}
-                    aria-label={social.label}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="w-9 h-9 rounded-full bg-background/10 hover:bg-primary flex items-center justify-center transition-colors"
-                  >
-                    <Icon className="w-4 h-4" />
-                  </a>
-                )
-              })}
-            </div>
           </div>
 
           {/* Link columns */}

@@ -13,22 +13,8 @@ import {
   CheckCircle,
   Send,
   MessageSquare,
-  Instagram,
-  Facebook,
-  Twitter,
-  Linkedin,
   MapPin,
 } from "lucide-react"
-
-function ZelligeDivider() {
-  return (
-    <div className="w-full h-2 flex overflow-hidden">
-      {Array.from({ length: 40 }).map((_, i) => (
-        <div key={i} className={`flex-1 h-full ${i % 4 === 0 ? "bg-primary" : i % 4 === 1 ? "bg-primary/70" : i % 4 === 2 ? "bg-secondary" : "bg-primary/40"}`} />
-      ))}
-    </div>
-  )
-}
 
 const subjects = [
   "Choisir un sujet...",
@@ -54,13 +40,6 @@ const contactCards = [
     value: "Moins de 24h",
     detail: "Du lundi au vendredi, 9h–18h",
   },
-]
-
-const socials = [
-  { icon: Facebook, label: "Facebook", href: "#" },
-  { icon: Instagram, label: "Instagram", href: "#" },
-  { icon: Twitter, label: "Twitter / X", href: "#" },
-  { icon: Linkedin, label: "LinkedIn", href: "#" },
 ]
 
 interface FormData {
@@ -151,8 +130,6 @@ export default function ContactPage() {
           </p>
         </div>
       </section>
-
-      <ZelligeDivider />
 
       <section className="py-16 bg-background">
         <div className="mx-auto max-w-6xl px-4 sm:px-6 lg:px-8">
@@ -293,28 +270,6 @@ export default function ContactPage() {
                   </div>
                 )
               })}
-
-              {/* Social links */}
-              <div className="p-5 rounded-2xl bg-card border border-border">
-                <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wide mb-4">Réseaux sociaux</p>
-                <div className="space-y-3">
-                  {socials.map((s, i) => {
-                    const Icon = s.icon
-                    return (
-                      <a
-                        key={i}
-                        href={s.href}
-                        className="flex items-center gap-3 text-sm text-muted-foreground hover:text-primary transition-colors group"
-                      >
-                        <div className="w-8 h-8 rounded-lg bg-secondary border border-border flex items-center justify-center group-hover:border-primary/30 group-hover:bg-primary/5 transition-colors">
-                          <Icon className="w-4 h-4" />
-                        </div>
-                        {s.label}
-                      </a>
-                    )
-                  })}
-                </div>
-              </div>
 
               {/* Note */}
               <div className="p-5 rounded-2xl bg-primary/5 border border-primary/15">

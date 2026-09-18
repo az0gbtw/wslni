@@ -1,13 +1,10 @@
 "use client"
 
 import Link from "next/link"
-import { Palette, Code2, TrendingUp, Video, PenTool, Music, Briefcase, GraduationCap, Sparkles } from "lucide-react"
 import { useLanguage } from "@/lib/language-context"
 import { translations } from "@/lib/translations"
-import { CATEGORY_GROUPS, GROUP_GRADIENTS } from "@/lib/categories"
+import { CATEGORY_GROUPS } from "@/lib/categories"
 import { useScrollReveal } from "@/hooks/use-scroll-reveal"
-
-const GROUP_ICONS = [Palette, Code2, TrendingUp, Video, PenTool, Music, Briefcase, GraduationCap, Sparkles]
 
 export function CategoriesSection() {
   const { lang } = useLanguage()
@@ -17,72 +14,45 @@ export function CategoriesSection() {
   return (
     <section
       ref={sectionRef as React.RefObject<HTMLElement>}
-      className="py-20 md:py-28 bg-secondary/40"
+      className="py-16 md:py-24 bg-background"
     >
       <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
 
-        {/* Section header */}
-        <div className="text-center mb-10 md:mb-14 reveal" style={{ transitionDelay: "0ms" }}>
-          <h2 className="font-serif font-bold text-4xl md:text-5xl text-foreground tracking-tight mb-3 leading-tight">
+        <div className="mb-8 md:mb-10 reveal" style={{ transitionDelay: "0ms" }}>
+          <h2 className="font-serif font-bold text-3xl md:text-4xl text-foreground tracking-tight leading-tight">
             {t.title}
           </h2>
-          <p className="text-muted-foreground text-sm md:text-base max-w-lg mx-auto">{t.subtitle}</p>
+          <p className="text-muted-foreground text-sm md:text-base mt-2 max-w-lg">{t.subtitle}</p>
         </div>
 
-        {/* 3×3 category grid */}
         <div className="grid grid-cols-2 sm:grid-cols-3 gap-3 md:gap-4">
           {CATEGORY_GROUPS.map((group, index) => {
-            const Icon   = GROUP_ICONS[index]
-            const grad   = GROUP_GRADIENTS[group.value] ?? { bg: "from-gray-50 to-gray-100", icon: "text-gray-500" }
             const label  = lang === "ar" ? group.arLabel : t.items[index]
             const count  = group.subcategories.length
-            const suffix = lang === "ar" ? "خدمة" : "services"
+            const suffix = lang === "ar" ? "تخصصات" : "spécialités"
             return (
               <Link
                 key={group.value}
                 href={`/services?group=${group.value}`}
-                className={`reveal category-card-hover group relative isolate flex flex-col items-start p-5 md:p-6 rounded-xl border border-transparent hover:border-current/10 shadow-[0_1px_3px_rgba(0,0,0,0.08)] hover:shadow-xl hover:shadow-black/10 cursor-pointer gap-4 overflow-hidden`}
-                style={{ transitionDelay: `${(index + 1) * 55}ms` }}
+                className="reveal group flex flex-col justify-between gap-6 p-5 md:p-6 rounded-lg border border-border bg-card hover:border-primary/40 transition-colors"
+                style={{ transitionDelay: `${(index + 1) * 40}ms` }}
               >
-                {/* Desaturated background gradient — isolated so filter doesn't affect children */}
-                <div
-                  className={`absolute inset-0 bg-gradient-to-br ${grad.bg}`}
-                  style={{ zIndex: -1, filter: 'saturate(0.55)' }}
-                  aria-hidden="true"
-                />
-
-                {/* Icon container — white pill with colored icon */}
-                <div className="flex items-center justify-center rounded-xl bg-white shadow-sm group-hover:shadow-md transition-shadow duration-200 p-3">
-                  <Icon className={`w-7 h-7 ${grad.icon} transition-transform duration-200 group-hover:scale-110`} />
-                </div>
-
-                {/* Text */}
-                <div className="flex-1">
-                  <p className="font-bold text-sm md:text-base text-foreground leading-snug">{label}</p>
-                  <p className="text-xs text-muted-foreground mt-1">{count} {suffix}</p>
-                </div>
-
-                {/* Hover arrow */}
-                <svg
-                  className={`absolute bottom-4 end-4 w-4 h-4 opacity-0 group-hover:opacity-60 transition-opacity duration-200 ${grad.icon} rtl:rotate-180`}
-                  fill="none" stroke="currentColor" viewBox="0 0 24 24"
-                  aria-hidden="true"
-                >
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M9 5l7 7-7 7" />
-                </svg>
+                <p className="font-semibold text-base md:text-lg text-foreground leading-snug group-hover:text-primary transition-colors">
+                  {label}
+                </p>
+                <p className="text-xs text-muted-foreground">{count} {suffix}</p>
               </Link>
             )
           })}
         </div>
 
-        {/* View all link */}
-        <div className="text-center mt-8 reveal" style={{ transitionDelay: "600ms" }}>
+        <div className="mt-8">
           <Link
             href="/services"
-            className="inline-flex items-center gap-2 text-primary font-semibold hover:underline underline-offset-4 transition-all text-sm md:text-base"
+            className="inline-flex items-center gap-2 text-primary font-semibold hover:underline underline-offset-4 text-sm md:text-base"
           >
             {t.viewAll}
-            <svg className="w-4 h-4 rtl:rotate-180" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <svg className="w-4 h-4 rtl:rotate-180" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
             </svg>
           </Link>

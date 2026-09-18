@@ -3,21 +3,6 @@ import { Footer } from "@/components/footer"
 import { Button } from "@/components/ui/button"
 import { Clock, Calendar, ArrowRight, BookOpen, Rss } from "lucide-react"
 
-function ZelligeDivider() {
-  return (
-    <div className="w-full h-2 flex overflow-hidden">
-      {Array.from({ length: 40 }).map((_, i) => (
-        <div
-          key={i}
-          className={`flex-1 h-full ${
-            i % 4 === 0 ? "bg-primary" : i % 4 === 1 ? "bg-primary/70" : i % 4 === 2 ? "bg-secondary" : "bg-primary/40"
-          }`}
-        />
-      ))}
-    </div>
-  )
-}
-
 const categories = ["Tous", "Conseils", "Freelance", "Business", "Tech", "Maroc"]
 
 const articles = [
@@ -119,8 +104,6 @@ export default function BlogPage() {
           </div>
         </div>
       </section>
-
-      <ZelligeDivider />
 
       <section className="py-16 bg-background">
         <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
