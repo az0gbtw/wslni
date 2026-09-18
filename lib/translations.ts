@@ -87,7 +87,7 @@ const fr = {
   footer: {
     tagline:
       "La première marketplace freelance 100% marocaine. Trouve le talent qu'il te faut.",
-    copyright: "© 2025 Wslni.ma. Tous droits réservés.",
+    copyright: "© 2026 Wslni.ma. Tous droits réservés.",
     services: {
       title: "Services",
       links: [
@@ -721,7 +721,7 @@ const ar: typeof fr = {
   footer: {
     tagline:
       "أول سوق للمستقلين المغاربة 100%. اعثر على الكفاءة التي تحتاجها.",
-    copyright: "© 2025 Wslni.ma. جميع الحقوق محفوظة.",
+    copyright: "© 2026 Wslni.ma. جميع الحقوق محفوظة.",
     services: {
       title: "الخدمات",
       links: [

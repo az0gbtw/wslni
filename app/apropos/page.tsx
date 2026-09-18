@@ -123,7 +123,7 @@ export default function AProposPage() {
           <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-primary/10 border border-primary/20 mb-8">
             <span className="w-2 h-2 rounded-full bg-primary animate-pulse-subtle" />
             <span className="text-sm font-medium text-primary">
-              Lancé en 2025 · Fièrement marocain
+              Lancé en 2026 · Fièrement marocain
             </span>
           </div>
 
