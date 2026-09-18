@@ -23,7 +23,7 @@ export function CategoriesSection() {
 
         {/* Section header */}
         <div className="text-center mb-10 md:mb-14 reveal" style={{ transitionDelay: "0ms" }}>
-          <h2 className="font-display font-black text-4xl md:text-5xl text-foreground tracking-tight mb-3 leading-tight">
+          <h2 className="font-serif font-bold text-4xl md:text-5xl text-foreground tracking-tight mb-3 leading-tight">
             {t.title}
           </h2>
           <p className="text-muted-foreground text-sm md:text-base max-w-lg mx-auto">{t.subtitle}</p>

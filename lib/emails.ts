@@ -1,6 +1,14 @@
 import { Resend } from "resend"
 
-const resend = new Resend(process.env.RESEND_API_KEY)
+let resendClient: Resend | null = null
+
+/** Lazily instantiates the Resend client so importing this module doesn't throw when RESEND_API_KEY is unset (e.g. at build time). */
+function getResend(): Resend {
+  if (!resendClient) {
+    resendClient = new Resend(process.env.RESEND_API_KEY)
+  }
+  return resendClient
+}
 
 const FROM_EMAIL = "Wslni.ma <onboarding@resend.dev>"
 const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL ?? "https://wslni.ma"
@@ -157,7 +165,7 @@ export async function sendWelcomeEmail(email: string, fullName: string) {
     ${ctaButton(`${SITE_URL}/dashboard`, "Accéder à mon tableau de bord")}
   `
 
-  return resend.emails.send({
+  return getResend().emails.send({
     from: FROM_EMAIL,
     to: email,
     subject: `Bienvenue sur Wslni.ma, ${firstName} !`,
@@ -205,7 +213,7 @@ export async function sendNewOrderEmail(params: {
     ${ctaButton(`${SITE_URL}/dashboard`, "Voir la commande")}
   `
 
-  return resend.emails.send({
+  return getResend().emails.send({
     from: FROM_EMAIL,
     to: freelancerEmail,
     subject: `Nouvelle commande : ${serviceTitle}`,
@@ -282,7 +290,7 @@ export async function sendOrderStatusEmail(params: {
     ${ctaButton(`${SITE_URL}/dashboard`, "Voir mes commandes")}
   `
 
-  return resend.emails.send({
+  return getResend().emails.send({
     from: FROM_EMAIL,
     to: clientEmail,
     subject: `Commande "${serviceTitle}" — Statut : ${statusLabel}`,
@@ -328,7 +336,7 @@ export async function sendCinApprovedEmail(params: {
     ${ctaButton(`${SITE_URL}/profil`, "Voir mon profil")}
   `
 
-  return resend.emails.send({
+  return getResend().emails.send({
     from: FROM_EMAIL,
     to: email,
     subject: "Votre identité a été vérifiée sur Wslni.ma ✓",
@@ -370,7 +378,7 @@ export async function sendCinRejectedEmail(params: {
     ${ctaButton(`${SITE_URL}/profil`, "Soumettre à nouveau")}
   `
 
-  return resend.emails.send({
+  return getResend().emails.send({
     from: FROM_EMAIL,
     to: email,
     subject: "Demande de vérification d'identité — Action requise",
@@ -417,7 +425,7 @@ export async function sendNewMessageEmail(params: {
     ${ctaButton(`${SITE_URL}/messages`, "Répondre au message")}
   `
 
-  return resend.emails.send({
+  return getResend().emails.send({
     from: FROM_EMAIL,
     to: recipientEmail,
     subject: `Nouveau message de ${senderName} sur Wslni.ma`,

@@ -404,7 +404,7 @@ export default function NewServicePage() {
 
           {/* ── Heading ── */}
           <div className="mb-8 animate-fade-in-up animation-delay-100">
-            <h1 className="text-3xl font-bold tracking-tight text-gray-900">Créer un service</h1>
+            <h1 className="font-serif text-3xl font-bold tracking-tight text-gray-900">Créer un service</h1>
             <p className="text-sm text-gray-500 mt-1">
               Présentez votre expertise et attirez vos premiers clients.
             </p>

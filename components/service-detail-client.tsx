@@ -155,7 +155,7 @@ export function ServiceDetailClient({
             </div>
 
             {/* Title */}
-            <h1 className="text-2xl sm:text-3xl lg:text-4xl font-black text-white leading-tight mb-5 max-w-3xl drop-shadow-md">
+            <h1 className="font-serif text-2xl sm:text-3xl lg:text-4xl font-bold text-white leading-tight mb-5 max-w-3xl drop-shadow-md">
               {service.title}
             </h1>
 

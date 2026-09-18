@@ -77,7 +77,7 @@
 
 @theme inline {
   --font-sans: var(--font-inter), system-ui, sans-serif;
-  --font-display: var(--font-jakarta), system-ui, sans-serif;
+  --font-serif: var(--font-baskerville), Georgia, serif;
   --font-arabic: var(--font-cairo), system-ui, sans-serif;
   --font-mono: 'Geist Mono', 'Geist Mono Fallback';
   --color-background: var(--background);
@@ -130,15 +130,18 @@
     position: relative;
   }
   h1, h2, h3, h4, h5, h6 {
-    font-family: var(--font-display), sans-serif;
+    font-family: var(--font-serif), Georgia, serif;
     font-synthesis: none;
-    letter-spacing: -0.02em;
-    line-height: 1.1;
+    letter-spacing: -0.01em;
+    line-height: 1.15;
   }
   h1, h2 {
-    letter-spacing: -0.03em;
-    line-height: 0.95;
-    font-weight: 800;
+    letter-spacing: -0.015em;
+    line-height: 1.05;
+    font-weight: 700;
+  }
+  h3 {
+    font-weight: 400;
   }
 }
 
@@ -180,6 +183,18 @@
     opacity: 0;
     animation: fade-in-up 0.4s cubic-bezier(0.16, 1, 0.3, 1) forwards;
   }
+
+  /* Hero freelancer wheel — outer ring orbits, avatars counter-rotate to stay upright */
+  @keyframes orbit {
+    from { transform: rotate(0deg); }
+    to   { transform: rotate(360deg); }
+  }
+  @keyframes counterOrbit {
+    from { transform: rotate(calc(-1 * var(--angle, 0deg))); }
+    to   { transform: rotate(calc(-1 * var(--angle, 0deg) - 360deg)); }
+  }
+  .wheel-orbit         { animation: orbit 30s linear infinite; }
+  .wheel-counter-orbit { animation: counterOrbit 30s linear infinite; }
 }
 
 /* Scroll-triggered reveal */
@@ -398,12 +413,12 @@ html[lang="ar"] button {
   font-family: var(--font-cairo), system-ui, sans-serif;
 }
 
-/* Arabic RTL — override display/heading font with Cairo, reset letter-spacing */
+/* Arabic RTL — override serif/heading font with Cairo, reset letter-spacing */
 html[lang="ar"] h1,
 html[lang="ar"] h2,
 html[lang="ar"] h3,
 html[lang="ar"] h4,
-html[lang="ar"] .font-display {
+html[lang="ar"] .font-serif {
   font-family: var(--font-cairo), system-ui, sans-serif;
   letter-spacing: 0;
 }

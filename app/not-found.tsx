@@ -23,7 +23,7 @@ export default function NotFound() {
           {/* Large 404 */}
           <p
             className="text-8xl font-black text-red-600 leading-none select-none"
-            style={{ fontFamily: "var(--font-jakarta), system-ui, sans-serif" }}
+            style={{ fontFamily: "var(--font-baskerville), Georgia, serif" }}
             aria-hidden="true"
           >
             404

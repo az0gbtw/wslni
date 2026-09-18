@@ -1,15 +1,16 @@
 import type { Metadata, Viewport } from 'next'
-import { Plus_Jakarta_Sans, Inter, Cairo } from 'next/font/google'
+import { Libre_Baskerville, Inter, Cairo } from 'next/font/google'
 import { Analytics } from '@vercel/analytics/next'
 import { Providers } from '@/components/providers'
 import { PageTransition } from '@/components/page-transition'
 import { ProgressBar } from '@/components/progress-bar'
 import './globals.css'
 
-const jakarta = Plus_Jakarta_Sans({
+const libreBaskerville = Libre_Baskerville({
   subsets: ['latin'],
-  weight: ['600', '700', '800'],
-  variable: '--font-jakarta',
+  weight: ['400', '700'],
+  style: ['normal', 'italic'],
+  variable: '--font-baskerville',
   display: 'swap',
 })
 
@@ -76,7 +77,7 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="fr" className="bg-background" suppressHydrationWarning>
-      <body className={`${jakarta.variable} ${inter.variable} ${cairo.variable} font-sans antialiased`}>
+      <body className={`${libreBaskerville.variable} ${inter.variable} ${cairo.variable} font-sans antialiased`}>
         <ProgressBar />
         <Providers>
           <PageTransition>

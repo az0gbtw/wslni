@@ -161,7 +161,7 @@ Allows `*.supabase.co` as a remote image pattern. `allowedDevOrigins` includes `
 ## Fonts
 
 Three Google Fonts loaded in `app/layout.tsx`:
-- `--font-jakarta` (Plus Jakarta Sans 600/700/800) — display headings
+- `--font-baskerville` (Libre Baskerville 400/700, normal+italic) — headings / `font-serif`
 - `--font-inter` (Inter 400/500/600) — body / default `font-sans`
 - `--font-cairo` (Cairo, arabic+latin) — Arabic content
 

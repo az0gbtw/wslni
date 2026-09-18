@@ -34,7 +34,7 @@ export default function Error({ reset }: ErrorProps) {
 
         <h1
           className="text-2xl font-bold text-foreground tracking-tight"
-          style={{ fontFamily: "var(--font-jakarta), system-ui, sans-serif" }}
+          style={{ fontFamily: "var(--font-baskerville), Georgia, serif" }}
         >
           Une erreur est survenue
         </h1>

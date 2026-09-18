@@ -40,7 +40,7 @@ export function TrendingCategoriesSection({ categories }: Props) {
 
         {/* Header */}
         <div className="reveal mb-8" style={{ transitionDelay: "0ms" }}>
-          <h2 className="font-display font-bold text-xl sm:text-2xl text-foreground">
+          <h2 className="font-serif font-bold text-xl sm:text-2xl text-foreground">
             Tendances sur Wslni
           </h2>
           <p className="text-sm text-muted-foreground mt-1">

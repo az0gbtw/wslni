@@ -83,7 +83,7 @@ export function FeaturedFreelancersSection({ profiles }: FeaturedFreelancersSect
           style={{ transitionDelay: "0ms" }}
         >
           <div>
-            <h2 className="font-display font-black text-4xl md:text-5xl text-foreground tracking-tight leading-tight">
+            <h2 className="font-serif font-bold text-4xl md:text-5xl text-foreground tracking-tight leading-tight">
               {t.title}
             </h2>
             <p className="text-muted-foreground text-sm mt-2">{t.subtitle}</p>

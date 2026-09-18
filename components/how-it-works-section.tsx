@@ -31,7 +31,7 @@ export function HowItWorksSection() {
 
         {/* Section header */}
         <div className="text-center mb-14 md:mb-20 reveal" style={{ transitionDelay: "0ms" }}>
-          <h2 className="font-display font-black text-4xl md:text-5xl text-foreground tracking-tight mb-3 leading-tight">
+          <h2 className="font-serif font-bold text-4xl md:text-5xl text-foreground tracking-tight mb-3 leading-tight">
             {t.title}
           </h2>
           <p className="text-muted-foreground text-sm md:text-base max-w-sm mx-auto">{t.subtitle}</p>
@@ -66,7 +66,7 @@ export function HowItWorksSection() {
                 </div>
 
                 {/* Title */}
-                <h3 className="font-display font-black text-xl md:text-2xl text-foreground leading-tight">
+                <h3 className="font-serif font-bold text-xl md:text-2xl text-foreground leading-tight">
                   {step.title}
                 </h3>
 

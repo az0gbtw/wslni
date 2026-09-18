@@ -17,6 +17,8 @@ export default async function HomePage() {
     { count: serviceCount, error: e2 },
     { data: rawProfiles, error: e3 },
     { data: rawServiceCategories, error: e4 },
+    { data: topFreelancers, error: e7 },
+    { data: wheelRatings, error: e8 },
   ] = await Promise.all([
     supabase.from("profiles").select("*", { count: "exact", head: true }).neq("role", "admin"),
     supabase.from("services").select("*", { count: "exact", head: true }).eq("status", "published"),
@@ -30,11 +32,21 @@ export default async function HomePage() {
       .from("services")
       .select("category, category_group")
       .eq("status", "published"),
+    supabase
+      .from("profiles")
+      .select("id, full_name, avatar_url, job_title")
+      .neq("role", "admin")
+      .limit(6),
+    supabase
+      .from("reviews")
+      .select("freelancer_id, rating"),
   ])
   if (e1) console.error("[home] profiles count:", e1.message)
   if (e2) console.error("[home] services count:", e2.message)
   if (e3) console.error("[home] profiles:", e3.message)
   if (e4) console.error("[home] service categories:", e4.message)
+  if (e7) console.error("[home] top freelancers:", e7.message)
+  if (e8) console.error("[home] wheel ratings:", e8.message)
 
   // Aggregate service counts per subcategory for the trending section
   const catCountMap = new Map<string, { count: number; group: string | null }>()
@@ -111,6 +123,8 @@ export default async function HomePage() {
       <HeroSection
         freelancerCount={freelancerCount ?? 0}
         serviceCount={serviceCount ?? 0}
+        topFreelancers={topFreelancers ?? []}
+        wheelRatings={wheelRatings ?? []}
       />
       <SectionErrorBoundary name="categories">
         <CategoriesSection />

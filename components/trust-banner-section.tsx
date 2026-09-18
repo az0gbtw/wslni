@@ -50,7 +50,7 @@ export function TrustBannerSection({ freelancerCount, serviceCount }: TrustBanne
         {isEmpty ? (
           /* Launch mode — no data yet */
           <div className="reveal text-center max-w-xl mx-auto" style={{ transitionDelay: "0ms" }}>
-            <h2 className="font-display font-black text-2xl sm:text-3xl md:text-4xl mb-6 leading-tight">
+            <h2 className="font-serif font-bold text-2xl sm:text-3xl md:text-4xl mb-6 leading-tight">
               {lang === "ar" ? "كن من بين الأوائل على وصلني" : "Soyez parmi les premiers sur Wslni"}
             </h2>
             <Link
@@ -72,7 +72,7 @@ export function TrustBannerSection({ freelancerCount, serviceCount }: TrustBanne
                 <div className="relative mb-3">
                   {/* Inner glow highlight */}
                   <div className="absolute inset-0 rounded-3xl bg-white/10 blur-2xl scale-125" aria-hidden="true" />
-                  <div className="relative font-display font-black text-8xl md:text-9xl leading-none">
+                  <div className="relative font-serif font-bold text-8xl md:text-9xl leading-none">
                     <CountUp to={stat.to} suffix={stat.suffix} duration={1200} />
                   </div>
                 </div>
